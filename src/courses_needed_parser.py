@@ -1,7 +1,5 @@
 """
 TODO: fix one of the dataframes from tabula gets included as column title data, needs to be data
-TODO: fix regex parser to include "or" statements in pdf, Ex: CPSC 4148 or 5128U
-TODO: fix regex parser to include letters at end of number, Ex: 5128U
 TODO: find solution for electives, Ex: 6 Credits in CPSC 3@ or 4@ or 5@
 """
 import pandas as pd
