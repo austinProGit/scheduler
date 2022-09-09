@@ -1,7 +1,5 @@
 """
 TODO: fix one of the dataframes from tabula gets included as column title data, needs to be data
-TODO: fix regex parser to include "or" statements in pdf, Ex: CPSC 4148 or 5128U
-TODO: fix regex parser to include letters at end of number, Ex: 5128U
 TODO: find solution for electives, Ex: 6 Credits in CPSC 3@ or 4@ or 5@
 """
 import pandas as pd
@@ -9,7 +7,7 @@ import tabula
 import re
 
 
-def get_courses_needed(file):
+def get_courses_needed(file_name):
     """Inputs file name as string, reads pdf tables into list of dataframes per table,
        merges list of dataframes into single dataframe, parses dataframe for course id's,
        adds course id's to list (can change to set or other), and returns list
@@ -17,7 +15,7 @@ def get_courses_needed(file):
     # create blank dataframe
     courses_needed_df = pd.DataFrame()
     # read and import tables from pdf, returns as list of dataframes
-    courses_needed_df_list = tabula.read_pdf('src/input_files/' + file, pages='all')
+    courses_needed_df_list = tabula.read_pdf('src/input_files/' + file_name, pages='all')
     # regex shenanigans
     # [A-Z]{4} looks for 4 capital letters, \s{1} looks for 1 space, \d{4} looks for 4 digits/numbers
     # pattern is used to find course id, Ex: CPSC 1301, MATH 2125, etc.
