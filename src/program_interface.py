@@ -214,7 +214,10 @@ class SmartPlannerController:
         current_interface.parse_input(self, user_input)     # Pass the user's input to the current menu
         return len(self._interface_stack) != 0              # return whether there are still any interfaces presenting
 
-
+    
+# Interfaces are expected to have a parse_input method that takes as input the controller and the user input
+# and a deconstruct method that takes as input the controller. It is also expected to have a "name" property.
+   
 # The following is base for interface objects.
 
 class GeneralInterface:
