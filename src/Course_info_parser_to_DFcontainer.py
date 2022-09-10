@@ -1,4 +1,4 @@
-# Max Lewis 09/08/22
+# Max Lewis 09/10/22
 # CPSC 4175 Project
 
 import pandas as pd
@@ -11,14 +11,12 @@ class Course_info_dataframe_container:
     def display(self):
         print(self._df)
 
-    def get_name(self, courseid):
-        name = ''       
+    def get_name(self, courseid):       
         index = self._df[self._df['courseID'] == courseid].index[0]
         name = self._df.at[index, 'courseName']
         return name
    
     def get_availability(self, courseid):
-        availability = ''
         index = self._df[self._df['courseID'] == courseid].index[0]
         availability = self._df.at[index, 'availability']
         return availability
@@ -30,16 +28,24 @@ class Course_info_dataframe_container:
         return prereqs
 
     def get_coreqs(self, courseid):
-        coreqs = ''
         index = self._df[self._df['courseID'] == courseid].index[0]
         coreqs = self._df.at[index, 'co-requisites']
         return coreqs
 
     def get_recommended(self, courseid):
-        recommended = ''
         index = self._df[self._df['courseID'] == courseid].index[0]
         recommended = self._df.at[index, 'recommended']
         return recommended
+
+    def get_courseID_list(self):
+        list_of_courseIDs = self._df['courseID'].tolist()
+        return list_of_courseIDs
+
+    def get_availability_list(self, courseid):
+        index = self._df[self._df['courseID'] == courseid].index[0]
+        availability = self._df.at[index, 'availability']
+        availability_list = availability.split()
+        return availability_list
 
 # ------END OF CLASS---------END OF CLASS-----------END OF CLASS----------END OF CLASS---------------------------
 
@@ -72,3 +78,7 @@ print('Availability: ',container1.get_availability(course2))
 print('Pre-requisites: ', container1.get_prereqs(course2))
 print('Co-requisites: ', container1.get_coreqs(course2))
 print('Recommendations: ',container1.get_recommended(course2))
+print()
+print('Course ID List: ', container1.get_courseID_list())
+print('Availability List: ',container1.get_availability_list(course1))
+print('Availability List: ',container1.get_availability_list(course2))
