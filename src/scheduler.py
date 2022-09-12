@@ -5,21 +5,21 @@ from course_info_container import *
 import pandas as pd
 
 
-def check_availability(course_id, current_semester):
+def check_availability(_course_id, _current_semester):
     # TODO: return list instead? @Max idk how much this matters as I just .split() here
-    availability = courses_info.get_availability(course_id).split()
-    if current_semester in availability:
+    _availability = courses_info.get_availability(_course_id).split()
+    if _current_semester in _availability:
         return True
     else:
         return False
 
 
-def check_prerequisites(course):
+def check_prerequisites(_course):
     # TODO: need .get_prereqs() to return a list to account for 2+ pre-reqs
-    prerequisites = courses_info.get_prereqs(course)
-    print("PreReq: " + prerequisites)
+    _prerequisites = courses_info.get_prereqs(_course)
+    print("PreReq: " + _prerequisites)
     # if PreReq is in courses_needed or in current_semester, can't take course.
-    if prerequisites in courses_needed or prerequisites in temporary_semester:
+    if _prerequisites in courses_needed or _prerequisites in temporary_semester:
         return False
     else:
         return True
@@ -44,7 +44,7 @@ courses_needed.append("CPSC 3125")
 
 # we need a max courses, and not a hard n courses per semester
 # I personally only had ONE class in a previous semester and could not take ANY other
-max_courses = 5
+max_courses = 6
 # sorting should speed up the scheduler, as lower tier courses are more likely to be required sooner
 courses_needed.sort()
 
@@ -77,7 +77,7 @@ while current_courses < max_courses:
         courses_needed.append(course)
         continue
 
-    # slot in semester
+    # slot course in semester
     temporary_semester.append(course)
     current_courses += 1
 
