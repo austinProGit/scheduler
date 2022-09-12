@@ -6,23 +6,21 @@ import pandas as pd
 
 
 def check_availability(_course_id, _current_semester):
-    # TODO: return list instead? @Max idk how much this matters as I just .split() here
-    _availability = courses_info.get_availability(_course_id).split()
+    _availability = courses_info.get_availability_list(_course_id)
     if _current_semester in _availability:
         return True
     else:
         return False
 
 
-def check_prerequisites(_course):
-    # TODO: need .get_prereqs() to return a list to account for 2+ pre-reqs
-    _prerequisites = courses_info.get_prereqs(_course)
-    print("PreReq: " + _prerequisites)
+def check_prerequisites(_course_id):
+    _prerequisites = courses_info.get_prereqs_list(_course_id)
+    print("PreReq: " + str(_prerequisites))
     # if PreReq is in courses_needed or in current_semester, can't take course.
-    if _prerequisites in courses_needed or _prerequisites in temporary_semester:
-        return False
-    else:
-        return True
+    for prerequisite in _prerequisites:
+        if prerequisite in courses_needed or prerequisite in temporary_semester:
+            return False
+    return True
 
 
 # file names
@@ -44,16 +42,17 @@ courses_needed.append("CPSC 3125")
 
 # we need a max courses, and not a hard n courses per semester
 # I personally only had ONE class in a previous semester and could not take ANY other
-max_courses = 6
+max_courses = 5
 # sorting should speed up the scheduler, as lower tier courses are more likely to be required sooner
 courses_needed.sort()
 
 # only adding this course, to get a fail on my pre-reqs
 courses_needed.append("CPSC 2108")
+print(str(len(courses_needed)) + " Courses")
 
 # ************ single semester ********************
 temporary_semester = []
-current_courses = 1  # need to manually control this loop
+current_courses = 0  # need to manually control this loop
 while current_courses < max_courses:
     # TODO: Need to create something to check current semester and assign two letter semester
     this_semester = 'Sp'
@@ -61,6 +60,14 @@ while current_courses < max_courses:
     # get first course in list
     course = courses_needed.pop(0)
     print("Course: " + course)
+
+    # check for non CPSC courses, these courses will throw errors when checking course_info
+    if course[:4] != "CPSC":
+        # slot course in semester
+        print("Added to semester")
+        temporary_semester.append(course)
+        current_courses += 1
+        continue
 
     # check availability
     available = check_availability(course, this_semester)
@@ -78,6 +85,7 @@ while current_courses < max_courses:
         continue
 
     # slot course in semester
+    print("Added to semester")
     temporary_semester.append(course)
     current_courses += 1
 
