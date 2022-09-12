@@ -14,6 +14,17 @@ def check_availability(course_id, current_semester):
         return False
 
 
+def check_prerequisites(course):
+    # TODO: need .get_prereqs() to return a list to account for 2+ pre-reqs
+    prerequisites = courses_info.get_prereqs(course)
+    print("PreReq: " + prerequisites)
+    # if PreReq is in courses_needed or in current_semester, can't take course.
+    if prerequisites in courses_needed or prerequisites in temporary_semester:
+        return False
+    else:
+        return True
+
+
 # file names
 needed_file = 'Sample Input1.pdf'
 info_file = "ClassInfo.xlsx"
@@ -23,7 +34,6 @@ courses_needed = get_courses_needed(needed_file)
 courses_info = Course_info_dataframe_container(load_course_info('ClassInfo.xlsx'))
 
 # create blank dataframe for final schedule
-# TODO: More modular date fills?
 schedule_df = pd.DataFrame(columns=['Spring 2023', 'Summer 2023', 'Fall 2023',
                                     'Spring 2024', 'Summer 2024', 'Fall 2024',
                                     'Spring 2025', 'Summer 2025', 'Fall 2025',
@@ -61,12 +71,8 @@ while current_courses < max_courses:
 
     # check prerequisites
     # TODO: create co-requisites check
-    # TODO: need .get_prereqs() to return a list to account for 2+ pre-reqs
-    prerequisites = courses_info.get_prereqs(course)
-    print(len(prerequisites))
-    print("PreReq: " + prerequisites)
-    # if PreReq is in courses_needed or in current_semester, can't take course.
-    if prerequisites in courses_needed or prerequisites in temporary_semester:
+    prerequisites = check_prerequisites(course)
+    if not prerequisites:
         print("PreReq failed, skipped")
         courses_needed.append(course)
         continue
