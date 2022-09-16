@@ -15,6 +15,7 @@
 # TODO: Maybe make the name of the help file included in config
 # TODO: Ensure exception raising is implemented in other modules (e.g. NonDAGCourseInfoError)
 # TODO: Create the driver-level interface for getting item selection (e.g. for selecting electives)
+# TODO: Add support for course info being in a different directoy (and different OS)
 
 from sys import exit
 from cli_interface import *
