@@ -15,6 +15,10 @@
 # TODO: Maybe make the name of the help file included in config
 # TODO: Ensure exception raising is implemented in other modules (e.g. NonDAGCourseInfoError)
 # TODO: Create the driver-level interface for getting item selection (e.g. for selecting electives)
+# TODO: Add support for course info being in a different directoy (and different OS)
+# TODO: Set up error codes or boolean return (other modules)
+# TODO: Add status command that prints scheduling parameters
+# TODO: Add confirmation menu that shows warnings when a large number of hours per semester is entered or a file will be overriden
 
 from sys import exit
 from cli_interface import *
@@ -61,17 +65,20 @@ def get_courses_needed(file_name):
 
 class Scheduler:
     def __init__(self):
-        pass
+        self.h = 14
+        
+    def get_hours_per_semester(self):
+        return self.h
         
     def configure_course_info(self, container):
         pass
         
     def configure_courses_needed(self, container):
         pass
-        
+    
     def configure_hours_per_semester(self, number_of_hours):
-        pass
-        
+        self.h = number_of_hours
+    
     def generate_schedule(self, filename):
         pass
 
@@ -141,8 +148,7 @@ class SmartPlannerController:
                     application = QtWidgets.QApplication.instance()
                     if not application:
                         application = QtWidgets.QApplication([])
-                    new_main_menu = MainMenuWidget()
-                    new_main_menu.controller = self
+                    new_main_menu = MainMenuWidget(self)
                     self._interface_stack = [new_main_menu]
                     new_main_menu.resize(300, 300)
                     new_main_menu.show()
@@ -166,7 +172,7 @@ class SmartPlannerController:
         '''Output an error message to the user.'''
         self.output('ERROR: {0}'.format(message))
 
-    ## ----------- CLI Interface/menu control ----------- ##
+    ## ----------- Interface/menu control ----------- ##
     
     
     def get_input(self):
@@ -211,19 +217,27 @@ class SmartPlannerController:
     def enter_error_menu(self):
         '''Push an error menu onto the menu stack so the user can correct errors before reloading.'''
         self.push_interface(ErrorMenu())
-
+                
+    ## ----------- Info getting ----------- ##
+    
+    def get_hours_per_semester(self):
+        return self._scheduler.get_hours_per_semester()
                 
     ## ----------- Scheduling procedure configuration ----------- ##
 
     def load_courses_needed(self, filename):
-        '''Load the courses that must be scheduled into the scheduler (from a filename).'''
+        '''Load the courses that must be scheduled into the scheduler (from a filename). This return the success of the load.'''
+        success = False
         try:
-            courses_needed_list = self._scheduler.configure_courses_needed(filename)    # Get the needed courses from the file
+            courses_needed_list = get_courses_needed(filename)                          # Get the needed courses from the file
             self._scheduler.configure_courses_needed(courses_needed_list)               # Load the course list into the scheduler
             self.output('Course requirements loaded from {0}.'.format(filename))        # Report success to the user
+            success = True                                                              # Set success to true
         except FileNotFoundError:
             output_error('Sorry, {0} could not be found.'.format(filename))             # Report if the file was not found
-
+        return success
+        
+    
     def configure_hours_per_semester(self, number_of_hours):
         '''Set the number of hours that are scheduled per semester.'''
         self._scheduler.configure_hours_per_semester(number_of_hours)
