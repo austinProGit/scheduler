@@ -16,9 +16,12 @@
 # TODO: Ensure exception raising is implemented in other modules (e.g. NonDAGCourseInfoError)
 # TODO: Create the driver-level interface for getting item selection (e.g. for selecting electives)
 # TODO: Add support for course info being in a different directoy (and different OS)
+<<<<<<< HEAD
 # TODO: Set up error codes or boolean return (other modules)
 # TODO: Add status command that prints scheduling parameters
 # TODO: Add confirmation menu that shows warnings when a large number of hours per semester is entered or a file will be overriden
+=======
+>>>>>>> d4fc887b142a9be0c146c5792d99e632b0b64546
 
 from sys import exit
 from cli_interface import *
