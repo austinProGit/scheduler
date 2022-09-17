@@ -7,6 +7,7 @@ TODO: CPSC 1301K, handle the k, temporarily removed the k from course_info.xlsx
 TODO: Create automatic semester types, Spring -> Sp, Summer -> Su, Fall -> Fa
 TODO: Create co-requisites check
 TODO: Deal with list sorting low level CYBR behind ALL CPSC courses, pointless if I get ALL courses through crawler?
+TODO: Summer courses are not able to support the same amount of maximum courses, add fix for this
 
 Over commented as usual for your reading pleasure.
 """
