@@ -3,7 +3,8 @@
 # Contributor(s): Thomas Merino
 
 
-# NOTE: this was modified from Vincent's schdeuler. All I have done is encapsulated it in a class with configuration methods, added support for coreqs, reorganized a bit of stuff (to my weird liking), and fixed a rare bug.
+# NOTE: this was modified from Vincent's schdeuler. All I have done is encapsulated it in a class with configuration methods, added support
+# for coreqs, added support for starting on any semester, reorganized a bit of stuff (to my weird liking), and fixed a rare bug.
 
 """
 TODO: This has not been tested rigorously (please try to break it).
@@ -135,7 +136,10 @@ class Scheduler:
             
             semester = []                       # the working list of courses
             current_courses_counter = 0         # counter to control max_courses
-            # NOTE: I am changing the use of this variable so it only stops the searching cycle if it runs through the entire needed courses list without finding any new courses to register. This is the only solution I have for ensuring we schedule courses that may have been skipped because of coreq requirements. This also prevents a rare bug where the while-loop would end preemptively--this was dues to courses_counter not be corrected when the length of courses_needed was modified.
+            # NOTE: I am changing the use of this variable so it only stops the searching cycle if it runs through the entire needed
+            # courses list without finding any new courses to register. This is the only solution I have for ensuring we schedule courses
+            # that may have been skipped because of coreq requirements. This also prevents a rare bug where the while-loop would end
+            # preemptively--this was dues to courses_counter not be corrected when the length of courses_needed was modified.
             unregistered_courses_counter = 0    # counter to control iteration through courses_needed
             
             # NOTE: we can easily set this depending on the semester type so there're fewer courses in the summer.
