@@ -4,17 +4,28 @@
 
 # TODO: Maybe make the name of the help file included in config
 # TODO: Make importing PySide components optional in case the user does not have them installed
-# TODO: Fix help file parser not ending predictably
+# TODO: Fix help file parser not ending predictably (no extra blank lines)
+# TODO: Create a file browser sub-mod
 
 from PySide6 import QtCore, QtWidgets, QtGui
 from sys import exit
+from os import path
+from pathlib import Path
 
 HELP_FILENAME = 'help'
-HELP_TERMINATOR = '<END'
+HELP_TERMINATOR = '<END>'
+
+
+# The hope here is to move all command line interface management to a single object that the driving controller presents:
+
+#class CommandLineController:
+#
+#    def __init__(self):
+#        self._interface_stack = [MainMenuInterface()]
 
 # Interfaces are expected to have a parse_input method that takes as input the controller and the user input and a deconstruct method that takes as input the controller. It is also expected to have a "name" property.
 
-# TODO: Making the command dictionary statically set may be a better approach.
+# TODO: Make the command dictionary statically set (may be a better approach).
 
 # The following is base for interface objects.
 
@@ -70,7 +81,9 @@ class MainMenuInterface(GeneralInterface):
         
         # Add commands to the command listing
         self.add_command(load_needed_courses_command, 'load', 'needed', 'set')
-        self.add_command(browse_command, 'browse', 'browser')
+        self.add_command(load_destination_directory_command, 'destination', 'dest', 'to', 'directory')
+        self.add_command(browse_need_courses_command, 'browse', 'browser', 'load-b', 'needed-b', 'set-b')
+        self.add_command(browse_destination_directory_command, 'destination-b', 'dest-b', 'to-b', 'directory-b')
         self.add_command(test_listing_command, 'testl')
         self.add_command(list_available_commands_command, '', 'commands', 'list')
         self.add_command(set_hours_per_semster_command, 'hours', 'per', 'count')
@@ -283,13 +296,32 @@ def list_available_commands_command(controller, argument):
     controller.output('Here are the commands available:')
     # TODO: use a listing from help resourses.
 
+def load_helper(controller, is_directory, filename):
+    load_type_description = 'directory' if is_directory else 'file'
+    if filename == '':
+        controller.output_error('Please enter the {0}\'s path.'.format(load_type_description))
+    else:
+        file_path = filename
+        
+        if filename[0] == '~':
+            file_path = str(Path.home()) + filename[1:]
+        
+        if path.exists(file_path):
+            if is_directory:
+                controller.configure_destination_directory(file_path)
+            else:
+                controller.load_courses_needed(file_path)
+        else:
+            controller.output_error('Sorry, that {0} could not be found (try entering an absolute path).'.format(load_type_description))
 
 def load_needed_courses_command(controller, filename):
     '''Ask the provided caller to load needed courses via the provided filename.'''
-    if filename != '':
-        controller.load_courses_needed(filename)
-    else:
-        controller.output_error('Please enter a filename.')
+    load_helper(controller, False, filename)
+    
+
+def load_destination_directory_command(controller, directory):
+    '''Ask the provided caller to change the destination directory to the provided directory (the directory's existence i checked first).'''
+    load_helper(controller, True, directory)
 
 def set_hours_per_semster_command(controller, argument):
     '''Ask the provided caller to set the number of hours per semester.'''
@@ -350,9 +382,10 @@ def create_default_config_command(controller, argument):
 
 ## ----------- The following are more or less for testing ----------- ##
 
-def browse_command(controller, argument):
-    '''Command to create a new QT application for the purpose '''
+def browse_need_courses_command(controller, argument):
+    '''Command to create a new QT application for the purpose of loading the needed courses file.'''
     # TODO: polish this (probably not in final version)
+    # TODO: acknowledge arg.
     
     # This gets the application (launches if there is none) and uses it to present a file selection dialog
     application = QtWidgets.QApplication.instance()
@@ -370,6 +403,26 @@ def browse_command(controller, argument):
         
     application.quit()
     
+def browse_destination_directory_command(controller, argument):
+    '''Command to create a new QT application for the purpose of setting the destination directory.'''
+    # TODO: polish this (probably not in final version)
+    # TODO: acknowledge arg.
+    
+    # This gets the application (launches if there is none) and uses it to present a file selection dialog
+    application = QtWidgets.QApplication.instance()
+    if not application:
+        application = QtWidgets.QApplication([])
+    file_loader_dialog = QtWidgets.QFileDialog()
+    file_loader_dialog.setFileMode(QtWidgets.QFileDialog.Directory)
+    directory_name = None
+    
+    if file_loader_dialog.exec():
+        directory_name = file_loader_dialog.selectedFiles()[0]
+        load_destination_directory_command(controller, directory_name)
+    if directory_name == None:
+        controller.output('Load cancelled.')
+        
+    application.quit()
 
 def test_listing_command(controller, argument):
 

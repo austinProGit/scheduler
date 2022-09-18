@@ -12,23 +12,28 @@
 # TODO: Maybe add session data so the program can recover from a crash
 # TODO: Have the user store/set in the config file whether to open in GUI or CLI (this may be changed in either interface)
 # TODO: Have the last directory used for saving stored in the config
+# TODO: Ensure the directories in the config file work no matter the OS (if not implement).
 # TODO: Maybe make the name of the help file included in config
 # TODO: Ensure exception raising is implemented in other modules (e.g. NonDAGCourseInfoError)
 # TODO: Create the driver-level interface for getting item selection (e.g. for selecting electives)
 # TODO: Add support for course info being in a different directoy (and different OS)
-<<<<<<< HEAD
 # TODO: Set up error codes or boolean return (other modules)
 # TODO: Add status command that prints scheduling parameters
 # TODO: Add confirmation menu that shows warnings when a large number of hours per semester is entered or a file will be overriden
-=======
->>>>>>> d4fc887b142a9be0c146c5792d99e632b0b64546
+# TODO: Implement saving destination in the driver (not just GUIs)
+
+from PySide6 import QtWidgets, QtGui
 
 from sys import exit
-from cli_interface import *
-from graphical_interface import *
+from pathlib import Path
 
+from cli_interface import MainMenuInterface
+from graphical_interface import MainProgramWindow
+
+ICON_FILENAME = 'icon.png'
 DEFAULT_CATALOG_NAME = 'catalog.xlsx'
 CONFIG_FILENAME = 'config'
+DEFAULT_SCHEDULE_NAME = 'Path to Graduation'
 
 ## --------------------------------------------------------------------- ##
 ## ----------- The following are dummy classes and functions ----------- ##
@@ -94,7 +99,8 @@ class Scheduler:
 class InterfaceProcedureError(Exception):
     pass
     
-    
+# This class manages the interactions between the interface of the program and the model (mostly the scheduler).
+# The class also manages the destination directory and filename.
 class SmartPlannerController:
 
     def __init__(self):
@@ -105,11 +111,13 @@ class SmartPlannerController:
         
         # Initialize important variables
         self._scheduler = Scheduler()
+        self._destination_directory = Path.home()
+        self._destination_filename = DEFAULT_SCHEDULE_NAME
 
         # Load the course info file
         self.load_course_info()
         
-        # Load the user interface
+        # Load the user interface -- the program will
         self.load_interface()
     
     def load_course_info(self):
@@ -151,10 +159,11 @@ class SmartPlannerController:
                     application = QtWidgets.QApplication.instance()
                     if not application:
                         application = QtWidgets.QApplication([])
-                    new_main_menu = MainMenuWidget(self)
-                    self._interface_stack = [new_main_menu]
-                    new_main_menu.resize(300, 300)
-                    new_main_menu.show()
+                    application.setWindowIcon(QtGui.QIcon(ICON_FILENAME))
+                    main_window = MainProgramWindow(self)
+                    self._interface_stack = [main_window.widget]
+                    main_window.resize(450, 300)
+                    main_window.show()
                     exit(application.exec())
                 else:
                     self._interface_stack = [MainMenuInterface()]
@@ -225,7 +234,13 @@ class SmartPlannerController:
     
     def get_hours_per_semester(self):
         return self._scheduler.get_hours_per_semester()
-                
+    
+    def get_destination_filename(self):
+        return self._destination_filename
+    
+    def get_destination_directory(self):
+        return self._destination_directory
+    
     ## ----------- Scheduling procedure configuration ----------- ##
 
     def load_courses_needed(self, filename):
@@ -245,6 +260,16 @@ class SmartPlannerController:
         '''Set the number of hours that are scheduled per semester.'''
         self._scheduler.configure_hours_per_semester(number_of_hours)
         self.output('Hours per semester set to {0}.'.format(number_of_hours))
+        
+    def configure_destination_filename(self, filename):
+        '''Set the destination filename (what to name the schedule).'''
+        self._destination_filename = filename
+        self.output('Result filename set to {0}.'.format(filename))
+        
+    def configure_destination_directory(self, directory):
+        '''Set the destination directory (where to save the schedule).'''
+        self._destination_directory = directory
+        self.output('Destination set to {0}.'.format(directory))
         
     def generate_schedule(self, filename):
         '''Generate the schedule with a given filename.'''

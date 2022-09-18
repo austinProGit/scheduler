@@ -11,18 +11,27 @@
 # TODO: Maybe make the name of the help file included in config
 # TODO: Ensure exception raising is implemented in other modules (e.g. NonDAGCourseInfoError)
 # TODO: Create the driver-level interface for getting item selection (e.g. for selecting electives)
+# TODO: Shorten the name of long directories (for display purposes).
 
 
 from PySide6 import QtCore, QtWidgets, QtGui
-from os import getcwd, path
+from os import path
 from pathlib import Path
 
-DEFAULT_SCHEDULE_NAME = 'Path to Graduation'
 
 ## --------------------------------------------------------------------- ##
 ## ---------------------- Graphical User Interface --------------------- ##
 ## --------------------------------------------------------------------- ##
 
+class MainProgramWindow(QtWidgets.QMainWindow):
+    
+    def __init__(self, controller):
+        super().__init__()
+        self.setWindowTitle('Smart Planner')
+        self.setWindowIcon(QtGui.QIcon('Icon.png'))
+        self.widget = MainMenuWidget(controller)
+        self.setCentralWidget(self.widget)
+        
 
 # This is a subclass of the QT text field that clears when focus is changed or the user presses enter/return
 class TextField(QtWidgets.QLineEdit):
@@ -39,9 +48,7 @@ class MainMenuWidget(QtWidgets.QWidget):
         super().__init__()                      # Call the super's initialization
         
         self.controller = controller
-        self.working_directory = getcwd()       # Get the program's working directory and set it as the output directory
-        self.schedule_name = DEFAULT_SCHEDULE_NAME
-
+        
         # Create a label for presenting recent messages
         self.message_label = QtWidgets.QLabel('Welcome to Smart Planner')
         
@@ -59,7 +66,7 @@ class MainMenuWidget(QtWidgets.QWidget):
 
         # Create a button to select the working directory for output
         self.destination_directory_label = QtWidgets.QLabel('*No destination directory selected*')
-        self.set_destination_label(self.working_directory)
+        self.set_destination_label(self.controller.get_destination_directory())
         self.change_directory_button = QtWidgets.QPushButton('Change Directory')
         self.change_directory_button.clicked.connect(self._change_directory_callback)
 
@@ -67,7 +74,7 @@ class MainMenuWidget(QtWidgets.QWidget):
         self.schedule_name_label = QtWidgets.QLabel("Schedule name:")
         self.schedule_name_field = TextField()
         self.schedule_name_field.returnPressed.connect(self._schedule_name_callback)
-        self.schedule_name_field.setPlaceholderText(self.schedule_name)
+        self.schedule_name_field.setPlaceholderText(self.controller.get_destination_filename())
         
         # Create a button that generate's the schedule
         self.generate_schedule_button = QtWidgets.QPushButton('Generate Schedule')
@@ -126,24 +133,25 @@ class MainMenuWidget(QtWidgets.QWidget):
         file_loader_dialog = QtWidgets.QFileDialog()
         file_loader_dialog.setFileMode(QtWidgets.QFileDialog.Directory)
         directory_name = None
-
+        
         if file_loader_dialog.exec():
             directory_name = file_loader_dialog.selectedFiles()[0]
-            self.working_directory = directory_name
-            self.set_destination_label(directory_name)
+            self.controller.configure_destination_directory(directory_name)
+            self.set_destination_label(self.controller.get_destination_directory())
         if directory_name == None:
             self.controller.output('Load cancelled.')
         
         
     def _schedule_name_callback(self):
-        self.schedule_name = self.schedule_name_field.text().strip()
+        self.controller.configure_destination_filename(self.schedule_name_field.text().strip())
         self.schedule_name_field.clear()
         self.schedule_name_field.clearFocus()
-        self.schedule_name_field.setPlaceholderText(self.schedule_name)
+        self.schedule_name_field.setPlaceholderText(self.controller.get_destination_filename())
         
     
     def _generate_schedule_callback(self):
         print('_generate_schedule_callback')
-        self.controller.generate_schedule(path.join(self.working_directory, self.schedule_name))
+        self.controller.generate_schedule(path.join(self.controller.get_destination_directory(),
+                                                    self.controller.get_destination_filename()))
         self.message_label.setText('Schedule Generated')
     
