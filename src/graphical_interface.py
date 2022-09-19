@@ -11,11 +11,16 @@
 # TODO: Maybe add help
 # TODO: Create the driver-level interface for getting item selection (e.g. for selecting electives)
 # TODO: Shorten the name of long directories (for display purposes).
-
+# TODO: implement weakref into the GUI widgets to prevent strong reference cycles
 
 from PySide6 import QtCore, QtWidgets, QtGui
 from os import path
 from pathlib import Path
+import weakref
+
+# TODO: Add these to a constants file so they are not defined in both driver and here
+PATH_TO_GRADUATION_EXPORT_TYPE = 0x00
+PLAIN_TEXT_EXPORT_TYPE = 0x01
 
 ## --------------------------------------------------------------------- ##
 ## ---------------------- Graphical User Interface --------------------- ##
@@ -55,25 +60,32 @@ class MainMenuWidget(QtWidgets.QWidget):
         self.needed_courses_load_label = QtWidgets.QLabel('*No needed courses file loaded*')
         self.needed_courses_load_button = QtWidgets.QPushButton('Open Needed Courses')
         self.needed_courses_load_button.clicked.connect(self._needed_courses_load_callback)
-
+        
         # Create a text field that sets hours per semester after pressing enter/return
-        self.hours_per_semester_label = QtWidgets.QLabel("Hours per semester:")
+        self.hours_per_semester_label = QtWidgets.QLabel('Hours per semester:')
         self.hours_per_semester_field = TextField()
         self.hours_per_semester_field.setValidator(QtGui.QIntValidator())
         self.hours_per_semester_field.returnPressed.connect(self._hours_per_semester_callback)
-        self.hours_per_semester_field.setPlaceholderText(str(self.controller.get_hours_per_semester()))
-
+        self.hours_per_semester_field.setPlaceholderText(str(controller.get_hours_per_semester()))
+        
         # Create a button to select the working directory for output
         self.destination_directory_label = QtWidgets.QLabel('*No destination directory selected*')
         self.set_destination_label(self.controller.get_destination_directory())
         self.change_directory_button = QtWidgets.QPushButton('Change Directory')
         self.change_directory_button.clicked.connect(self._change_directory_callback)
-
+        
+        self.path_to_graduation_checkbox = QtWidgets.QCheckBox('Export Path to Graduation Excel')
+        self.path_to_graduation_checkbox.setChecked(controller.is_using_export_type(PATH_TO_GRADUATION_EXPORT_TYPE))
+        self.path_to_graduation_checkbox.toggled.connect(self._toggle_export_type_callback)
+        self.plain_text_checkbox = QtWidgets.QCheckBox('Export Simple txt')
+        self.plain_text_checkbox.setChecked(controller.is_using_export_type(PLAIN_TEXT_EXPORT_TYPE))
+        self.plain_text_checkbox.toggled.connect(self._toggle_export_type_callback)
+        
         # Create a text field that set the schedule's name after pressing enter/return
-        self.schedule_name_label = QtWidgets.QLabel("Schedule name:")
+        self.schedule_name_label = QtWidgets.QLabel('Schedule name:')
         self.schedule_name_field = TextField()
         self.schedule_name_field.returnPressed.connect(self._schedule_name_callback)
-        self.schedule_name_field.setPlaceholderText(self.controller.get_destination_filename())
+        self.schedule_name_field.setPlaceholderText(controller.get_destination_filename())
         
         # Create a button that generate's the schedule
         self.generate_schedule_button = QtWidgets.QPushButton('Generate Schedule')
@@ -86,6 +98,8 @@ class MainMenuWidget(QtWidgets.QWidget):
         self.layout.addRow(self.needed_courses_load_label, self.needed_courses_load_button)
         self.layout.addRow(self.hours_per_semester_label, self.hours_per_semester_field)
         self.layout.addRow(self.destination_directory_label, self.change_directory_button)
+        self.layout.addWidget(self.path_to_graduation_checkbox)
+        self.layout.addWidget(self.plain_text_checkbox)
         self.layout.addRow(self.schedule_name_label, self.schedule_name_field)
         self.layout.addWidget(self.generate_schedule_button)
         
@@ -140,7 +154,17 @@ class MainMenuWidget(QtWidgets.QWidget):
         if directory_name == None:
             self.controller.output('Load cancelled.')
         
+    def _toggle_export_type_callback(self):
+        export_types = []
         
+        if self.path_to_graduation_checkbox.isChecked():
+            export_types.append(PATH_TO_GRADUATION_EXPORT_TYPE)
+                
+        if self.plain_text_checkbox.isChecked():
+            export_types.append(PLAIN_TEXT_EXPORT_TYPE)
+            
+        self.controller.set_export_types(export_types)
+    
     def _schedule_name_callback(self):
         self.controller.configure_destination_filename(self.schedule_name_field.text().strip())
         self.schedule_name_field.clear()
@@ -153,5 +177,4 @@ class MainMenuWidget(QtWidgets.QWidget):
         self.controller.generate_schedule(path.join(self.controller.get_destination_directory(),
                                                     self.controller.get_destination_filename()))
         self.message_label.setText('Schedule Generated')
-        self.controller.enter_error_menu()
     
