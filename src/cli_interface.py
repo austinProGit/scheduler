@@ -18,6 +18,11 @@ HELP_FILENAME = 'help'
 HELP_TERMINATOR = '<END>'
 ICON_FILENAME = 'icon.png'                      # The filename of the program's icon (when GUI)
 
+
+# TODO: Add these to a constants file so they are not defined in both driver and here
+PATH_TO_GRADUATION_EXPORT_TYPE = 0x00
+PLAIN_TEXT_EXPORT_TYPE = 0x01
+
 # The hope here is to move all command line interface management to a single object that the driving controller presents:
 
 #class CommandLineController:
@@ -92,6 +97,7 @@ class MainMenuInterface(GeneralInterface):
         self.add_command(load_destination_directory_command, 'destination', 'dest', 'to', 'directory')
         self.add_command(browse_destination_directory_command, 'destination-b', 'dest-b', 'to-b', 'directory-b')
         self.add_command(set_hours_per_semster_command, 'hours', 'per', 'count')
+        self.add_command(select_export_command, 'export', 'as', 'type', 'types')
         self.add_command(list_parameters_command, 'status', 'parameters', 'stat', 'info')
         self.add_command(generate_schedule_command, 'schedule', 'generate', 'done', 'save')
         self.add_command(set_gui_interface_command, 'gui')
@@ -99,7 +105,6 @@ class MainMenuInterface(GeneralInterface):
         self.add_command(gui_interface_immediate_command, 'gui-i', 'window', 'graphical')
         self.add_command(help_command, 'help')
         self.add_command(quit_command, 'quit', 'exit')
-        self.add_command(test_listing_command, 'testl')
         
     def report_invalid_command_error(self, controller, command_string):
         '''Report when an unsupported command is entered (this may be overridden to provide relevant tools/help).'''
@@ -130,7 +135,7 @@ class ItemSelectionInterface(GeneralInterface):
         
         # Add commands (these work in conjuction with entering numbers)
         self.add_command(self._switch_to_adding, 'add', 'append', 'include', '+')
-        self.add_command(self._switch_to_removal, 'remove', 'subtract', 'exclude', '-')
+        self.add_command(self._switch_to_removal, 'remove', 'subtract', 'exclude', 'rm', '-')
         self.add_command(self._list_commands, 'commands')
         self.add_command(self.list_progress, '', 'list', 'progress')
         self.add_command(self._complete, 'done', 'complete', 'finish')
@@ -179,7 +184,7 @@ class ItemSelectionInterface(GeneralInterface):
     
     def list_progress(self, controller):
         '''List the items and whether they are selected or not.'''
-        controller.output('List:')
+        controller.output('Items:')
         for index in range(self._options_count):
             selected_indicator = '+' if index in self._selected_options_set else ' '
             controller.output('{0} {1}: {2}'.format(selected_indicator, (index + 1), self._options_list[index]))
@@ -200,6 +205,9 @@ class ItemSelectionInterface(GeneralInterface):
             else:
                 self._selected_options_set.remove(index)
                 self._modification_callback(controller, self._selected_options_set)
+    
+    def set_selected(self, selected_options_set):
+        self._selected_options_set = selected_options_set.copy()
     
     def parse_input(self, controller, user_input):
         '''Handle input on behalf of the program.'''
@@ -251,9 +259,16 @@ class HelpMenu(GeneralInterface):
     def parse_input(self, controller, input):
         '''Handle input on behalf of the program.'''
         
-        # TODO: make exit command better (make sense).
+        # TODO: make exit and all command better (make sense).
         if 'exit' in input or 'quit' in input:
+            # Exit the help menu
             controller.pop_interface(self)
+        
+        elif 'all' in input:
+            # List all articles
+            for article_index in range(self.article_count):
+                controller.output(self.headers[article_index])
+                controller.output(self.articles[article_index])
         else:
             controller.output('Now searching for "{0}"...'.format(input))
             self._search_for_keywords(controller, input)
@@ -306,7 +321,15 @@ class GraphicalUserInterfaceMenu(GeneralInterface):
         main_window.resize(450, 300)
         main_window.show()
         application.exec()
-        controller.pop_interface(self)
+        if controller.has_interface() and controller.get_current_interface() == self:
+            controller.pop_interface(self)
+    
+        
+    def deconstruct(self, controller):
+        '''Destruction method that is called upon the interface being dismissed.'''
+        application = QtWidgets.QApplication.instance()
+        application.exit(0)
+
 
 ## --------------------------------------------------------------------- ##
 ## ------------------------ Interface Callbacks ------------------------ ##
@@ -413,11 +436,21 @@ def list_parameters_command(controller, arguements):
 
 def attempt_error_resolve(controller, argument):
     '''Attempt to reload the course info data and pop the top menu (expected to be an error menu).'''
+    
+    # TODO: this is broken when encountering error in gui-i
     if argument == '':
         controller.output('Reloading configuration files...')
+        
+        # Deconstruct all active interfaces on the stack
         controller.clear_all_interfaces()
-        controller.push_interface(MainMenuInterface())
-        controller.load_course_info()
+        
+        # Exit the QT application if active
+        application = QtWidgets.QApplication.instance()
+        if application:
+            exit(application)
+                
+        # Reload the program
+        controller.setup()
     else:
         controller.output_error('Arguments are not supported for this command.')
     
@@ -471,23 +504,43 @@ def browse_destination_directory_command(controller, argument):
         
     application.quit()
 
-def test_listing_command(controller, argument):
+def select_export_command(controller, argument):
 
-    # NOTE: this is just a test
-    l = ['1113', '1301', '1302', '4175', '1234', '4321']
+    # TODO: make this not so stupid
     
-    def modify(c, s):
-        print('Modified to {0}'.format(s))
-        
-    def complete(c, s):
-        print('Completed with {0}'.format(s))
+    available_export_types = ['Path to Graduation Excel', 'Plain txt']
     
-    def cancel(c, s):
-        print('Cancelled with {0}'.format(s))
+    def modify(controler, export_types_selected):
+        if len(export_types_selected) == 0:
+            controller.output('WARNING: make sure you have at least one export mode selected.')
         
-    list_interface = ItemSelectionInterface(l, modify, complete, cancel)
+    def complete(controler, export_types_selected):
+        # TODO: clean this up a bit (maybe use dictionaries)
+        export_types = []
+        
+        if 0 in export_types_selected:
+            export_types.append(PATH_TO_GRADUATION_EXPORT_TYPE)
+                
+        if 1 in export_types_selected:
+            export_types.append(PLAIN_TEXT_EXPORT_TYPE)
+            
+        controller.set_export_types(export_types)
+        controller.output('Export type(s) set.')
+    
+    def cancel(controler, export_types_selected):
+        controller.output('Export type(s) selection cancelled...')
+        
+    currently_selected = set()
+    if controller.is_using_export_type(PATH_TO_GRADUATION_EXPORT_TYPE):
+        currently_selected.add(0)
+        
+    if controller.is_using_export_type(PLAIN_TEXT_EXPORT_TYPE):
+        currently_selected.add(1)
+        
+    list_interface = ItemSelectionInterface(available_export_types, modify, complete, cancel)
+    list_interface.set_selected(currently_selected)
     controller.push_interface(list_interface)
     
-    controller.output('Please select from the following:')
+    controller.output('Please select from the following export types:')
     list_interface.list_progress(controller)
 
