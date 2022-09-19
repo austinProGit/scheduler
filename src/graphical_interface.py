@@ -1,5 +1,5 @@
 # Thomas Merino
-# 9/16/22
+# 9/19/22
 # CPSC 4175 Group Project
 
 # NOTE: you will need to install QT PySide6 to use this.
@@ -8,8 +8,7 @@
 
 # TODO: Finish the QT UI
 # TODO: Add testing.
-# TODO: Maybe make the name of the help file included in config
-# TODO: Ensure exception raising is implemented in other modules (e.g. NonDAGCourseInfoError)
+# TODO: Maybe add help
 # TODO: Create the driver-level interface for getting item selection (e.g. for selecting electives)
 # TODO: Shorten the name of long directories (for display purposes).
 
@@ -18,17 +17,16 @@ from PySide6 import QtCore, QtWidgets, QtGui
 from os import path
 from pathlib import Path
 
-
 ## --------------------------------------------------------------------- ##
 ## ---------------------- Graphical User Interface --------------------- ##
 ## --------------------------------------------------------------------- ##
 
+# This is the window for presenting the all graphical UI
 class MainProgramWindow(QtWidgets.QMainWindow):
     
     def __init__(self, controller):
         super().__init__()
         self.setWindowTitle('Smart Planner')
-        self.setWindowIcon(QtGui.QIcon('Icon.png'))
         self.widget = MainMenuWidget(controller)
         self.setCentralWidget(self.widget)
         
@@ -40,6 +38,7 @@ class TextField(QtWidgets.QLineEdit):
         '''Custom override of QLineEdit's focusOutEvent that clears text.'''
         super().focusOutEvent(event)
         self.clear()
+
 
 # Graphical interface for the main menu
 class MainMenuWidget(QtWidgets.QWidget):
@@ -154,4 +153,5 @@ class MainMenuWidget(QtWidgets.QWidget):
         self.controller.generate_schedule(path.join(self.controller.get_destination_directory(),
                                                     self.controller.get_destination_filename()))
         self.message_label.setText('Schedule Generated')
+        self.controller.enter_error_menu()
     
