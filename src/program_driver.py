@@ -22,6 +22,7 @@
 # TODO: Implement saving destination in the driver (not just GUIs)
 # TODO: Fix the unit tests to reflect the change in CLI user interface
 # TODO: Determine if we need os.path and pathlib.Path
+# TODO: Fix program icon appearing for browser (default Python icon)
 
 from PySide6 import QtWidgets, QtGui
 
@@ -36,6 +37,9 @@ from cli_interface import MainMenuInterface, GraphicalUserInterfaceMenu, ErrorMe
 DEFAULT_CATALOG_NAME = 'catalog.xlsx'           # The name of the catalog/course info file
 CONFIG_FILENAME = 'config'                      # The name of the configuration file
 DEFAULT_SCHEDULE_NAME = 'Path to Graduation'    # The default filename to export schedules with
+
+PATH_TO_GRADUATION_EXPORT_TYPE = 0x00
+PLAIN_TEXT_EXPORT_TYPE = 0x01
 
 ## --------------------------------------------------------------------- ##
 ## ----------- The following are dummy classes and functions ----------- ##
@@ -119,6 +123,7 @@ class SmartPlannerController:
         self._scheduler = Scheduler()
         self._destination_directory = Path.home()
         self._destination_filename = DEFAULT_SCHEDULE_NAME
+        self._export_types = [PATH_TO_GRADUATION_EXPORT_TYPE]
         self._interface_stack = []
 
         try:
@@ -257,6 +262,9 @@ class SmartPlannerController:
     def get_destination_directory(self):
         return self._destination_directory
     
+    def is_using_export_type(self, export_type):
+        return export_type in self._export_types
+    
     ## ----------- Scheduling procedure configuration ----------- ##
 
     def load_courses_needed(self, filename):
@@ -286,6 +294,10 @@ class SmartPlannerController:
         '''Set the destination directory (where to save the schedule).'''
         self._destination_directory = directory
         self.output('Destination set to {0}.'.format(directory))
+        
+    def set_export_types(self, export_types):
+        '''Set the types of formats to export with (schedule formatters to use).'''
+        self._export_types = export_types[:]
         
     def generate_schedule(self, filename):
         '''Generate the schedule with a given filename.'''
