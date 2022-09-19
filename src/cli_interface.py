@@ -1,10 +1,10 @@
 # Thomas Merino
-# 9/16/22
+# 9/19/22
 # CPSC 4175 Group Project
 
 # TODO: Maybe make the name of the help file included in config
 # TODO: Make importing PySide components optional in case the user does not have them installed
-# TODO: Fix help file parser not ending predictably (no extra blank lines)
+# TODO: Ensure help file parser ends predictably (no extra blank lines)
 # TODO: Create a file browser sub-mod
 
 from PySide6 import QtCore, QtWidgets, QtGui
@@ -12,9 +12,11 @@ from sys import exit
 from os import path
 from pathlib import Path
 
+from graphical_interface import MainProgramWindow
+
 HELP_FILENAME = 'help'
 HELP_TERMINATOR = '<END>'
-
+ICON_FILENAME = 'icon.png'                      # The filename of the program's icon (when GUI)
 
 # The hope here is to move all command line interface management to a single object that the driving controller presents:
 
@@ -36,6 +38,10 @@ class GeneralInterface:
         for command_name in command_names:
             self._commands[command_name] = callback
         
+    def was_pushed(self, controller):
+        '''Method that is called upon the interface being pushed onto the interface stack.'''
+        pass
+    
     def deconstruct(self, controller):
         '''Destruction method that is called upon the interface being dismissed.'''
         pass
@@ -80,16 +86,20 @@ class MainMenuInterface(GeneralInterface):
         self._commands = {}
         
         # Add commands to the command listing
-        self.add_command(load_needed_courses_command, 'load', 'needed', 'set')
-        self.add_command(load_destination_directory_command, 'destination', 'dest', 'to', 'directory')
-        self.add_command(browse_need_courses_command, 'browse', 'browser', 'load-b', 'needed-b', 'set-b')
-        self.add_command(browse_destination_directory_command, 'destination-b', 'dest-b', 'to-b', 'directory-b')
-        self.add_command(test_listing_command, 'testl')
         self.add_command(list_available_commands_command, '', 'commands', 'list')
+        self.add_command(load_needed_courses_command, 'load', 'needed', 'set')
+        self.add_command(browse_need_courses_command, 'browse', 'browser', 'load-b', 'needed-b', 'set-b')
+        self.add_command(load_destination_directory_command, 'destination', 'dest', 'to', 'directory')
+        self.add_command(browse_destination_directory_command, 'destination-b', 'dest-b', 'to-b', 'directory-b')
         self.add_command(set_hours_per_semster_command, 'hours', 'per', 'count')
+        self.add_command(list_parameters_command, 'status', 'parameters', 'stat', 'info')
         self.add_command(generate_schedule_command, 'schedule', 'generate', 'done', 'save')
+        self.add_command(set_gui_interface_command, 'gui')
+        self.add_command(set_cli_interface_command, 'lui', 'cli')
+        self.add_command(gui_interface_immediate_command, 'gui-i', 'window', 'graphical')
         self.add_command(help_command, 'help')
         self.add_command(quit_command, 'quit', 'exit')
+        self.add_command(test_listing_command, 'testl')
         
     def report_invalid_command_error(self, controller, command_string):
         '''Report when an unsupported command is entered (this may be overridden to provide relevant tools/help).'''
@@ -285,6 +295,18 @@ class ErrorMenu(GeneralInterface):
         self.add_command(quit_command, 'quit', 'exit', 'cancel')
         
 
+class GraphicalUserInterfaceMenu(GeneralInterface):
+
+    def was_pushed(self, controller):
+        application = QtWidgets.QApplication.instance()
+        if not application:
+            application = QtWidgets.QApplication([])
+        application.setWindowIcon(QtGui.QIcon(ICON_FILENAME))
+        main_window = MainProgramWindow(controller)
+        main_window.resize(450, 300)
+        main_window.show()
+        application.exec()
+        controller.pop_interface(self)
 
 ## --------------------------------------------------------------------- ##
 ## ------------------------ Interface Callbacks ------------------------ ##
@@ -349,12 +371,43 @@ def help_command(controller, argument):
     if argument != '':
         new_help_interface.parse_input(controller, argument)    # Have the new menu process the arguements
 
+def gui_interface_immediate_command(controller, arguements):
+    '''Enter a GUI interface (this does not change the program config, though).'''
+    if arguements == '':
+        controller.push_interface(GraphicalUserInterfaceMenu())
+    else:
+        controller.output_error('Arguments are not supported for this command.')
 
-def quit_command(controller, argument):
+def set_gui_interface_command(controller, arguements):
+    '''Change the user interface mode to GUI (this does not reload the interface, though).'''
+    if arguements == '':
+        controller.configure_user_interface_mode(is_graphical=True)
+        controller.output('Deafault UI mode set to graphical (enter gui-i to enter immediately).')
+    else:
+        controller.output_error('Arguments are not supported for this command.')
+
+def set_cli_interface_command(controller, arguements):
+    '''Change the user interface mode to CLI (this does not reload the interface, though).'''
+    if arguements == '':
+        controller.configure_user_interface_mode(is_graphical=False)
+        controller.output('Default UI mode set to commandline.')
+    else:
+        controller.output_error('Arguments are not supported for this command.')
+
+def quit_command(controller, arguements):
     '''Terminate the program.'''
-    if argument == '':
+    if arguements == '':
         controller.clear_all_interfaces()          # Pop all interfaces in the controller's stack
         controller.output('Thank you. Goodbye.')   # Output goodbye message
+    else:
+        controller.output_error('Arguments are not supported for this command.')
+
+def list_parameters_command(controller, arguements):
+    '''List the current scheduling parameters (destination directory, hours per semester, etc.).'''
+    if arguements == '':
+        controller.output('Scheduling Parameter:\n')
+        controller.output('Destination: {0}\n'.format(controller.get_destination_directory()))
+        controller.output('Hourse per semester: {0}\n'.format(controller.get_hours_per_semester()))
     else:
         controller.output_error('Arguments are not supported for this command.')
 
@@ -367,18 +420,12 @@ def attempt_error_resolve(controller, argument):
         controller.load_course_info()
     else:
         controller.output_error('Arguments are not supported for this command.')
-        
+    
 def create_default_config_command(controller, argument):
+    '''Command to create a default config file for the program.'''
+    controller.create_default_config_file(argument.strip())
 
-    # TODO: TEST - this has not been tested
-    
-    catalog_name = argument.strip()
-    if catalog_name == '':
-        catalog_name = DEFAULT_CATALOG_NAME
-    
-    with open(CONFIG_FILENAME, 'w') as config_file:
-        config_file.write(catalog_name + '\n')
-        config_file.write('GUI: NO\n')
+
 
 ## ----------- The following are more or less for testing ----------- ##
 
