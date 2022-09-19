@@ -23,13 +23,6 @@ ICON_FILENAME = 'icon.png'                      # The filename of the program's 
 PATH_TO_GRADUATION_EXPORT_TYPE = 0x00
 PLAIN_TEXT_EXPORT_TYPE = 0x01
 
-# The hope here is to move all command line interface management to a single object that the driving controller presents:
-
-#class CommandLineController:
-#
-#    def __init__(self):
-#        self._interface_stack = [MainMenuInterface()]
-
 # Interfaces are expected to have a parse_input method that takes as input the controller and the user input and a deconstruct method that takes as input the controller. It is also expected to have a "name" property.
 
 # TODO: Make the command dictionary statically set (may be a better approach).
