@@ -1,5 +1,5 @@
 # Thomas Merino
-# 9/16/22
+# 9/19/22
 # CPSC 4175 Group Project
 
 # NOTE: there needs to be a file called "config" in the same directory as this file.
@@ -10,30 +10,32 @@
 
 # TODO: Finish unit testing.
 # TODO: Maybe add session data so the program can recover from a crash
-# TODO: Have the user store/set in the config file whether to open in GUI or CLI (this may be changed in either interface)
 # TODO: Have the last directory used for saving stored in the config
 # TODO: Ensure the directories in the config file work no matter the OS (if not implement).
 # TODO: Maybe make the name of the help file included in config
 # TODO: Ensure exception raising is implemented in other modules (e.g. NonDAGCourseInfoError)
 # TODO: Create the driver-level interface for getting item selection (e.g. for selecting electives)
-# TODO: Add support for course info being in a different directoy (and different OS)
+# TODO: Ensure support for course info being in a different directoy (and different OS)
 # TODO: Set up error codes or boolean return (other modules)
 # TODO: Add status command that prints scheduling parameters
 # TODO: Add confirmation menu that shows warnings when a large number of hours per semester is entered or a file will be overriden
 # TODO: Implement saving destination in the driver (not just GUIs)
+# TODO: Fix the unit tests to reflect the change in CLI user interface
+# TODO: Determine if we need os.path and pathlib.Path
 
 from PySide6 import QtWidgets, QtGui
 
 from sys import exit
 from pathlib import Path
+from os import path
 
-from cli_interface import MainMenuInterface
-from graphical_interface import MainProgramWindow
+from cli_interface import MainMenuInterface, GraphicalUserInterfaceMenu, ErrorMenu
 
-ICON_FILENAME = 'icon.png'
-DEFAULT_CATALOG_NAME = 'catalog.xlsx'
-CONFIG_FILENAME = 'config'
-DEFAULT_SCHEDULE_NAME = 'Path to Graduation'
+
+
+DEFAULT_CATALOG_NAME = 'catalog.xlsx'           # The name of the catalog/course info file
+CONFIG_FILENAME = 'config'                      # The name of the configuration file
+DEFAULT_SCHEDULE_NAME = 'Path to Graduation'    # The default filename to export schedules with
 
 ## --------------------------------------------------------------------- ##
 ## ----------- The following are dummy classes and functions ----------- ##
@@ -98,81 +100,90 @@ class Scheduler:
 # Handling one should only be done for the sake of saving important data.
 class InterfaceProcedureError(Exception):
     pass
-    
+
+# This exception is used when an issue with config file is encountered.
+class ConfigFileError(Exception):
+    pass
+
 # This class manages the interactions between the interface of the program and the model (mostly the scheduler).
 # The class also manages the destination directory and filename.
 class SmartPlannerController:
 
-    def __init__(self):
-        self.setup()
+    def __init__(self, graphics_enabled=True):
+        self.setup(graphics_enabled)
         
-    def setup(self):
+    def setup(self, graphics_enabled=True):
         '''Perform setup for scheduling, general configuration, and user interface'''
         
         # Initialize important variables
         self._scheduler = Scheduler()
         self._destination_directory = Path.home()
         self._destination_filename = DEFAULT_SCHEDULE_NAME
+        self._interface_stack = []
 
-        # Load the course info file
-        self.load_course_info()
-        
-        # Load the user interface -- the program will
-        self.load_interface()
+        try:
+            # Attempt to get program parameters from the config file
+            course_info_filename, is_graphical = self.load_config_parameters()
+            is_graphical = is_graphical and graphics_enabled
+            
+            # Load the course info file
+            self.load_course_info(course_info_filename)
+            
+            # Load the user interface -- the program will
+            self.load_interface(is_graphical)
+            
+        except (ConfigFileError, FileNotFoundError, IOError, NonDAGCourseInfoError):
+            # Some error was encountered during loading (enter the error menu)
+            self.output_error('A problem was encountered while during loading--Entering error menu...')
+            self.enter_error_menu()
     
-    def load_course_info(self):
-        '''Load the course info file and use it to configure the scheduler. If the process fails, an error menu is pushed onto the interface stack.'''
-        # Create a variable to track where the course info file should be
-        course_info_filename = None
+    
+    def load_config_parameters(self):
+        try:
+            # Get the config file (the first line of which should be the catalog/course info filename)
+            with open(CONFIG_FILENAME, 'r') as configuration_file:
+            
+                course_info_filename = configuration_file.readline()
+                is_graphical_line = configuration_file.readline()
+                
+                # Check if both lines exist and are not empty strings
+                if course_info_filename and is_graphical_line:
+                    is_graphical = 'YES' in is_graphical_line
+                    return (course_info_filename, is_graphical)
+                else:
+                    # Configuration is missing important data (report to the user and raise a config error)
+                    self.output_error('Invalid config file contents. Please see instructions on how to reconfigure.')
+                    raise ConfigFileError()
+                
+        except (FileNotFoundError, IOError):
+            # Configuration file could not be found (report to the user and raise a config error)
+            self.output_error('Could not get config file. Please see instructions on how to reconfigure.')
+            raise ConfigFileError()
+    
+    
+    def load_course_info(self, course_info_filename):
+        '''Configure the scheduler with the course info file with the passed filename.'''
         
         # Attempt to load the course info data
         try:
-            # Get the config file (the first line of which should be the course info filename)
-            with open(CONFIG_FILENAME) as configuration_file:
-                course_info_filename = configuration_file.readline()
-                course_info_container = get_course_info(course_info_filename)
-                
-        except FileNotFoundError:
-            if course_info_filename == None:
-                # Configuration file could not be found (report to the user and enter the error menu)
-                self.output_error('Invalid config file. Please see instructions on how to reconfigure.')
-            else:
-                # Course info could not be found (report to the user and enter the error menu)
-                self.output_error('Invalid course catalog file. Please rename the catalog to {} and reload the catalog (enter "reload").'.format(course_info_filename))
-            self.enter_error_menu()
+            course_info_container = get_course_info(course_info_filename)
             
-        except NonDAGCourseInfoError:
-            # The catalog was/is invalid (report to the user and enter the error menu)
+        except (FileNotFoundError, IOError) as file_error:
+            # Course info could not be found (report to the user and re-raise the error to enter error menu)
+            self.output_error('Invalid course catalog file. Please rename the catalog to {} and reload the catalog (enter "reload").'.format(course_info_filename))
+            raise file_error
+            
+        except NonDAGCourseInfoError as non_dag_error:
+            # The catalog was/is invalid (report to the user and re-raise the error to enter error menu)
             self.output_error('Course catalog contains invalid data. Please correct all issues and reload the catalog (enter "reload").')
-            self.enter_error_menu()
+            raise non_dag_error
     
-    def load_interface(self):
+    
+    def load_interface(self, is_graphical):
         '''Load the program's interface (this should be called only once).'''
-        try:
-            # TODO: prevent reloading of config file
-            
-            # Get the config file (the second line of which should be UI type)
-            with open(CONFIG_FILENAME) as configuration_file:
-                configuration_file.readline()
-                is_graphical = 'YES' in configuration_file.readline()
-                if is_graphical:
-                    application = QtWidgets.QApplication.instance()
-                    if not application:
-                        application = QtWidgets.QApplication([])
-                    application.setWindowIcon(QtGui.QIcon(ICON_FILENAME))
-                    main_window = MainProgramWindow(self)
-                    self._interface_stack = [main_window.widget]
-                    main_window.resize(450, 300)
-                    main_window.show()
-                    exit(application.exec())
-                else:
-                    self._interface_stack = [MainMenuInterface()]
-                
-        except FileNotFoundError:
-            # Configuration file could not be found (report to the user and enter the error menu)
-            self.output_error('Invalid config file. Please see instructions on how to reconfigure.')
-            self.enter_error_menu()
-        
+        bottom_interface = GraphicalUserInterfaceMenu() if is_graphical else MainMenuInterface()
+        self.push_interface(bottom_interface)
+    
 
     ## ----------- User interface methods ----------- ##
 
@@ -209,6 +220,7 @@ class SmartPlannerController:
     def push_interface(self, interface):
         '''Push a given interface to the top of the interface stack.'''
         self._interface_stack.append(interface)
+        interface.was_pushed(self)
 
     def pop_interface(self, interface):
         '''Pop the provided interface if it on top of the interface stack. Otherwise, raise a InterfaceProcedureError.'''
@@ -227,8 +239,12 @@ class SmartPlannerController:
             self.pop_interface(self.get_current_interface())
 
     def enter_error_menu(self):
-        '''Push an error menu onto the menu stack so the user can correct errors before reloading.'''
-        self.push_interface(ErrorMenu())
+        '''Push an error menu onto the menu stack so the user can correct errors before reloading.
+        This blocks execution until the error menu exits.'''
+        new_error_menu = ErrorMenu()
+        self.push_interface(new_error_menu)
+        while new_error_menu in self._interface_stack:
+                self.run_top_interface()
                 
     ## ----------- Info getting ----------- ##
     
@@ -251,7 +267,7 @@ class SmartPlannerController:
             self._scheduler.configure_courses_needed(courses_needed_list)               # Load the course list into the scheduler
             self.output('Course requirements loaded from {0}.'.format(filename))        # Report success to the user
             success = True                                                              # Set success to true
-        except FileNotFoundError:
+        except (FileNotFoundError, IOError):
             output_error('Sorry, {0} could not be found.'.format(filename))             # Report if the file was not found
         return success
         
@@ -278,6 +294,40 @@ class SmartPlannerController:
         print(filename) # TODO: Remove this test
         self.output('Schedule complete.')
         
+    def configure_user_interface_mode(self, is_graphical):
+        '''Set the user interface mode to GUI is passed true and CLI if passed false.'''
+        try:
+            # Get the config file (the first line of which should be the course info filename)
+            config_lines = []
+            with open(CONFIG_FILENAME, 'r') as configuration_file:
+                config_lines = configuration_file.readlines()
+                
+            is_graphical_string = 'YES' if is_graphical else 'NO'
+            config_lines[1] = 'GUI: {0}\n'.format(is_graphical_string)
+            
+            with open(CONFIG_FILENAME, 'w') as configuration_file:
+                configuration_file.writelines(config_lines)
+                
+        except (FileNotFoundError, IOError):
+            self.output_error('Failed to access config file.')
+        
+    def create_default_config_file(self, catalog_name):
+        '''Create a default config file for the program. This uses DEFAULT_CATALOG_NAME if
+        catalog name is empty or None, and saves the config file to the working '''
+        
+        # TODO: TEST - this still has not been tested enough
+        
+        catalog_field = catalog_name
+        
+        # Check if catalog_name is None or ''
+        if not catalog_name:
+            catalog_field = DEFAULT_CATALOG_NAME
+        
+        config_filename = path.join(path.dirname(__file__), CONFIG_FILENAME)
+        with open(config_filename, 'w') as config_file:
+            config_file.write(catalog_field + '\n')
+            config_file.write('GUI: NO\n')
+    
     def run_top_interface(self):
         '''Gets input from the user and passed that input into the presenting interface/menu. The method then returns whether there are any interfaces left presenting. In the case there aren't any, the method should not be called again. This may act as the program's entire loop.'''
         user_input = self.get_input()                            # Get input from the user
@@ -287,82 +337,13 @@ class SmartPlannerController:
 
 
 ## --------------------------------------------------------------------- ##
-## --------------------- Program Setup and Testing --------------------- ##
+## --------------------------- Program Setup  -------------------------- ##
 ## --------------------------------------------------------------------- ##
-
-
-def test_driver_and_interface():
-    '''Unit test for UX and driver.'''
-    
-    # TODO: This may be a bad practice
-    import re
-    
-    # Create stream lists to hold/capture interface input/output
-    output_stream_list = []
-    input_stream_list = [
-        'load', 'load file1', 'set file2', 'set file3',
-        'commands',
-        'hours', 'hours 14', 'hours nine',
-        'schedule', 'schedule result'
-        'help', 'exit', 'help load', 'quit',
-        'quit'
-    ]
-    
-    # Define some overriding functions to replace program IO (these functions capture input/output)
-    def pipe_output_to_stream(self, message): output_stream_list.append(message)
-    def get_input_from_stream(self):
-        value = input_stream_list[0]
-        del input_stream_list[0]
-        return value
-    
-    # Save the old IO functions
-    old_output = SmartPlannerController.output
-    old_get_input = SmartPlannerController.get_input
-    
-    # Override existing IO functions
-    SmartPlannerController.output = pipe_output_to_stream
-    SmartPlannerController.get_input = get_input_from_stream
-    
-    planner = SmartPlannerController()
-    
-    #  Execute an entire session until it quits
-    while planner.run_top_interface(): pass
-    
-    # The following is a list of regex expressions that should describe each line of output
-    # That is, the first item in the list should reflect the first line of output
-    expected_patterns = [
-        r'(?i)(.*)(\bplease enter a filename\b)(.*?)',
-        r'(.*)(\bfile1\b)(.*?)',
-        r'(.*)(\bfile2\b)(.*?)',
-        r'(.*)(\bfile3\b)(.*?)',
-        r'(?i)(.*)(\bcommands available\b)(.*?)',
-        r'(?i)(.*)(\bsorry, that is not a valid input\b)(.*?)',
-        r'(.*)(\b14\b)(.*?)',
-        r'(?i)(.*)(\bsorry, that is not a valid input\b)(.*?)',
-        r'(?i)(.*)(\bplease enter a filename\b)(.*?)',
-        r'(?i)(.*)(\bgenerating schedule\b)(.*?)',
-        r'(?i)(.*)(\bschedule complete\b)(.*?)',
-        r'(?i)(.*)(\bgoodbye\b)(.*?)',
-    ]
-    
-    # Perform tests on each line of output
-    for test_index in range(len(output_stream_list)):
-        stream_output = output_stream_list[test_index]
-        matches_pattern = re.match(expected_patterns[test_index], stream_output)
-        if matches_pattern:
-            print('General UX test {0}: pass'.format(test_index + 1))
-        else:
-            print('General UX test {0}: FAIL - got "{1}"'.format(test_index + 1, stream_output))
-    
-    # Set the IO functions back as they were
-    SmartPlannerController.output = old_output
-    SmartPlannerController.get_input = old_get_input
 
 
 # Testing:
 if __name__ == "__main__":
 
-    test_driver_and_interface()
-    
     planner = SmartPlannerController()
-    while planner.run_top_interface(): pass
+    if planner.has_interface():
+        while planner.run_top_interface(): pass
