@@ -1,5 +1,5 @@
 # Thomas Merino
-# 9/19/22
+# 9/20/22
 # CPSC 4175 Group Project
 
 from program_driver import SmartPlannerController
@@ -8,8 +8,8 @@ import re
 # Unit testing for CLI and controller/driver
 
 # TODO: Add more tests and load a different file (not icon.png).
-# TODO: Fix weird 'resulthelp' print upon running the tests.
-
+# TODO: Use built-in listener from controller instead of setting output method
+#
 
 # Create stream lists to hold/capture interface input/output
 output_stream_list = []
@@ -55,7 +55,7 @@ expected_patterns = [
     r'(?i)(.*)(\bsorry, that is not a valid input\b)(.*?)',
     r'(?i)(.*)(\bplease enter a filename\b)(.*?)',
     r'(?i)(.*)(\bgenerating schedule\b)(.*?)',
-    r'(?i)(.*)(\bschedule complete\b)(.*?)',
+    r'(?i)(.*)(\bschedule exported\b)(.*?)',
     r'(?i)(.*)(\bgoodbye\b)(.*?)',
 ]
 
