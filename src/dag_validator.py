@@ -36,3 +36,4 @@ def validate_course_path(container):
     # for edge in G.edges:
     #     print(edge)
     return is_valid_course_path
+    # 
