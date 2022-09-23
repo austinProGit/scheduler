@@ -1,5 +1,5 @@
 # Thomas Merino
-# 9/21/22
+# 9/23/22
 # CPSC 4175 Group Project
 
 # NOTE: you must have PySide6 (QT) installed. To use the GUI, use the gui-i command.
@@ -8,32 +8,57 @@
 #   The config file stores in the first line the name of the course info filename. This is what's passed into the parser as input. The
 #   The second line detemines whether to load the gui (if "YES" is in the second line)
 
-# TODO: Maybe add session data so the program can recover from a crash
-# TODO: Have the last directory used for saving stored in the config
+# POTENTIAL GOALS FOR NEXT CYCLE:
+# - General refactoring
+# - Use AI for scheduling algorithm
+# - Use UI text dictionary (maybe langauges support)
+# - Maybe add session data so the program can recover from a crash
+# - Have the last directory used for saving stored in the config
 #           This may be changed just for the current session with something like ("temp dirname")
 #           Using the feature may be optional: having no directory means to start with home
-# TODO: Maybe make the name of the help file included in config
-# TODO: Fix program icon appearing for browser (default Python icon)
-# TODO: Make importing PySide components optional in case the user does not have them installed
-# TODO: Maybe add permission check when setting output directory
+# - Make importing PySide optional in case the user does not have them installed (maybe other packages as well)
+# - Add drag and drog support for easier file import
+# - Support more export/import types
+# - Display help menu contents in GUI mode via a web browser
+# - Add aliases (course ID) Excel file
+# - Allow use of the web crawler (fetch)
+# - Add batch work functionality (schedule multiple students by running through multiple requirements)
+#           The would be a good place for multithreading
+
+# - Handle missing package errors better
+# - Maybe make the name of the help file included in config (probably not)
+# - Fix program icon appearing for file explorer (default Python icon)
+# - Handler permission check when setting output directory
+# - Implement weakref into the GUI widgets and item selection callbacks to prevent strong reference cycles
+# - Add working popup warning/verifying GUI->CLI switch (adding this at the moment is bug-laden)
+#           this creats an issue where the GUI sometimes dones not dismiss when changing to CLI (after switching back and forth)
+# - Shorten long file/directory names in GUI (for display purposes)
 
 
 # TODO: Finish unit testing.
-# TODO: Maybe add batch support for handling multiple users
 # TODO: Ensure the directories in the config file work no matter the OS (if not, implement)
 # TODO: Ensure support for course info being in a different directoy (and different OS)
+# TODO: Ensure exception raising is implemented in other modules (e.g. NonDAGCourseInfoError)
+# TODO: Ensure proper setup of error codes or boolean return (other modules)
+# TODO: Ensure permission settings work
+# TODO: (CHECK) File existence check does not consider the to-be file extensions (fix this) -- we could do this with Path.with_suffix('') and Path.suffix
+# TODO: (CHECK) Add two filepaths to config file
+# TODO: (CHECK) Add comments so everyone knows where to place the new code for module integration
+# TODO: (CHECK) Add command to display needed courses
+# TODO: (CHECK) Update status command to provide more scheduling parameters
+# TODO: (CHECK/FIX) Allow switching to CLI from GUI
 # TODO: It might be good to clean up by replacing os.path functions with pathlib.Path methods.
 # TODO: Maybe have the listeners completely consume IO (otherwise, why not just use a notification pattern?)
-
-
-# TODO: Setting the directory does not check to see if it is indeed a directory (and not just a file); the same is true with getting files (fix this)
-#       --this can be done with Path.is_dir() and Path.is_file()
+# TODO: Consider useing f'{variable}' for formatting
+# TODO: Consider using := operator (probably not for compatibility's sake)
+# TODO: Clean up the mixing of string and Path objects (it is not clear what is what right now)
+# TODO: Loading files does not check extension (or if a directory) (fix this)
+#       --maybe just have extension check in parsers
+#       --this can be done with Path.is_file()
+# TODO: Need to select/handle electives
+# TODO: Ask if file extension are handled by module methods/functions
 # TODO: Hook up all commands
-# TODO: File existence check does not consider the to-be file extensions (fix this) -- we could do this with Path.with_suffix('')
-# TODO: Update status command to provide more scheduling parameters
-# TODO: Ensure exception raising is implemented in other modules (e.g. NonDAGCourseInfoError)
-# TODO: Set up error codes or boolean return (other modules)
-# TODO: clean up the mixing of string and Path objects (it is not clear what is what right now)
+
 
 from PySide6 import QtWidgets, QtGui
 
@@ -41,12 +66,15 @@ from sys import exit
 from pathlib import Path
 from os import path
 
+from driver_fs_functions import *
 from cli_interface import MainMenuInterface, GraphicalUserMenuInterface, ErrorMenu
 
-DEFAULT_CATALOG_NAME = 'catalog.xlsx'           # The default name for the catalog/course info file
-CONFIG_FILENAME = 'config'                      # The name of the config file
-DEFAULT_SCHEDULE_NAME = 'Path to Graduation'    # The default filename for exporting schedules
-NORMAL_HOURS_LIMIT = 18                         # The upper limit of credit hours students can take per semester (recommended)
+DEFAULT_CATALOG_NAME = 'course_info.xlsx'                   # The default name for the catalog/course info file
+DEFAULT_AVAILABILITY_FILENAME = 'course_availability.xlsx'  # The default name for the catalog/course availability file
+CONFIG_FILENAME = 'config'                                  # The name of the config file
+DEFAULT_SCHEDULE_NAME = 'Path to Graduation'                # The default filename for exporting schedules
+NORMAL_HOURS_LIMIT = 18                                     # The upper limit of credit hours students can take per semester (recommended)
+STRONG_HOURS_LIMIT = 30                                     # The absolute limit of credit hours students can take per semester (cannot exceed)
 
 # Constants for export types
 PATH_TO_GRADUATION_EXPORT_TYPE = 0x00
@@ -56,7 +84,7 @@ PLAIN_TEXT_EXPORT_TYPE = 0x01
 ## ----------- The following are dummy classes and functions ----------- ##
 ## --------------------------------------------------------------------- ##
 
-
+# TODO: IMPLEMENT HERE ->
 class CourseInfoDataframeContainer:
     def __init__(self, df):
         pass
@@ -78,6 +106,9 @@ class CourseInfoDataframeContainer:
 
     def get_recommended(self, courseid):
         pass
+        
+    def get_electives(self):
+        return ['1001', '1002', '1003', '1004', '1005']
 
 class NonDAGCourseInfoError(Exception):
     pass
@@ -85,21 +116,29 @@ class NonDAGCourseInfoError(Exception):
 def get_course_info(file_name):
    return None
    
+# TODO: IMPLEMENT HERE -> (I am now assuming the electives are the second list)
 def get_courses_needed(file_name):
-    return []
+    return ([], [])
+    
+
 
 class Scheduler:
     def __init__(self):
         self.h = 15
+        self.cn = []
         
     def get_hours_per_semester(self):
         return self.h
         
+    # TODO: IMPLEMENT HERE ->
+    def get_courses_needed(self):
+        return self.cn
+    
     def configure_course_info(self, container):
         pass
         
-    def configure_courses_needed(self, container):
-        pass
+    def configure_courses_needed(self, courses):
+        self.cn = ['1001', '1002', '1003', '1004', '1005', '2001', '2002', '2003', '2004', '2005']
     
     def configure_hours_per_semester(self, number_of_hours):
         self.h = number_of_hours
@@ -122,52 +161,6 @@ class ConfigFileError(Exception):
     pass
 
 
-def get_real_filepath(filepath):
-    '''Function to verify the existence of a file/directory and change any "~" prefix into the user's home directory. This
-    returns the corrected path if it exists and None if it does not.'''
-    corrected_filepath = Path(filepath).expanduser()                        # Change "~" to the user's home address if present
-    return corrected_filepath if corrected_filepath.exists() else None      # Return the path if it exists (otherwise None)
-
-
-# TODO: Make the function take the file's extension into account
-# TODO: We need to apply some TLC (Testing the Little Crap)
-def get_next_free_filename(filepath):
-    '''Function that checks if the passed filepath already has a file/directory. If it doesn't, simply return the passed path,
-    and if it does, return the next filepath that is free (by changing the trailing number in the filename). Please note this
-    is not optimized for large batches because there would be too many FS system calls (slow).'''
-    
-    # NOTE: if we want to use this for batch work, it would be better to simply store a file number and feed the filenames.
-    
-    if path.exists(filepath):
-        
-        # The filepath is already being used (find the next reasonable name)
-        
-        # Get the index where the digits suffix begins
-        end_digit_index = len(filepath)
-        # This checks if end_digit_index has reached the zero and if the checked character is numeric
-        while end_digit_index and filepath[end_digit_index - 1].isdigit():
-            end_digit_index -= 1
-        
-        # Seperate the filepath into its digit and non-digit section
-        path_digit_section = filepath[end_digit_index:]
-        
-        # If there is no digit at the end of the filename, just add a "2"
-        number = int(filepath[end_digit_index:]) + 1 if path_digit_section else 2
-        pre_digit_path = filepath[:end_digit_index]
-        working_filepath = pre_digit_path + str(number)
-        
-        # Increase the suffix number until no collision is found
-        while path.exists(working_filepath):
-            number += 1
-            working_filepath = pre_digit_path + str(number)
-        
-        return working_filepath
-    
-    else:
-        # The filepath is free (return it)
-        return filepath
-
-
 # This class manages the interactions between the interface of the program and the model (mostly the scheduler).
 # The class also manages the destination directory and filename.
 # Menuing is performed by having an interface stack--alike chain of responsibility and/or state machine.
@@ -182,6 +175,9 @@ class SmartPlannerController:
         '''Perform setup for scheduling, general configuration, and user interface. Setting graphics_enabled to false will
         only suppress the graphical interface during setup.'''
         
+        # The scheduler functions as the program's model. It may be serialized to save the save of the process.
+        
+        # TODO: IMPLEMENT HERE ->
         # Initialize important variables
         self._scheduler = Scheduler()                           # Create a scheduler object for heading the model
         self._destination_directory = Path.home()               # Create the default directoty to export to (set initially to home directory)
@@ -202,18 +198,18 @@ class SmartPlannerController:
 
         try:
             # Attempt to get the program parameters from the config file
-            course_info_filename, is_graphical = self.load_config_parameters()
+            course_info_filename, course_availability_filename, is_graphical = self.load_config_parameters()
             is_graphical = is_graphical and graphics_enabled    # Override conifg settings if graphics are suppressed
             
             # Load the course info file
-            self.load_course_info(course_info_filename)
+            self.load_course_info(course_info_filename, course_availability_filename)
             
             # Load the user interface -- this should only block execution if graphics are presented
             self.load_interface(is_graphical)
             
         except (ConfigFileError, FileNotFoundError, IOError, NonDAGCourseInfoError):
             # Some error was encountered during loading (enter the error menu)
-            self.output_error('A problem was encountered while during loading--entering error menu...')
+            self.output_error('A problem was encountered during loading--entering error menu...')
             self.enter_error_menu()
     
     
@@ -228,14 +224,16 @@ class SmartPlannerController:
             # Get the config file
             with open(CONFIG_FILENAME, 'r') as configuration_file:
                 
-                # Get the first two lines of the file (location of the catalog and whether presenting graphics initially)
+                # Get the first three lines of the file (locations of the catalog and whether presenting graphics initially)
                 course_info_filename = configuration_file.readline()
+                course_availability_filename = configuration_file.readline()
                 is_graphical_line = configuration_file.readline()
                 
-                # Check if both lines exist and are not empty strings
-                if course_info_filename and is_graphical_line:
-                    is_graphical = 'YES' in is_graphical_line       # Get boolean meaning from the second line
-                    return (course_info_filename, is_graphical)     # Return the results
+                
+                # Check if all lines exist and are not empty strings
+                if course_info_filename and course_availability_filename and is_graphical_line:
+                    is_graphical = 'YES' in is_graphical_line                                   # Get boolean meaning from the second line
+                    return (course_info_filename, course_availability_filename, is_graphical)   # Return the results
                 else:
                     # Configuration is missing important data (report to the user and raise a config error)
                     self.output_error('Invalid config file contents. Please see instructions on how to reconfigure.')
@@ -247,18 +245,21 @@ class SmartPlannerController:
             raise ConfigFileError()
     
     
-    def load_course_info(self, course_info_filename):
+    def load_course_info(self, course_info_filename, course_availability_filename):
         '''Configure the scheduler with the course info file with the passed filename. This may re-raise a
         NonDAGCourseInfoError if one was raised during loading the course info.'''
         
         # Attempt to load the course info data and pass it to the scheduler
         try:
+            # TODO: IMPLEMENT HERE ->
+            # NOTE: I am not sure how course_availability_filename plays a role yet (y'all just need to socket it in however you like)
             course_info_container = get_course_info(course_info_filename)
+            # OR: course_info_container = get_course_info(course_info_filename, course_availability_filename)
             self._scheduler.configure_course_info(course_info_container)
             
         except (FileNotFoundError, IOError) as file_error:
             # Course info could not be found/read (report to the user and re-raise the error to enter error menu)
-            self.output_error('Invalid course catalog file. Please rename the catalog to {}, make sure it is accessible, and reload the catalog (enter "reload").'.format(course_info_filename))
+            self.output_error('Invalid course catalog file. Please rename the catalog to {0}, make sure it is accessible, and reload the catalog (enter "reload").'.format(course_info_filename))
             raise file_error
             
         except NonDAGCourseInfoError as non_dag_error:
@@ -364,6 +365,12 @@ class SmartPlannerController:
             self.pop_interface(self.get_current_interface())
     
     
+    def reload_in_cli(self):
+        '''Clear the interface stack (this dismisses all interface in order from highest to lowest) and push a cli menu.'''
+        self.clear_all_interfaces()
+        self.push_interface(MainMenuInterface())
+    
+    
     def get_graphical_application(self):
         '''Get the current graphical application object. If it does not exist, create a new one.'''
         application = QtWidgets.QApplication.instance()
@@ -386,15 +393,19 @@ class SmartPlannerController:
     
     ## ----------- Scheduling parameter getting ----------- ##
     
+    def get_courses_needed(self):
+        '''Get the coursed needed that have been loaded into the scheduler. This return a list of strings (IDs).'''
+        return self._scheduler.get_courses_needed()
+        
     
     def get_hours_per_semester(self):
         '''Get the hours per semester to use.'''
         return self._scheduler.get_hours_per_semester()
     
     
-    def is_using_export_type(self, export_type):
-        '''Get whether the passed export type is enabled.'''
-        return export_type in self._export_types
+    def get_export_type(self):
+        '''Get a set of the enabled export types.'''
+        return self._export_types.copy()
     
     
     def get_destination_directory(self):
@@ -409,7 +420,7 @@ class SmartPlannerController:
     
     def get_destination(self):
         '''Get the full path of the schedule destination. This should always return a valid destination.'''
-        return path.join(self._destination_directory, self._destination_filename)
+        return Path(self._destination_directory, self._destination_filename)
     
     
     ## ----------- Scheduling parameter configuration ----------- ##
@@ -434,15 +445,15 @@ class SmartPlannerController:
     
     
     def configure_hours_per_semester(self, number_of_hours):
-        '''Set the number of hours that are scheduled per semester. This return the sucess of the load.'''
+        '''Set the number of hours that are scheduled per semester. This return the success of the load.'''
         
-        if number_of_hours <= 0:
-            self.output_warning('Please enter a minimum of 1 hour per semester')
+        if number_of_hours <= 0 or STRONG_HOURS_LIMIT < number_of_hours:
+            self.output_warning('Please enter between 1 and {0} hours per semester.'.format(STRONG_HOURS_LIMIT))
             return False
         
         if number_of_hours > NORMAL_HOURS_LIMIT:
             self.output_warning('Taking over {0} credit hours per semester is not recommended.'.format(NORMAL_HOURS_LIMIT))
-            # TODO: we may or may not want to return from here if this is off limits
+            
         
         self._scheduler.configure_hours_per_semester(number_of_hours)
         self.output('Hours per semester set to {0}.'.format(number_of_hours))
@@ -455,20 +466,20 @@ class SmartPlannerController:
     
     
     def configure_destination_directory(self, directory):
-        '''Set the destination directory (where to save the schedule). This return the sucess of the configuration.'''
+        '''Set the destination directory (where to save the schedule). This return the success of the configuration.'''
         success = False
                 
-        # Verify the passed directory exists
-        directory_path = get_real_filepath(directory)
-        if directory_path:
+        # Verify the passed directory exists and is indeed a directory
+        directory_path = get_real_filepath(directory)   # Get the verified path (this is a Path object that exists, but it is not necessarily a directory)
+        if directory_path and directory_path.is_dir():
             self._destination_directory = directory_path
             self.output('Destination directory set to {0}.'.format(directory_path))
-            sucess = True
+            success = True
         else:
             # Report if the directory could not be found
             self.output_error('Sorry, {0} directory could not be found.'.format(directory))
             
-        return sucess
+        return success
     
     
     def configure_destination_filename(self, filename):
@@ -489,12 +500,14 @@ class SmartPlannerController:
     
     
     # TODO: TEST - this still has not been tested enough
-    def create_default_config_file(self, catalog_name):
+    def create_default_config_file(self, catalog_name=None, availability_name=None):
         '''Create a default config file for the program. This uses DEFAULT_CATALOG_NAME if
         catalog name is empty or None and saves the config file to this file's directory '''
         
         # Set catalog_field to catalog_name unless it is None or '' (set catalog_field to the default value if so)
         catalog_field = catalog_name if catalog_name else DEFAULT_CATALOG_NAME
+        availability_field = availability_name if availability_name else DEFAULT_AVAILABILITY_FILENAME
+        
         
         # Save the config file to this file's directory
         config_filename = path.join(path.dirname(__file__), CONFIG_FILENAME)
@@ -502,20 +515,21 @@ class SmartPlannerController:
             
             # Write config contents
             config_file.write(catalog_field + '\n')
+            config_file.write(availability_field + '\n')
             config_file.write('GUI: NO\n')
     
     
     def configure_user_interface_mode(self, is_graphical):
         '''Set the user interface mode to GUI is passed true and CLI if passed false.'''
         try:
-            # Get the config file as a list of strings/lines (the first of which should be the course info filename)
+            # Get the config file as a list of strings/lines
             config_lines = []
             with open(CONFIG_FILENAME, 'r') as configuration_file:
                 config_lines = configuration_file.readlines()
                 
-            # Change the second line to reflect is_graphical
+            # Change the third line to reflect is_graphical
             is_graphical_string = 'YES' if is_graphical else 'NO'
-            config_lines[1] = 'GUI: {0}\n'.format(is_graphical_string)
+            config_lines[2] = 'GUI: {0}\n'.format(is_graphical_string)
             
             # Save/overwrite the file
             with open(CONFIG_FILENAME, 'w') as configuration_file:
@@ -529,7 +543,7 @@ class SmartPlannerController:
         
         self.output('Fetching data...')
         
-        # TODO: add implementation if needed
+        # TODO: add implementation if/when needed
         
         self.output('Course catalog info updated.')
         
@@ -549,7 +563,10 @@ class SmartPlannerController:
         unique_destination = get_next_free_filename(desired_destination)
         
         try:
+            # TODO: IMPLEMENT HERE ->
             self._scheduler.generate_schedule(unique_destination)
+            
+            
             self.output('Schedule exported as {0}'.format(unique_destination))
         except (FileNotFoundError, IOError):
             # This code will probably execute when file system permissions/organization change after setting parameters
@@ -590,7 +607,9 @@ class SmartPlannerController:
 
 # Testing:
 if __name__ == "__main__":
-
+    
+    
     planner = SmartPlannerController()
+    
     if planner.has_interface():
         while planner.run_top_interface(): pass

@@ -1,34 +1,27 @@
 # Thomas Merino
-# 9/21/22
+# 9/23/22
 # CPSC 4175 Group Project
 
 
 # TO THOSE INTERESTED: place YES as the second line of the "config" file to try out the GUI. This has fewer features right now, but it should give you a taste of what QT can provide (or least the minimum). I would still need to add labels and instructions, of course.
 
-# TODO: Maybe add help
-
-# TODO: Add testing.
-# TODO: Add drag and drop support
-# TODO: Implement weakref into the GUI widgets to prevent strong reference cycles
-# TODO: Maybe move the message label to the bottom
-
-# TODO: Shorten the name of long directories/fillenames (for display purposes).
-# TODO: Needed courses label does not source from the data model (fix)
-# TODO: Finish the QT UI
+# TODO: TEST.
 # TODO: Add some meaningful comments/documentation
+# TODO: Needed courses label and listing box do not source from the data model (fix)
 
 from PySide6 import QtCore, QtWidgets, QtGui
-from os import path
 from pathlib import Path
+from os import path
 import weakref
+from time import sleep
 
-# TODO: Add these to a constants file so they are not defined in both driver and here
-PATH_TO_GRADUATION_EXPORT_TYPE = 0x00
-PLAIN_TEXT_EXPORT_TYPE = 0x01
+from driver_fs_functions import *
+
 
 ## --------------------------------------------------------------------- ##
 ## ---------------------- Graphical User Interface --------------------- ##
 ## --------------------------------------------------------------------- ##
+
 
 # This is the window for presenting the all graphical UI
 class MainProgramWindow(QtWidgets.QMainWindow):
@@ -54,6 +47,13 @@ class TextField(QtWidgets.QLineEdit):
         self.clear()                    # Remove all text (use splaceholder text)
 
 
+class ListingField(QtWidgets.QTextEdit):
+    
+    def __init__(self):
+        super().__init__()
+        self.setReadOnly(True)
+
+
 # Graphical interface for the main menu
 class MainMenuWidget(QtWidgets.QWidget):
 
@@ -68,6 +68,15 @@ class MainMenuWidget(QtWidgets.QWidget):
         self.message_label = QtWidgets.QLabel('Welcome to Smart Planner')
         self.message_label.setWordWrap(True)
         
+        # Row at the bottom to place miscellaneous buttons
+        self.bottom_bar = QtWidgets.QHBoxLayout()
+        self.bottom_bar.addItem(QtWidgets.QSpacerItem(1, 1, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        
+        # Create a button to switch to the command line (interface)
+        self.command_line_button = QtWidgets.QPushButton('Enter Command Line')
+        self.command_line_button.clicked.connect(self._reload_in_cli_callback)
+        self.bottom_bar.addWidget(self.command_line_button)
+        
         # Initialize the scheduling parameter widgets
         # This does not add them; it just initializes them and saves them as instance variables
         self.initialize_parameter_widgets()
@@ -76,14 +85,18 @@ class MainMenuWidget(QtWidgets.QWidget):
         self.generate_schedule_button = QtWidgets.QPushButton('Generate Schedule')
         self.generate_schedule_button.clicked.connect(self._generate_schedule_callback)
         
+        
+        # Create a vertical layout to store all UI elements
+        self.layout = QtWidgets.QVBoxLayout(self)
+        
         # Create a horizontal box layout
-        # This will hold scheduling parametes on the left and information on the right
-        self.layout = QtWidgets.QHBoxLayout(self)
+        # This will hold scheduling parametes on the left and listing/information on the right
+        self.main_area = QtWidgets.QHBoxLayout()
         
         # Create the form area for presenting the message label, parameters, scheduling button, etc.
         self.interaction_area = QtWidgets.QFormLayout()
         
-        self.interaction_area.addWidget(self.message_label)
+        #self.interaction_area.addWidget(self.message_label)
         self.interaction_area.addRow(self.needed_courses_load_label, self.needed_courses_load_button)
         self.interaction_area.addRow(self.hours_per_semester_label, self.hours_per_semester_field)
         self.interaction_area.addRow(self.destination_directory_label, self.change_directory_button)
@@ -92,8 +105,17 @@ class MainMenuWidget(QtWidgets.QWidget):
         self.interaction_area.addRow(self.schedule_name_label, self.schedule_name_field)
         self.interaction_area.addWidget(self.generate_schedule_button)
         
+        # Create the area for presenting large amounts of data
+        self.listing_box = ListingField()
+        
         # Add the form area to the horizontal box
-        self.layout.addLayout(self.interaction_area)
+        self.main_area.addLayout(self.interaction_area)
+        self.main_area.addWidget(self.listing_box)
+        
+        # Add the main area and the message label
+        self.layout.addLayout(self.main_area)
+        self.layout.addWidget(self.message_label)
+        self.layout.addLayout(self.bottom_bar)
         
     def initialize_parameter_widgets(self):
         '''Setup the widgets for scheduling parameters. This does not add them; it just initializes them
@@ -113,16 +135,17 @@ class MainMenuWidget(QtWidgets.QWidget):
         
         # Create a button to select the working directory for output
         self.destination_directory_label = QtWidgets.QLabel('*No destination directory selected*')
-        self.set_destination_label(self.controller.get_destination_directory())
+        self._update_destination_label()
         self.change_directory_button = QtWidgets.QPushButton('Change Directory')
         self.change_directory_button.clicked.connect(self._change_directory_callback)
         
         # Create checkboxes for controlling the output types to generate
         self.path_to_graduation_checkbox = QtWidgets.QCheckBox('Export Path to Graduation Excel')
-        self.path_to_graduation_checkbox.setChecked(self.controller.is_using_export_type(PATH_TO_GRADUATION_EXPORT_TYPE))
+        active_export_types = self.controller.get_export_type()
+        self.path_to_graduation_checkbox.setChecked(PATH_TO_GRADUATION_EXPORT_TYPE in active_export_types)
         self.path_to_graduation_checkbox.toggled.connect(self._toggle_export_type_callback)
         self.plain_text_checkbox = QtWidgets.QCheckBox('Export Simple txt')
-        self.plain_text_checkbox.setChecked(self.controller.is_using_export_type(PLAIN_TEXT_EXPORT_TYPE))
+        self.plain_text_checkbox.setChecked(PLAIN_TEXT_EXPORT_TYPE in active_export_types)
         self.plain_text_checkbox.toggled.connect(self._toggle_export_type_callback)
         
         # Create a text field that set the schedule's name after pressing enter/return
@@ -144,9 +167,13 @@ class MainMenuWidget(QtWidgets.QWidget):
         message_box.setText(message)
         message_box.exec()
         
-    def set_needed_courses_label(self, filename):
-        description = Path(filename).stem
+    def _update_needed_courses_label(self):
+        '''Set the needed course label to reflect what the controller has loaded and list those courses in the listing box.'''
+        # Get the file's description and set the label to the description
+        description = Path(self.controller.get_destination_filename()).stem
         self.needed_courses_load_label.setText('Needed Courses: {0}'.format(description))
+        
+        self.listing_box.setText('\n'.join(self.controller.get_courses_needed()))
                 
     def _needed_courses_load_callback(self):
         
@@ -159,8 +186,7 @@ class MainMenuWidget(QtWidgets.QWidget):
             filename = file_loader_dialog.selectedFiles()[0]
             load_success = self.controller.load_courses_needed(filename)
             if load_success:
-                # TODO: Test this for absolute and relative paths
-                self.set_needed_courses_label(filename)
+                self._update_needed_courses_label()
         if filename == None:
             self.controller.output('Load cancelled.')
         
@@ -180,8 +206,8 @@ class MainMenuWidget(QtWidgets.QWidget):
         self.hours_per_semester_field.clearFocus()
         
             
-    def set_destination_label(self, directory_name):
-        description = Path(directory_name).stem
+    def _update_destination_label(self):
+        description = Path(self.controller.get_destination_directory()).stem
         self.destination_directory_label.setText('Destination Directory: {0}'.format(description))
                 
     def _change_directory_callback(self):
@@ -193,11 +219,14 @@ class MainMenuWidget(QtWidgets.QWidget):
         if file_loader_dialog.exec():
             directory_name = file_loader_dialog.selectedFiles()[0]
             self.controller.configure_destination_directory(directory_name)
-            self.set_destination_label(self.controller.get_destination_directory())
+            self._update_destination_label()
         if directory_name == None:
             self.controller.output('Load cancelled.')
         
     def _toggle_export_type_callback(self):
+        '''Callback for when any export type checkbox changes state. This checks to see if all methods are unchecked (inform
+        the user if so) and updates the controller with the new selection.'''
+        
         export_types = []
         
         if self.path_to_graduation_checkbox.isChecked():
@@ -223,17 +252,11 @@ class MainMenuWidget(QtWidgets.QWidget):
     def _generate_schedule_callback(self):
         
         self.controller.generate_schedule()
+        
     
-
-
-# NOTE: this may be removed later; it is just a thought right now.
-class ConfigurationMenuWidget(QtWidgets.QWidget):
-
-    def __init__(self, controller):
-        super().__init__()                      # Call the super's initialization
-        
-        self.controller = controller
-        
-        # Create a basic layout
-        self.layout = QtWidgets.QFormLayout(self)
+    def _reload_in_cli_callback(self):
+        '''Callback for entering the CLI. This sends the user immediately into the CLI, but outputs instructions on
+        how to get back to the GUI.'''
+        self.controller.reload_in_cli()
+        self.controller.output('Interface mode changed to command line. Enter "gui-i" to change back.')
     

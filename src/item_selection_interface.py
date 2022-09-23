@@ -4,14 +4,11 @@
 
 from menu_interface_base import GeneralInterface
 
-# TODO: we may want to store callbacks with a weak reference
-
 # The following is the main menu for the program. It handles loading the needed courses,
 # configuring scheduling parameters, and generating the schedule.
 
 class ItemSelectionInterface(GeneralInterface):
     
-    # TODO: determine and then clarify the purpose of callback return values
     
     def __init__(self, options_list, modification_callback, completion_callback, cancellation_callback):
         self.name = 'SELECTION (ADD)'
@@ -30,10 +27,10 @@ class ItemSelectionInterface(GeneralInterface):
         self._is_completed = False                 # Create a variable to track whether the interface has finished processing the input
         
         # Add commands (these work in conjuction with entering numbers)
-        self.add_command(self._list_commands,       'commands')
+        self.add_command(self._list_commands,       '', 'list-commands', 'commands')
         self.add_command(self._switch_to_adding,    'add', 'append', 'include', '+')
         self.add_command(self._switch_to_removal,   'remove', 'subtract', 'exclude', 'rm', '-')
-        self.add_command(self.list_progress,        '', 'list', 'progress')
+        self.add_command(self.list_progress,        'list-selection', 'progress')
         self.add_command(self._complete,            'done', 'complete', 'finish')
         self.add_command(self._cancel,              'cancel', 'exit', 'quit')
     

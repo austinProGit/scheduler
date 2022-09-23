@@ -1,5 +1,5 @@
 # Thomas Merino
-# 9/20/22
+# 9/22/22
 # CPSC 4175 Group Project
 
 # TL;DR: Interfaces are expected to have a parse_input method that takes as input the controller and
@@ -12,7 +12,7 @@
 # _commands: a dictionary with string keys and ((controller, string) -> void) function values. This is only used
 #            by the default implement of the parse_input method
 # was_pushed(self, controller): the method that is called when a menu is pushed to the interface stack. This is
-#                               where model-dependant state is set
+#                               where model-dependent state is set
 # deconstruct(self, controller): the method called when the interface is popped. This is where clean up and saving
 #                                should be done.
 # parse_input(self, string): the method that processes input on behalf of the passed controller. The default implementation

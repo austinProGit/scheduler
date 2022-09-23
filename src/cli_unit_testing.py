@@ -9,7 +9,7 @@ import re
 
 # TODO: Add more tests and load a different file (not icon.png).
 # TODO: Use built-in listener from controller instead of setting output method
-#
+
 
 # Create stream lists to hold/capture interface input/output
 output_stream_list = []
