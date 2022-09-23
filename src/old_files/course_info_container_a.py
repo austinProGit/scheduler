@@ -2,7 +2,7 @@
 # CPSC 4175 Project
 
 import pandas as pd
-import re
+
 from dag_validator import validate_course_path
 
 class CourseInfoContainer:
@@ -52,14 +52,6 @@ class CourseInfoContainer:
         if isElective == 1: success = True
         return success
 
-    def get_electives(self):
-        courses = self.get_courseIDs()
-        electives = []
-        for course in courses:
-            if self.get_isElective(course):
-                electives.append(course)
-        return electives
-
     def get_restrictions(self, courseid):
         restrictions_list = self.get_comma_split_list(self.get_data('restrictions', courseid))       
         return restrictions_list
@@ -67,8 +59,6 @@ class CourseInfoContainer:
     def get_note(self, courseid):   
         note = self.get_data('note', courseid)
         return note
-
-    # Need get electives list
 
     # ............helper methods............................helper methods...........................helper methods
     # methods now account for None, 'none', or '??' values, and still return lists
@@ -103,8 +93,18 @@ class CourseInfoContainer:
         if (len(str(data)) == 1):
             return int(data)
         else:
-            data = list(map(int, re.findall(r'\d+', data)))
-        return data[-1]
+            if len(data) == 7: 
+                lst = []
+                for letter in data:
+                    lst.append(letter)
+                return int(lst[-2])
+            if len(data) == 11 or len(data) == 15: 
+                lst = []
+                for letter in data:
+                    lst.append(letter)
+                return int(lst[-3])
+            else:
+                return 3
 
     def validate_course(self, course):
         lst = self.get_courseIDs()
@@ -120,10 +120,10 @@ class CourseInfoContainer:
 # ******beginning of course_info_parser**********beginning of course_info_parser*********************************
 
 def load_course_info(file_name):
-    df = pd.read_excel(file_name, sheet_name='CPSC') # !!! insert this sheet name or ClassInfo if using ClassInfo.xlsx!!!
+    df = pd.read_excel(file_name, sheet_name='ClassInfo') # !!! insert this sheet name or ClassInfo if using ClassInfo.xlsx!!!
     return df
 
 # ******ending of course_info_parser**********ending of course_info_parser***************************************
-# Line below will be deleted when we merge all files
-container = CourseInfoContainer(load_course_info('src/input_files/course_info.xlsx'))
-print(validate_course_path(container))
+
+container = CourseInfoContainer(load_course_info('src/input_files/ClassInfo0.xlsx')) 
+print('DAG success check: ', validate_course_path(container))
