@@ -13,11 +13,13 @@ TODO: CPSC 3165, junior+ requirement
 TODO: CPSC 1301K, handle the k, temporarily removed the k from course_info.xlsx
 TODO: Deal with list sorting low level CYBR behind ALL CPSC courses, pointless if I get ALL courses through crawler?
 TODO: Summer courses are not able to support the same amount of maximum courses, add fix for this
+TODO: (CHECK) Handling hours going over the limit
+TODO: (CHECK) Use hours instead of course count
 Over commented as usual for your reading pleasure.
 """
 
 SEMESTER_TYPE_SUCCESSOR = {'Fa': 'Sp', 'Sp':'Su', 'Su':'Fa'}    # Translation map from semester K to the next
-DEFAULT_HOURS_PER_SEMESTER = 14
+DEFAULT_HOURS_PER_SEMESTER = 15 # MERINO: updated value
 
 # Dummy container made in part by Austin (thanks)
 # The values have the form (prereqs, availability, coreqs)
@@ -69,10 +71,16 @@ class Scheduler:
         self.courses_needed = []
         self.course_info_container = None
         self.semester_type = 'Sp'
-        
-        # TODO: this is just a temporary fix
-        self.max_courses = DEFAULT_HOURS_PER_SEMESTER // 3
+        # Removed mention course number
             
+    # MERINO: added two more getters
+    
+    def get_course_info(self):
+        return self.course_info_container
+        
+    def get_courses_needed(self):
+        return self.courses_needed[:]
+    
     def get_hours_per_semester(self):
         return self.hours_per_semester
         
@@ -88,8 +96,8 @@ class Scheduler:
     
     def configure_hours_per_semester(self, number_of_hours):
         self.hours_per_semester = number_of_hours
-        self.max_courses = number_of_hours // 3
     
+    # MERINO: the method now uses hours per semester
     def generate_schedule(self):
         
         course_info = self.course_info_container    # Get the course info container
@@ -98,9 +106,13 @@ class Scheduler:
         # Helper functions
         
         def check_availability(course_id):
-            availability = course_info.get_availability_list(course_id) # Get a list that can contain 'Fa', 'Sp', 'Su', and/or '--'
+            # MERINO: changed method call name for course_info
+            availability = course_info.get_availability(course_id) # Get a list that can contain 'Fa', 'Sp', 'Su', and/or '--'
             return working_semester_type in availability
             
+        def check_precise_hours(course_id):
+            return current_hours_counter + course_hours <= max_hours
+                        
         def check_prerequisites(course_id):
             
             prerequisites = course_info.get_prereqs(course_id)
@@ -120,7 +132,8 @@ class Scheduler:
         
         def complete_check(course_id):
             # Run all three of the above checks (with short circuit evaluation)
-            return check_availability(course) \
+            return check_availability(course_id) \
+                and check_precise_hours(course_id) \
                 and check_prerequisites(course_id) \
                 and check_corequisites(course_id)
         
@@ -135,7 +148,7 @@ class Scheduler:
                 break
             
             semester = []                       # the working list of courses
-            current_courses_counter = 0         # counter to control max_courses
+            current_hours_counter = 0           # counter to hold number of scheduled hours during the current semester
             # NOTE: I am changing the use of this variable so it only stops the searching cycle if it runs through the entire needed
             # courses list without finding any new courses to register. This is the only solution I have for ensuring we schedule courses
             # that may have been skipped because of coreq requirements. This also prevents a rare bug where the while-loop would end
@@ -143,16 +156,17 @@ class Scheduler:
             unregistered_courses_counter = 0    # counter to control iteration through courses_needed
             
             # NOTE: we can easily set this depending on the semester type so there're fewer courses in the summer.
-            max_courses = self.max_courses      # the number of courses to register in the loop's semester
+            max_hours = self.hours_per_semester # the number of hours (max) to register in the loop's semester
             
-            # loop to fill out semester, don't loop over max_courses,
+            # loop to fill out semester, don't loop over max_hours,
             # don't loop through courses_needed more than once, don't loop through courses_needed if empty
-            while current_courses_counter < self.max_courses \
+            while current_hours_counter < max_hours \
                     and unregistered_courses_counter < len(courses_needed) \
                     and len(courses_needed):
                     
                 # get first course in list
                 course = courses_needed.pop(0)
+                course_hours = course_info.get_hours(course)
 
                 # check availability, prerequisites, and corequisites
                 passes_complete_check = complete_check(course)
@@ -162,9 +176,9 @@ class Scheduler:
                     unregistered_courses_counter += 1   # Used to detect if all courses have been check and, indeed, none can be registered
                     
                 else:
-                    # add course in semester, increment counter
+                    # add course in semester, increment hours
                     semester.append(course)
-                    current_courses_counter += 1
+                    current_hours_counter += course_hours
                     unregistered_courses_counter = 0
             
             # add semester to full_schedule
@@ -179,15 +193,18 @@ class Scheduler:
 
 # Testing:
     
+# MERINO: removed "K" from 1301K and updated container name (this is just for testing, though)
+        
 # This is just for reference
-courses = ['MATH 1113', 'MATH 2125', 'MATH 5125', 'CPSC 2108', 'CPSC 1301K', 'CPSC 1302', 'CPSC 2105', 'CYBR 2159', 'CYBR 2106', 'CPSC 3175', 'CPSC 3125', 'CPSC 3131', 'CPSC 4135', 'CPSC 3165', 'CPSC 3121', 'CPSC 4155', 'CPSC 4157', 'CPSC 4175', 'CPSC 4115', 'CPSC 4148', 'CPSC 4176', 'CPSC 4000']
+courses = ['MATH 1113', 'MATH 2125', 'MATH 5125', 'CPSC 2108', 'CPSC 1301', 'CPSC 1302', 'CPSC 2105', 'CYBR 2159', 'CYBR 2106', 'CPSC 3175', 'CPSC 3125', 'CPSC 3131', 'CPSC 4135', 'CPSC 3165', 'CPSC 3121', 'CPSC 4155', 'CPSC 4157', 'CPSC 4175', 'CPSC 4115', 'CPSC 4148', 'CPSC 4176', 'CPSC 4000']
 
 if __name__ == '__main__':
-    
+    from course_info_container import *
     s = Scheduler()
-    s.configure_course_info(DummyCourseInfoDataframeContainer())
+    container = CourseInfoContainer(load_course_info('input_files/Course Info.xlsx'))
+    s.configure_course_info(container)
     print("Schedule 1:")
-    s.configure_courses_needed(['MATH 1113', 'MATH 2125', 'MATH 5125', 'CPSC 2108', 'CPSC 1301K', 'CPSC 1302', 'CPSC 2105', 'CYBR 2159', 'CYBR 2106', 'CPSC 3175', 'CPSC 3125', 'CPSC 3131', 'CPSC 4135', 'CPSC 3165', 'CPSC 3121', 'CPSC 4155', 'CPSC 4157', 'CPSC 4175', 'CPSC 4115', 'CPSC 4148', 'CPSC 4176', 'CPSC 4000'])
+    s.configure_courses_needed(['MATH 1113', 'MATH 2125', 'MATH 5125', 'CPSC 2108', 'CPSC 1301', 'CPSC 1302', 'CPSC 2105', 'CYBR 2159', 'CYBR 2106', 'CPSC 3175', 'CPSC 3125', 'CPSC 3131', 'CPSC 4135', 'CPSC 3165', 'CPSC 3121', 'CPSC 4155', 'CPSC 4157', 'CPSC 4175', 'CPSC 4115', 'CPSC 4148', 'CPSC 4176', 'CPSC 4000'])
     s.configure_hours_per_semester(15)
     print(s.generate_schedule())
     

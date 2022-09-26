@@ -2,8 +2,9 @@
 # 9/23/22
 # CPSC 4175 Group Project
 
-# TODO: Ensure help file parser ends predictably at "<END>" (no extra blank lines)
-# TODO: Create a file browser sub-mod
+# TODO: (ENSURE) help file parser ends predictably at "<END>" (no extra blank lines)
+# TODO: (ORGANIZE) Remove redundant file explorer code
+# TODO: (WISH) make help loading the documentation happen only once and only when needed (static and lazy)
 
 from PySide6 import QtCore, QtWidgets, QtGui
 from sys import exit
@@ -38,14 +39,15 @@ class MainMenuInterface(GeneralInterface):
         # e: explorer
         # i: immediate
         
+        # MERINO: added command aliases
         # Add commands to the command dictionary
         self.add_command(list_available_commands_command,       '', 'commands', 'list-commands')
         self.add_command(load_needed_courses_command,           'load', 'needed', 'set')
         self.add_command(explore_needed_courses_command,         'load-e', 'needed-e', 'set-e')
         self.add_command(load_destination_directory_command,    'destination', 'dest', 'to', 'directory')
         self.add_command(explore_destination_directory_command, 'destination-e', 'dest-e', 'to-e', 'directory-e')
-        self.add_command(set_hours_per_semster_command,         'hours', 'per', 'count')
-        self.add_command(select_export_command,                 'as', 'exports', 'type', 'types')
+        self.add_command(set_hours_per_semster_command,         'hours', 'set-hours', 'per', 'count', 'set-count')
+        self.add_command(select_export_command,                 'as', 'exports', 'set-exports', 'type', 'types', 'set-types',)
         self.add_command(list_parameters_command,               'courses', 'list-courses', 'parameters', 'list-parameters', 'arguments', 'list-arguments', 'args')
         self.add_command(generate_schedule_command,             'schedule', 'generate', 'done', 'save')
         self.add_command(set_gui_interface_command,             'gui')
@@ -67,7 +69,6 @@ class MainMenuInterface(GeneralInterface):
 
 class HelpMenu(GeneralInterface):
 
-    # TODO: make help loading the documentation happen only once and only when needed (static and lazy)
     # TODO: add code comments
     
     def __init__(self):
@@ -91,12 +92,7 @@ class HelpMenu(GeneralInterface):
                 self.article_count += 1
                 header = documentation.readline()
     
-    
-    def deconstruct(self, controller):
-        '''Destruction method that is called upon the interface being dismissed.'''
-        # TODO: if any files are openned, close them here
-        pass
-    
+    # MERINO: removed deconstruct method
     
     def parse_input(self, controller, input):
         '''Handle input on behalf of the program.'''
@@ -233,7 +229,8 @@ class ErrorMenu(GeneralInterface):
 
 def list_available_commands_command(controller, argument):
     '''Output the commands that may be entered.'''
-    controller.output('Here are the commands available:\ncommands, load, load-b, destination, destination-b, hours, as, status, schedule, gui, cli, gui-i, help, quit')
+    # MERINO: corrected commands
+    controller.output('Here are the commands available:\ncommands, load, load-e, destination, destination-e, set-hours, set-exports, list-parameters, schedule, gui, cli, gui-i, help, quit')
     # TODO: maybe use a listing from help resourses or the main menu interface class.
 
 
@@ -351,7 +348,8 @@ def select_export_command(controller, argument):
         
     # Initialize and construct the item selection menu
     list_interface = ItemSelectionInterface(list(EXPORT_TYPE_DESCRIPTIONS.values()), modify, complete, cancel)
-    list_interface.set_selected(controller.active_export_types)
+    # MERINO: corrected this line's call
+    list_interface.set_selected(set(controller.get_export_type()))
     controller.push_interface(list_interface)
     
     controller.output('Please select from the following export types:') # Output the initial prompt
@@ -387,7 +385,8 @@ def set_gui_interface_command(controller, arguements):
     '''Change the user interface mode to GUI (this does not reload the interface, though).'''
     if not arguements:
         controller.configure_user_interface_mode(is_graphical=True)
-        controller.output('Deafault UI mode set to graphical (enter gui-i to enter immediately).')
+        # MERINO: fixed spelling
+        controller.output('Default UI mode set to graphical (enter gui-i to enter immediately).')
     else:
         controller.output_error('Arguments are not supported for this command.')
 

@@ -16,10 +16,10 @@ def get_courses_needed(file_name):
        adds course id's to list, and returns list"""
 
     # read and import tables from pdf, returns as list of dataframes
-    # TODO: why is file_name relative path lame, figure out and fix later
-    # courses_needed_df_list = tabula.read_pdf('src/input_files/' + file_name, pages='all')
-    courses_needed_df_list = tabula.read_pdf('input_files/' + file_name, pages='all')
-
+    
+    # MERINO: removed "input_files/" from file_name, turned off guess search area, and turned silent (no error output) on
+    courses_needed_df_list = tabula.read_pdf(file_name, guess=False, pages='all', silent=False)
+    
     # merge list of dataframes into one dataframe
     courses_needed_df = pd.DataFrame()
     for i in range(len(courses_needed_df_list)):
@@ -30,14 +30,34 @@ def get_courses_needed(file_name):
     course_pattern2 = r'CPSC\s{1}\d{4}'  # pattern for CPSC courses
     course_pattern3 = r'CYBR\s{1}\d{4}'  # pattern for CYBR courses
 
+    # MERINO: Commented out the origianl code in place of ugly code that handles dumbass inputs
+    
     # search dataframe for course id pattern, adds to list
+#    courses_needed_list = list()
+#    for element in courses_needed_df['Unnamed: 0']:
+#        cspc_match = re.search(course_pattern2, str(element))
+#        cybr_match = re.search(course_pattern3, str(element))
+#        if cspc_match:
+#            courses_needed_list.append(cspc_match.group())
+#        elif cybr_match:
+#            courses_needed_list.append(cybr_match.group())
+    
     courses_needed_list = list()
-    for element in courses_needed_df['Unnamed: 0']:
-        cspc_match = re.search(course_pattern2, str(element))
-        cybr_match = re.search(course_pattern3, str(element))
-        if cspc_match:
-            courses_needed_list.append(cspc_match.group())
-        elif cybr_match:
-            courses_needed_list.append(cybr_match.group())
+    for col_name, _ in courses_needed_df.iteritems():
+    
+        cspc_col_match = re.search(course_pattern2, str(col_name))
+        cybr_col_match = re.search(course_pattern3, str(col_name))
+        if cspc_col_match:
+            courses_needed_list.append(cspc_col_match.group())
+        elif cybr_col_match:
+            courses_needed_list.append(cybr_col_match.group())
+    
+        for element in courses_needed_df[col_name]:
+            cspc_match = re.search(course_pattern2, str(element))
+            cybr_match = re.search(course_pattern3, str(element))
+            if cspc_match:
+                courses_needed_list.append(cspc_match.group())
+            elif cybr_match:
+                courses_needed_list.append(cybr_match.group())
 
     return courses_needed_list

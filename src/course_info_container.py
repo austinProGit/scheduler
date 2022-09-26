@@ -32,7 +32,8 @@ class CourseInfoContainer:
 
     def get_availability(self, courseid):
         availability_list = self.get_space_split_list(self.get_data('availability', courseid))
-        return availability_list  
+        # MERINO: We may want to send an error (notification pattern or error raise) when list is empty or use something like "availability_list if availability_list else ['Fa', 'Sp', 'Su']" to default to always available. This is necessary to prevent infinite loops on the scheduler when a unrecognized course is entered.
+        return availability_list
 
     def get_prereqs(self, courseid):
         prereqs_list = self.get_comma_split_list(self.get_data('prerequisites', courseid))
@@ -119,11 +120,14 @@ class CourseInfoContainer:
 
 # ******beginning of course_info_parser**********beginning of course_info_parser*********************************
 
+# MERINO: probably should give Vincent credit here (I believe this is his)
 def load_course_info(file_name):
-    df = pd.read_excel(file_name, sheet_name='CPSC') # !!! insert this sheet name or ClassInfo if using ClassInfo.xlsx!!!
+    # MERINO: changed name to "Sheet1"
+    df = pd.read_excel(file_name, sheet_name='Sheet1') # !!! insert this sheet name or ClassInfo if using ClassInfo.xlsx!!!
     return df
 
 # ******ending of course_info_parser**********ending of course_info_parser***************************************
 # Line below will be deleted when we merge all files
-container = CourseInfoContainer(load_course_info('src/input_files/course_info.xlsx'))
-print(validate_course_path(container))
+# MERINO: commented this out
+#container = CourseInfoContainer(load_course_info('src/input_files/course_info.xlsx'))
+#print(validate_course_path(container))
