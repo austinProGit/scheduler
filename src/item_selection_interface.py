@@ -27,10 +27,11 @@ class ItemSelectionInterface(GeneralInterface):
         self._is_completed = False                 # Create a variable to track whether the interface has finished processing the input
         
         # Add commands (these work in conjuction with entering numbers)
+        # MERINO: added alias "list"
         self.add_command(self._list_commands,       '', 'list-commands', 'commands')
         self.add_command(self._switch_to_adding,    'add', 'append', 'include', '+')
         self.add_command(self._switch_to_removal,   'remove', 'subtract', 'exclude', 'rm', '-')
-        self.add_command(self.list_progress,        'list-selection', 'progress')
+        self.add_command(self.list_progress,        'list-selection', 'progress', 'list')
         self.add_command(self._complete,            'done', 'complete', 'finish')
         self.add_command(self._cancel,              'cancel', 'exit', 'quit')
     
@@ -112,7 +113,8 @@ class ItemSelectionInterface(GeneralInterface):
         else:
             # Determine if the entered index is even selected
             if index not in self._selected_options_set:
-                controller.output_error('That is item is not selected (to add an item, switch to add mode with the "add" command),')
+                # MERINO: fixed grammar
+                controller.output_error('That item is not selected (to add an item, switch to add mode with the "add" command),')
             else:
                 self._selected_options_set.remove(index)
                 self._modification_callback(controller, self._selected_options_set)

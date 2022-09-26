@@ -1,12 +1,12 @@
 # Thomas Merino
-# 9/23/22
+# 9/25/22
 # CPSC 4175 Group Project
 
 # NOTE: you must have PySide6 (QT) installed. To use the GUI, use the gui-i command.
 
 # NOTE: the config file needs to be in the same directory as this file.
-#   The config file stores in the first line the name of the course info filename. This is what's passed into the parser as input. The
-#   The second line detemines whether to load the gui (if "YES" is in the second line)
+#   The config file stores in the first line the name of the course info filename. This is what's passed into the parser as input.
+#   The third line detemines whether to load the gui (if "YES" is in the second line)
 
 # POTENTIAL GOALS FOR NEXT CYCLE:
 # - General refactoring
@@ -19,12 +19,20 @@
 # - Make importing PySide optional in case the user does not have them installed (maybe other packages as well)
 # - Add drag and drog support for easier file import
 # - Support more export/import types
+# - Manually setting courses setting
+#           Adding specified course (via scheduler)
+#           Adding scheduling constraints (maybe via AI)
+#           Adding custom classes: specify name, availability, hours (via course info container buffer)
+#           NOTE: this might mean serializing the course info container when preserving session data
 # - Display help menu contents in GUI mode via a web browser
 # - Add aliases (course ID) Excel file
 # - Allow use of the web crawler (fetch)
 # - Add batch work functionality (schedule multiple students by running through multiple requirements)
 #           The would be a good place for multithreading
+# - Use number of courses OR number of credit hours
 
+# - Accept any/all courses
+# - Make path to graduation start on any semester
 # - Handle missing package errors better
 # - Maybe make the name of the help file included in config (probably not)
 # - Fix program icon appearing for file explorer (default Python icon)
@@ -32,119 +40,79 @@
 # - Implement weakref into the GUI widgets and item selection callbacks to prevent strong reference cycles
 # - Add working popup warning/verifying GUI->CLI switch (adding this at the moment is bug-laden)
 #           this creats an issue where the GUI sometimes dones not dismiss when changing to CLI (after switching back and forth)
-# - Shorten long file/directory names in GUI (for display purposes)
 
 
-# TODO: Finish unit testing.
-# TODO: Ensure the directories in the config file work no matter the OS (if not, implement)
-# TODO: Ensure support for course info being in a different directoy (and different OS)
-# TODO: Ensure exception raising is implemented in other modules (e.g. NonDAGCourseInfoError)
-# TODO: Ensure proper setup of error codes or boolean return (other modules)
-# TODO: Ensure permission settings work
-# TODO: (CHECK) File existence check does not consider the to-be file extensions (fix this) -- we could do this with Path.with_suffix('') and Path.suffix
-# TODO: (CHECK) Add two filepaths to config file
-# TODO: (CHECK) Add comments so everyone knows where to place the new code for module integration
-# TODO: (CHECK) Add command to display needed courses
-# TODO: (CHECK) Update status command to provide more scheduling parameters
-# TODO: (CHECK/FIX) Allow switching to CLI from GUI
-# TODO: It might be good to clean up by replacing os.path functions with pathlib.Path methods.
-# TODO: Maybe have the listeners completely consume IO (otherwise, why not just use a notification pattern?)
-# TODO: Consider useing f'{variable}' for formatting
-# TODO: Consider using := operator (probably not for compatibility's sake)
-# TODO: Clean up the mixing of string and Path objects (it is not clear what is what right now)
-# TODO: Loading files does not check extension (or if a directory) (fix this)
-#       --maybe just have extension check in parsers
-#       --this can be done with Path.is_file()
-# TODO: Need to select/handle electives
-# TODO: Ask if file extension are handled by module methods/functions
-# TODO: Hook up all commands
+# To-do Legend:
+#   Ensure: something that should work or should be fixed but has not been tested enough
+#   Organize: stuff that should be cleaned up but is not necessary
+#   Fix: suprise feature
+#   Wish: something that should be implemented but is not necessary
+#   Ask: something that needs to be decided upon
+#   Need: something that needs to be done
 
+# TODO: (ORGANIZE) It might be good to clean up by replacing os.path functions with pathlib.Path methods.
+# TODO: (ORGANIZE) Maybe have the listeners completely consume IO (otherwise, why not just use a notification pattern?)
+# TODO: (ORGANIZE) Consider useing f'{variable}' for formatting
+# TODO: (ORGANIZE) Consider using := operator for cleaner code (probably not for compatibility's sake)
+# TODO: (ORGANIZE) Clean up the mixing of string and Path objects (it is not clear what is what right now)
+# TODO: (ENSURE) the directories in the config file work no matter the OS (if not, implement)
+# TODO: (ENSURE) support for course info being in a different directoy (and different OS)
+# TODO: (ENSURE) exception raising is implemented in other modules (e.g. NonDAGCourseInfoError)
+# TODO: (ENSURE) proper setup of error codes or boolean return (other modules)
+# TODO: (ENSURE) ensure permission settings work
+# TODO: (ENSURE) File existence check does not consider the to-be file extensions (fix this) -- we could do this with Path.with_suffix('') and Path.suffix
+# TODO: (ENSURE) Add two filepaths to config file
+# TODO: (ENSURE) Add command to display needed courses
+# TODO: (ENSURE) Fix error message when entering empty string for export name in gui
+# TODO: (ENSURE) Add text export
+# TODO: (ENSURE) Does not work when loaded courses or catalog file is bad extension/format
+# TODO: (ENSURE) Make GUI update needed courses data when loading
+# TODO: (ENSURE/WISH) Allow switching to CLI from GUI (adding confirmation popup breaks this)
+# TODO: (WISH) Add README and seperate file for general tasks (or maybe just have that external)
+# TODO: (WISH) No warning about filename collision because of extension (take all selected export types into consideration)
+# TODO: (WISH) Have the GUI display errors (like warnings)
+# TODO: (FIX) Add "silient=True" to tabula calls so there are no error print outs
+# TODO: (FIX) Open config from src not the working the directory
+# TODO: (FIX) Fix issue with no availability for Sample Input3 (add default value?)
+# TODO: (ASK) Decide if course_info_parser.py can be removed
+# TODO: (ASK) Ask how file extension are handled by module methods/functions
+# TODO: (NEED) Need to select/handle electives
+# TODO: (NEED) Iron out summer scheduling issue (lower hours per summer)
+# TODO: (NEED) Add hours per course to Course Info.xlsx
+# TODO: (NEED) Finish unit testing.
 
 from PySide6 import QtWidgets, QtGui
 
+# MERINO: Uncomment this if you want to run memory profiling
+# from guppy import hpy; heap = hpy() # MERINO: added this for testing! (memory leak detecting; this requires loading in cli)
+
+# MERINO: added imports
 from sys import exit
 from pathlib import Path
 from os import path
+from subprocess import CalledProcessError   # This is used for handling errors raised by tabula parses
 
 from driver_fs_functions import *
 from cli_interface import MainMenuInterface, GraphicalUserMenuInterface, ErrorMenu
+from scheduler_test import Scheduler
+from course_info_container import *
+from courses_needed_parser import get_courses_needed
+from dag_validator import NonDAGCourseInfoError
+from excel_formatter import excel_formatter
+from plain_text_formatter import plain_text_export
 
-DEFAULT_CATALOG_NAME = 'course_info.xlsx'                   # The default name for the catalog/course info file
-DEFAULT_AVAILABILITY_FILENAME = 'course_availability.xlsx'  # The default name for the catalog/course availability file
-CONFIG_FILENAME = 'config'                                  # The name of the config file
-DEFAULT_SCHEDULE_NAME = 'Path to Graduation'                # The default filename for exporting schedules
-NORMAL_HOURS_LIMIT = 18                                     # The upper limit of credit hours students can take per semester (recommended)
-STRONG_HOURS_LIMIT = 30                                     # The absolute limit of credit hours students can take per semester (cannot exceed)
+# MERINO: Added min constant
+DEFAULT_CATALOG_NAME = 'input_files/Course Info.xlsx'           # The default name for the catalog/course info file
+DEFAULT_AVAILABILITY_FILENAME = 'input_files/Course Info.xlsx'  # The default name for the catalog/course availability file
+CONFIG_FILENAME = 'config'                                      # The name of the config file
+DEFAULT_SCHEDULE_NAME = 'Path to Graduation'                    # The default filename for exporting schedules
+NORMAL_HOURS_LIMIT = 18                                         # The upper limit of credit hours students can take per semester (recommended)
+STRONG_HOURS_LIMIT = 30                                         # The absolute limit of credit hours students can take per semester (cannot exceed)
+STRONG_HOURS_MINIMUM = 4                                        # The absolute minimum of credit hours students can take per semester (cannot be below)
 
-# Constants for export types
-PATH_TO_GRADUATION_EXPORT_TYPE = 0x00
-PLAIN_TEXT_EXPORT_TYPE = 0x01
+# MERINO: removed redefinition of export types
 
-## --------------------------------------------------------------------- ##
-## ----------- The following are dummy classes and functions ----------- ##
-## --------------------------------------------------------------------- ##
-
-# TODO: IMPLEMENT HERE ->
-class CourseInfoDataframeContainer:
-    def __init__(self, df):
-        pass
-
-    def display(self):
-        pass
-
-    def get_name(self, courseid):
-        pass
-   
-    def get_availability(self, courseid):
-        pass
-
-    def get_prereqs(self, courseid):
-        pass
-
-    def get_coreqs(self, courseid):
-        pass
-
-    def get_recommended(self, courseid):
-        pass
-        
-    def get_electives(self):
-        return ['1001', '1002', '1003', '1004', '1005']
-
-class NonDAGCourseInfoError(Exception):
-    pass
-
-def get_course_info(file_name):
-   return None
-   
-# TODO: IMPLEMENT HERE -> (I am now assuming the electives are the second list)
-def get_courses_needed(file_name):
-    return ([], [])
-    
-
-
-class Scheduler:
-    def __init__(self):
-        self.h = 15
-        self.cn = []
-        
-    def get_hours_per_semester(self):
-        return self.h
-        
-    # TODO: IMPLEMENT HERE ->
-    def get_courses_needed(self):
-        return self.cn
-    
-    def configure_course_info(self, container):
-        pass
-        
-    def configure_courses_needed(self, courses):
-        self.cn = ['1001', '1002', '1003', '1004', '1005', '2001', '2002', '2003', '2004', '2005']
-    
-    def configure_hours_per_semester(self, number_of_hours):
-        self.h = number_of_hours
-    
-    def generate_schedule(self, filename):
-        pass
+# MERINO: removed dummies
 
 ## --------------------------------------------------------------------- ##
 ## ---------------------- Smart Planner Controller --------------------- ##
@@ -169,6 +137,9 @@ class SmartPlannerController:
     
     def __init__(self, graphics_enabled=True):
         self.setup(graphics_enabled)
+        # MERINO: adding this for testing! (set size for relative heap comparison; you must launch in cli mode to use this)
+        # MERINO: Uncomment this if you want to run memory profiling
+        #heap.setrelheap()
     
     
     def setup(self, graphics_enabled=True):
@@ -207,7 +178,7 @@ class SmartPlannerController:
             # Load the user interface -- this should only block execution if graphics are presented
             self.load_interface(is_graphical)
             
-        except (ConfigFileError, FileNotFoundError, IOError, NonDAGCourseInfoError):
+        except (ConfigFileError, FileNotFoundError, IOError, NonDAGCourseInfoError, ValueError):
             # Some error was encountered during loading (enter the error menu)
             self.output_error('A problem was encountered during loading--entering error menu...')
             self.enter_error_menu()
@@ -224,9 +195,10 @@ class SmartPlannerController:
             # Get the config file
             with open(CONFIG_FILENAME, 'r') as configuration_file:
                 
+                # MERINO: fixed reading escape character
                 # Get the first three lines of the file (locations of the catalog and whether presenting graphics initially)
-                course_info_filename = configuration_file.readline()
-                course_availability_filename = configuration_file.readline()
+                course_info_filename = configuration_file.readline()[:-1]
+                course_availability_filename = configuration_file.readline()[:-1]
                 is_graphical_line = configuration_file.readline()
                 
                 
@@ -252,9 +224,11 @@ class SmartPlannerController:
         # Attempt to load the course info data and pass it to the scheduler
         try:
             # TODO: IMPLEMENT HERE ->
+            # MERINO: implemented changes
             # NOTE: I am not sure how course_availability_filename plays a role yet (y'all just need to socket it in however you like)
-            course_info_container = get_course_info(course_info_filename)
+            # course_info_container = get_course_info(course_info_filename)
             # OR: course_info_container = get_course_info(course_info_filename, course_availability_filename)
+            course_info_container = CourseInfoContainer(load_course_info(course_info_filename))
             self._scheduler.configure_course_info(course_info_container)
             
         except (FileNotFoundError, IOError) as file_error:
@@ -262,10 +236,12 @@ class SmartPlannerController:
             self.output_error('Invalid course catalog file. Please rename the catalog to {0}, make sure it is accessible, and reload the catalog (enter "reload").'.format(course_info_filename))
             raise file_error
             
-        except NonDAGCourseInfoError as non_dag_error:
+        except (NonDAGCourseInfoError, ValueError) as config_error: # MERINO: added exception handling
             # The catalog was/is invalid (report to the user and re-raise the error to enter error menu)
+            # NonDAGCourseInfoError is raised when a prequisite cycle is detected
+            # ValueError is raised when the table has an invalid format or is the wrong type of file (check extension)
             self.output_error('Course catalog contains invalid data. Please correct all issues and reload the catalog (enter "reload").')
-            raise non_dag_error
+            raise config_error
     
     
     def load_interface(self, is_graphical):
@@ -309,6 +285,9 @@ class SmartPlannerController:
     def get_input(self):
         '''Get input text from the user with the current interface's/menu's name in the prompt.'''
         current_interface = self.get_current_interface()
+        # MERINO: Added this for testing! Uncomment to print new heap allocations at every input
+        # MERINO: Uncomment this if you want to run memory profiling
+        # print(heap.heap().more)
         return input('{0}: '.format(current_interface.name))
     
     
@@ -441,14 +420,18 @@ class SmartPlannerController:
                 self.output_error('Sorry, {0} file could not be found.'.format(filename))   # Report if the file could not be found
         except IOError:
             self.output_error('Sorry, {0} file could not be openned.'.format(filename))     # Report if the file could not be openned
+        except CalledProcessError: # MERINO: added exception handling
+            # MERINO: fixed spelling
+            self.output_error('Sorry, invalid format while parsing {0}.'.format(filename))  # Report if the file could not be openned
         return success
     
     
     def configure_hours_per_semester(self, number_of_hours):
         '''Set the number of hours that are scheduled per semester. This return the success of the load.'''
         
-        if number_of_hours <= 0 or STRONG_HOURS_LIMIT < number_of_hours:
-            self.output_warning('Please enter between 1 and {0} hours per semester.'.format(STRONG_HOURS_LIMIT))
+        # MERINO: added minimum hours
+        if number_of_hours <= STRONG_HOURS_MINIMUM or STRONG_HOURS_LIMIT < number_of_hours:
+            self.output_warning('Please enter between {0} and {1} hours per semester.'.format(STRONG_HOURS_MINIMUM, STRONG_HOURS_LIMIT))
             return False
         
         if number_of_hours > NORMAL_HOURS_LIMIT:
@@ -517,6 +500,9 @@ class SmartPlannerController:
             config_file.write(catalog_field + '\n')
             config_file.write(availability_field + '\n')
             config_file.write('GUI: NO\n')
+            
+        # MERINO: added output
+        self.output('Config file created.')
     
     
     def configure_user_interface_mode(self, is_graphical):
@@ -553,24 +539,49 @@ class SmartPlannerController:
     def generate_schedule(self, filename=None):
         '''Generate the schedule with a given filename or the current default filename if nothing is provided.'''
         
+        # MERINO: added needed courses and export types check (empty)
+        # Check if any courses are loaded
+        if not self._scheduler.get_courses_needed():
+            self.output_warning('No schedule exported.')
+            self.output_error('No needed courses loaded.')
+            return
+           
+        # Check if no export types are selected (empty)
+        if not self._export_types:
+            self.output_warning('No schedule exported.')
+            self.output_error('No export type selected.')
+            return
+        
         self.output('Generating schedule...')
         
         # Set _destination_filename to the passed filename if one was passed
         if filename:
             self._destination_filename = filename
-        
+            
+        # MERINO: moved unique destination
         desired_destination = self.get_destination()
-        unique_destination = get_next_free_filename(desired_destination)
         
         try:
             # TODO: IMPLEMENT HERE ->
-            self._scheduler.generate_schedule(unique_destination)
-            
-            
-            self.output('Schedule exported as {0}'.format(unique_destination))
+            # MERINO: implemented changes
+            if self._export_types:
+                semesters_listing = self._scheduler.generate_schedule()
+                
+                if PATH_TO_GRADUATION_EXPORT_TYPE in self._export_types:
+                    unique_ptg_destination = get_next_free_filename(desired_destination.with_suffix('.xlsx'))
+                    excel_formatter('input_files/Path To Graduation X.xlsx', unique_ptg_destination, semesters_listing, self._scheduler.get_course_info())
+                    self.output('Schedule (Path to Graduation) exported as {0}'.format(unique_ptg_destination))
+                
+                if PLAIN_TEXT_EXPORT_TYPE in self._export_types:
+                    unique_ptext_destination = get_next_free_filename(desired_destination.with_suffix('.txt'))
+                    plain_text_export(unique_ptext_destination, semesters_listing, 'Spring', 2022)
+                    self.output('Schedule (plain text) exported as {0}'.format(unique_ptext_destination))
+                
+            else:
+                self.output_error('Please select an export type.')
         except (FileNotFoundError, IOError):
             # This code will probably execute when file system permissions/organization change after setting parameters
-            self.output_error('File system error ecountered while attempting to export (please try re-entering parameters).')
+            self.output_error('File system error ecountered while attempting an export (please try re-entering parameters). Some files may have exported.')
         
     
     def batch_schedule(self, inputs_directory, filename_prefix):
@@ -600,16 +611,4 @@ class SmartPlannerController:
 
 # End of SmartPlannerController definition
 
-## --------------------------------------------------------------------- ##
-## --------------------------- Process Setup  -------------------------- ##
-## --------------------------------------------------------------------- ##
-
-
-# Testing:
-if __name__ == "__main__":
-    
-    
-    planner = SmartPlannerController()
-    
-    if planner.has_interface():
-        while planner.run_top_interface(): pass
+# MERINO: removed main entrance (that's main.py's job now)

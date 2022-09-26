@@ -20,14 +20,16 @@ def schedule(courses_needed_file_name, course_info_file_name, max_courses):
 
     # helper functions
     def check_availability(_course_id, _current_semester):
-        _availability = course_info.get_availability_list(_course_id)
+        # MERINO: changed method call name for course_info
+        _availability = course_info.get_availability(_course_id)
         if _current_semester in _availability:
             return True
         else:
             return False
 
     def check_prerequisites(_course_id):
-        _prerequisites = course_info.get_prereqs_list(_course_id)
+        # MERINO: changed method call name for course_info
+        _prerequisites = course_info.get_prereqs(_course_id)
         # if prerequisite course is in courses_needed or in semester, can't take course yet.
         for _prerequisite in _prerequisites:
             if _prerequisite in courses_needed or _prerequisite in semester:
@@ -36,7 +38,8 @@ def schedule(courses_needed_file_name, course_info_file_name, max_courses):
 
     # get data being worked with
     courses_needed = get_courses_needed(courses_needed_file_name)
-    course_info = Course_info_dataframe_container(load_course_info(course_info_file_name))
+    # MERINO: changed type name for container
+    course_info = CourseInfoContainer(load_course_info(course_info_file_name))
 
     # sorting should speed up the scheduler, as lower level courses are more likely to be required sooner
     # TODO: Low level CYBR courses will be pushed behind ALL CPSC courses, fix

@@ -16,6 +16,18 @@ EXPORT_TYPE_DESCRIPTIONS = {
     PLAIN_TEXT_EXPORT_TYPE: 'Plain txt'
 }
 
+# MERINO: Added a handy splitting function for getting the numeric end of a filename
+def suffix_split(filtr, sequence):
+    '''Split the passed sequence by a suffix: end section of the sequence such that every item meets the passed filter--
+    the suffix ends as soon as one item doesn't meet the filter, and the entire sequence may be the suffix if all pass.
+    The filter function is expeceted to take an item and returns a boolean. This returns a tuple with the sequence before
+    the suffix and then the suffix (both may be esequencempty).'''
+    for index in range(len(sequence) - 1, -1, -1):              # Iterate backwards
+        if not filtr(sequence[index]):                          # Return if the filter does not pass
+            return (sequence[:index + 1], sequence[index + 1:]) # Split on the index
+    return (sequence[:0], sequence[:])                          # All items pass
+    
+
 def get_real_filepath(filepath):
     '''Function to verify the existence of a file/directory and change any "~" prefix into the user's home directory. This
     returns the corrected path if it exists and None if it does not. The argument is expected to be a string or Path and
@@ -42,18 +54,12 @@ def get_next_free_filename(filepath):
         filepath_name = str(path.with_suffix(''))
         filepath_extension = path.suffix
         
-        # Get the index where the digits suffix begins
-        end_digit_index = len(filepath_name)
-        # This checks if end_digit_index has reached the zero and if the checked character is numeric
-        while end_digit_index and filepath_name[end_digit_index - 1].isdigit():
-            end_digit_index -= 1
+        # MERINO: Using the new function above
         
-        # Seperate the filepath into its digit and non-digit section
-        path_digit_section = filepath_name[end_digit_index:]
-        
+        # Seperate the filepath into its non-digit and end-digit section
+        pre_digit_path_name, path_digit_section = suffix_split(lambda c : c.isdigit(), filepath_name)
         # If there is no digit at the end of the filename, just add a "2"
-        number = int(filepath_name[end_digit_index:]) + 1 if path_digit_section else 2
-        pre_digit_path_name = filepath_name[:end_digit_index]
+        number = int(path_digit_section) + 1 if path_digit_section else 2
         working_filepath = Path(pre_digit_path_name + str(number)).with_suffix(filepath_extension)
         
         # Increase the suffix number until no collision is found
