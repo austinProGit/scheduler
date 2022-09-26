@@ -16,12 +16,12 @@ def validate_course_path(container):
     G = nx.DiGraph()
 
     # Get all the courseIDs as a list of IDs
-    courseids = container.dummy_get_courseids()
+    courseids = container.get_courseIDs()
 
     for course in courseids:                           # Iterate through the list of course IDs
         if not is_valid_course_path:                   # Check if an invalid course has been found
             break
-        prereqs = container.dummy_get_prereqs(course)  # Get the prereqs for each course ID
+        prereqs = container.get_prereqs(course)  # Get the prereqs for each course ID
         for prereq in prereqs:                         # For each prereq for a given course
             if prereq in courseids:                    # Check if the prereq is found in the list of courses
                 G.add_edge(prereq, course)             # Add a directed edge from the prereq to the course

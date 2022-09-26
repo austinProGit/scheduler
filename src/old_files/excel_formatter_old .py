@@ -2,12 +2,13 @@
 # CPSC 4175 Project
 
 import openpyxl
-import shutil
-from course_info_container import container
+# We probably will have access to container already in scheduler; but because I'm working on this seperate I imported.
+# If we keep these modules separate because they are lengthy, then we'd import in from somewhere or take as param.
+from course_info_container import container # I used ClassInfo.xlsx because it has more usable data right now
 from datetime import date
 
-def excel_formatter(input_file_name, output_file_name, sched, container):  # second param needs to be destination path for copy
-    edit_excel = openpyxl.load_workbook(input_file_name)
+def excel_formatter(file_name, sched): 
+    edit_excel = openpyxl.load_workbook(file_name)
     sheet = edit_excel.active
     previous_seas = False # Use this boolean as an easy way to skip 1st iteration of outside loop
     current_seas = current_season() # Determined by actual date; depicts the next semester to schedule
@@ -20,10 +21,7 @@ def excel_formatter(input_file_name, output_file_name, sched, container):  # sec
             if container.validate_course(sched[i][x]): # Use container to get values
                 course = sched[i][x]
                 avail = container.get_availability(course)
-                if avail != []:
-                    data = course + ' - ' + container.get_name(course) + ' (' + avail[0] + ' ' + avail[1] + ' ' + avail[2] + ')'
-                else:
-                    data = course + ' - ' + container.get_name(course) + ' (?? ?? ??)'
+                data = course + ' - ' + container.get_name(course) + ' (' + avail[0] + ' ' + avail[1] + ' ' + avail[2] + ')'
                 hours = container.get_hours(course)
                 co = current_seas[0]
                 ro = current_seas[1] + x
@@ -33,23 +31,18 @@ def excel_formatter(input_file_name, output_file_name, sched, container):  # sec
                 sheet.cell(row=r, column=c, value=hours)
                 previous_seas = True
             else: # course not in container or class info
-                course1 = sched[i][x]
+                course = sched[i][x]
                 co1 = current_seas[0]
                 ro1 = current_seas[1] + x
                 c1 = current_seas[0] + 1
                 r1 = current_seas[1] + x
-                data1 = course1 + ' - Name Unavailable (?? ?? ??)'
-                sheet.cell(row=ro1, column=co1, value=data1)
+                sheet.cell(row=ro1, column=co1, value=course)
                 sheet.cell(row=r1, column=c1, value=3)
                 previous_seas = True
 
-    edit_excel.save(input_file_name) # Save the file so we can copy to specified directory
+    #clear_contents(sheet) # uncomment this for easy clearing of cells!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    shutil.copy2(input_file_name, output_file_name) # Copy file
-
-    clear_contents(sheet) # Clearing the input file; ready for next student schedule
-
-    edit_excel.save(input_file_name) # Save the cleared file
+    edit_excel.save(file_name) # Save edited workbook to edit excel
 
 # ...............HELPER METHODS...............HELPER METHODS...............HELPER METHODS...............HELPER METHODS
     
@@ -95,7 +88,6 @@ def next_season(current_season):
 # list below is not in scheduler order; it is just random list; including generic classes and classes not listed
 # in container; the limits are 6 max course per Fall or Spring, 2 max for Summer
 
-rando_list = [['CPSC 3121', 'CPSC 3165', 'CPSC 4000', 'CPSC 4135', 'POLS 1101'], 
-              ['STAT 3127', 'CPSC 2108'], ['CPSC 3125', 'MATH 1113']]
+rando_list = [['CPSC 3121', 'CPSC 3165', 'CPSC 4000', 'CPSC 4135', 'POLS 1101'], ['STAT 3127', 'CPSC 2108'], ['CPSC 3125']]
 
-excel_formatter('src\input_files\Path To Graduation X.xlsx', 'src\output_files', rando_list, container)
+excel_formatter('src\output_files\Path To Graduation X.xlsx', rando_list)
