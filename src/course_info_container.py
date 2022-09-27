@@ -108,7 +108,7 @@ class CourseInfoContainer:
             return int(data)
         else:
             data = list(map(int, re.findall(r'\d+', data)))
-        return data[-1]
+            return data[-1]
 
     def validate_course(self, course):
         lst = self.get_courseIDs()
