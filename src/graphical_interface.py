@@ -14,7 +14,6 @@
 from PySide6 import QtCore, QtWidgets, QtGui
 from pathlib import Path
 from os import path
-from time import sleep
 
 from driver_fs_functions import *
 
