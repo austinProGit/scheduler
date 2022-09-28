@@ -33,6 +33,9 @@ class CourseInfoContainer:
     def get_availability(self, courseid):
         availability_list = self.get_space_split_list(self.get_data('availability', courseid))
         # MERINO: We may want to send an error (notification pattern or error raise) when list is empty or use something like "availability_list if availability_list else ['Fa', 'Sp', 'Su']" to default to always available. This is necessary to prevent infinite loops on the scheduler when a unrecognized course is entered.
+        # Lew complied
+        if availability_list ==[]:
+            availability_list = ['Fa', 'Sp', '--']
         return availability_list
 
     def get_prereqs(self, courseid):
@@ -105,7 +108,7 @@ class CourseInfoContainer:
             return int(data)
         else:
             data = list(map(int, re.findall(r'\d+', data)))
-        return data[-1]
+            return data[-1]
 
     def validate_course(self, course):
         lst = self.get_courseIDs()
@@ -121,6 +124,7 @@ class CourseInfoContainer:
 # ******beginning of course_info_parser**********beginning of course_info_parser*********************************
 
 # MERINO: probably should give Vincent credit here (I believe this is his)
+# Author: Vincent
 def load_course_info(file_name):
     # MERINO: changed name to "Sheet1"
     df = pd.read_excel(file_name, sheet_name='Sheet1') # !!! insert this sheet name or ClassInfo if using ClassInfo.xlsx!!!

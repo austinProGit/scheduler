@@ -3,6 +3,7 @@
 # CPSC 4175 Group Project
 
 from dag_validator_tests import dag_validator_tests
+from container_tests import container_tests
 
 def all_tests():
     tests_passed = True
@@ -10,11 +11,14 @@ def all_tests():
     if not dag_validator_tests():
         tests_passed = False
         failed_tests.append('dag_validator')
+    if not container_tests():
+        tests_passed = False
+        failed_tests.append('container')
     # ADD ALL TESTS HERE ^^^
     if not tests_passed:
-        print(f'The following tests have failed: {failed_tests}')
+        print(f'The following tests have FAILED: {failed_tests}')
     else:
-        print('All tests have passed.')
+        print('\nAll tests have PASSED.')
     return tests_passed
 
 all_tests()

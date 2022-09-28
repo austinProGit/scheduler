@@ -2,11 +2,23 @@
 # 9/21/22
 # CPSC 4175 Group Project
 
+from dataclasses import dataclass
 import sys
+import os
+ 
+# getting the name of the directory
+# where the this file is present.
+current = os.path.dirname(os.path.realpath(__file__))
+ 
+# Getting the parent directory name
+# where the current directory is present.
+parent = os.path.dirname(current)
+ 
+# adding the parent directory to
+# the sys.path.
+sys.path.append(parent)
 
-sys.path.append('../scheduler')
-
-from src.dag_validator import validate_course_path
+from dag_validator import NonDAGCourseInfoError, validate_course_path
 
 # ================================ Unit Tests =======================================================
 
@@ -24,13 +36,13 @@ def dag_validator_tests() :
             self.course_path = course_path
 
     # Accesses the dataframe's course IDs and returns them as a list of strings.
-        def dummy_get_courseids(self):
+        def get_courseIDs(self):
             courseids = []
             courseids = list(self.course_path.keys())
             return courseids
 
     # Accesses the dataframe's prerequisites for a given course and returns the prereqs as a list of strings.
-        def dummy_get_prereqs(self, courseid):
+        def get_prereqs(self, courseid):
             prereqs = []
             try:
                 for prereq in self.course_path.get(courseid):
@@ -228,41 +240,31 @@ def dag_validator_tests() :
 
     print('=============================== Start Dag Validator Tests ===============================\n')
 
-    # Test the current path.
-    if validate_course_path(dummy_course_info_dataframe_container(current_path)):
-        print('Current path test passed.\n')
-    else:
-        tests_passed = False
-        print('Current path test failed.\n')
-    if not validate_course_path(dummy_course_info_dataframe_container(short_cycle)):
-        print('Short cycle test passed.\n')
-    else:
-        tests_passed = False
-        print('Short cycle test failed.\n')
-    if not validate_course_path(dummy_course_info_dataframe_container(long_cycle)):
-        print('Long cycle test passed.\n')
-    else:
-        test_passed = False
-        print('Long cycle test failed.\n')
-    if not validate_course_path(dummy_course_info_dataframe_container(multiple_cycles)):
-        print('Multiple cycles test passed.\n')
-    else:
-        tests_passed = False
-        print('Multiple cycles test failed.\n')
-    if not validate_course_path(dummy_course_info_dataframe_container(single_invalid_course_prereq)):
-        print('Single invalid course prereq test passed\n')
-    else: 
-        tests_passed = False
-        print('Single invalid course prereq failed.\n')
-    if not validate_course_path(dummy_course_info_dataframe_container(multiple_invalid_courses_prereqs)):
-        print('Multiple invalid courses prereqs test passed.\n')
-    else:
-        tests_passed = False
-        print('Multiple invalid courses prereqs test failed.\n')
-    if tests_passed:
-        print('Dag validator tests all passed.')
-    else:
-        print('At least one dag validator test failed.')
+    test_case_list = []
+    
+    def add_test(test_name, test_data, should_validate):
+        test_case_list.append({"test_name": test_name, "test_data": test_data, "should_validate": should_validate})
 
-    print('=============================== End Dag Validator Tests ===============================\n')
+    add_test("current_path", current_path, True)
+    add_test("short_cycle", short_cycle, False)
+    add_test("long_cycle", long_cycle, False)
+    add_test("multiple_cycles", multiple_cycles, False)
+    add_test("single_invalid_course_prereq", single_invalid_course_prereq, False)
+    add_test("multiple_invalid_courses_prereqs", multiple_invalid_courses_prereqs, False)
+    
+    for test in test_case_list:
+        test_passed = False
+        try:
+            validate_course_path(dummy_course_info_dataframe_container(test["test_data"]))
+            test_passed = test["should_validate"]
+        except:
+            test_passed = not test["should_validate"]
+        if test_passed:
+            print(f'The {test["test_name"]} test PASSED.')
+        else:
+            tests_passed = False
+            print(f'The {test["test_name"]} test FAILED.')
+
+    print('\n=============================== End Dag Validator Tests ===============================\n')
+
     return tests_passed
