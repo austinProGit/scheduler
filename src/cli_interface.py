@@ -51,6 +51,8 @@ class MainMenuInterface(GeneralInterface):
         self.add_command(select_export_command,                 'as', 'exports', 'set-exports', 'type', 'types', 'set-types',)
         self.add_command(list_parameters_command,               'courses', 'list-courses', 'parameters', 'list-parameters', 'arguments', 'list-arguments', 'args')
         self.add_command(generate_schedule_command,             'schedule', 'generate', 'done', 'save')
+        self.add_command(schedule_verify_command,               'verify', 'validate', 'check')
+        self.add_command(explore_schedule_verify_command,       'verify-e', 'validate-e', 'check-e')
         self.add_command(set_gui_interface_command,             'gui')
         self.add_command(set_cli_interface_command,             'cli', 'lui')
         self.add_command(gui_interface_immediate_command,       'gui-i', 'window', 'graphical', 'graphics')
@@ -262,7 +264,6 @@ def load_destination_directory_command(controller, directory):
     else:
         controller.output_error('Please enter the directory\'s path.')
 
-
 def explore_needed_courses_command(controller, argument):
     '''Command to create a new QT file explorer application so the user can load the needed courses file.'''
     # TODO: polish this a bit
@@ -408,6 +409,37 @@ def gui_interface_immediate_command(controller, arguements):
         controller.push_interface(GraphicalUserMenuInterface())
     else:
         controller.output_error('Arguments are not supported for this command.')
+
+
+def schedule_verify_command(controller, filename):
+    '''Verify the schedule for prequisite cycles.'''
+    if filename:
+        controller.check_schedule(filename)
+    else:
+        controller.output_error('Please enter the file\'s path.')
+
+
+def explore_schedule_verify_command(controller, filename):
+    '''Verify the schedule for prequisite cycles (with file explorer).'''
+    
+    # Check if the user passed some argument(s) (report error and return if so)
+    if argument:
+        controller.output_error('Arguments are not supported for this command.')
+        return
+    
+    # This gets the application (launches if there is none) and uses it to present a file selection dialog
+    application = controller.get_graphical_application()
+    file_loader_dialog = QtWidgets.QFileDialog()
+    file_loader_dialog.setFileMode(QtWidgets.QFileDialog.ExistingFile)
+    filename = None
+    
+    if file_loader_dialog.exec():
+        filename = file_loader_dialog.selectedFiles()[0]
+        schedule_verify_command(controller, filename)
+    if filename == None:
+        controller.output('File load cancelled.')
+        
+    application.quit()
 
 
 def generate_schedule_command(controller, filename):

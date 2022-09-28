@@ -78,6 +78,11 @@ class MainMenuWidget(QtWidgets.QWidget):
         self.command_line_button.clicked.connect(self._reload_in_cli_callback)
         self.bottom_bar.addWidget(self.command_line_button)
         
+        # Create a button to verify a schedule
+        self.verify_schedule_button = QtWidgets.QPushButton('Verify Schedule')
+        self.verify_schedule_button.clicked.connect(self._verify_schedule_callback)
+        self.bottom_bar.addWidget(self.verify_schedule_button)
+        
         # Add spacer to bottom bar
         self.bottom_bar.addItem(QtWidgets.QSpacerItem(1, 1, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
         
@@ -205,6 +210,26 @@ class MainMenuWidget(QtWidgets.QWidget):
                 self._update_needed_courses_label(filename) # MERINO: passed filename
         if filename == None:
             self.controller.output('Load cancelled.')
+        
+    def _verify_schedule_callback(self):
+    
+        file_loader_dialog = QtWidgets.QFileDialog()
+        file_loader_dialog.setFileMode(QtWidgets.QFileDialog.ExistingFile)
+        filename = None
+        
+        if file_loader_dialog.exec():
+            filename = file_loader_dialog.selectedFiles()[0]
+            error_report = self.controller.check_schedule(filename)
+            
+            if error_report:
+                self.listing_box.setText('\n'.join(error_report))
+            else:
+                message_box = QtWidgets.QMessageBox()
+                message_box.setText('Path Valid.')
+                message_box.exec()
+        if filename == None:
+            self.controller.output('Load cancelled.')
+        
         
     # MERINO: minor changes here are there (I don't remember)
     def _update_destination_label(self):

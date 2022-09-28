@@ -99,12 +99,14 @@ from subprocess import CalledProcessError   # This is used for handling errors r
 
 from driver_fs_functions import *
 from cli_interface import MainMenuInterface, GraphicalUserMenuInterface, ErrorMenu
-from scheduler_test import Scheduler
+from scheduler_class import Scheduler
 from course_info_container import *
 from courses_needed_parser import get_courses_needed
 from dag_validator import NonDAGCourseInfoError
 from excel_formatter import excel_formatter
 from plain_text_formatter import plain_text_export
+from user_submitted_validator import validate_user_submitted_path
+from path_to_grad_parser import parse_path_to_grad 
 
 # MERINO: Added min constant
 DEFAULT_CATALOG_NAME = 'input_files/Course Info.xlsx'           # The default name for the catalog/course info file
@@ -548,6 +550,34 @@ class SmartPlannerController:
     
     ## ----------- Execution ----------- ##
     
+    def check_schedule(self, filename):
+        '''Check the schedule at the passed filename for prerquisites cycles.'''
+        error_reports = None
+                
+        # Verify the passed filename exists
+        filepath = get_real_filepath(filename)   # Get the verified path (this is a Path object that exists, but it is not necessarily a directory)
+        if filepath:
+            try:
+                schedule = parse_path_to_grad(filepath)
+                
+                # This is list (empty is valid)
+                error_reports = validate_user_submitted_path(self._scheduler.get_course_info(), schedule)
+                if not error_reports:
+                    self.output('Path valid!')
+                else:
+                    self.output_warning('Invalid path! Infraction:')
+                    for infraction in error_reports:
+                        self.output(infraction)
+                
+            except (ConfigFileError, IOError, ValueError):
+                self.output_error('Sorry, {0} file does not have the correct format.'.format(filename))
+        else:
+            # Report if the directory could not be found
+            self.output_error('Sorry, {0} file could not be found.'.format(filename))
+            
+        return error_reports
+        
+    
     def generate_schedule(self, filename=None):
         '''Generate the schedule with a given filename or the current default filename if nothing is provided.'''
         
@@ -582,7 +612,7 @@ class SmartPlannerController:
                 
                 if PATH_TO_GRADUATION_EXPORT_TYPE in self._export_types:
                     unique_ptg_destination = get_next_free_filename(desired_destination.with_suffix('.xlsx'))
-                    excel_formatter(Path(template_path, 'Path To Graduation X.xlsx'), unique_ptg_destination, semesters_listing, self._scheduler.get_course_info())
+                    excel_formatter(Path(template_path, 'Path To Graduation Y.xlsx'), unique_ptg_destination, semesters_listing, self._scheduler.get_course_info())
                     self.output('Schedule (Path to Graduation) exported as {0}'.format(unique_ptg_destination))
                 
                 if PLAIN_TEXT_EXPORT_TYPE in self._export_types:
