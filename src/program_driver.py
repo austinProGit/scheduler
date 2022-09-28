@@ -30,6 +30,8 @@
 # - Add batch work functionality (schedule multiple students by running through multiple requirements)
 #           The would be a good place for multithreading
 # - Use number of courses OR number of credit hours
+# - Open finished schedule once generated
+# - Easy openning (PATH and/or desktop shortcut)
 
 # - Accept any/all courses
 # - Make path to graduation start on any semester
@@ -39,7 +41,9 @@
 # - Handler permission check when setting output directory
 # - Implement weakref into the GUI widgets and item selection callbacks to prevent strong reference cycles
 # - Add working popup warning/verifying GUI->CLI switch (adding this at the moment is bug-laden)
-#           this creats an issue where the GUI sometimes dones not dismiss when changing to CLI (after switching back and forth)
+#           this creates an issue where the GUI sometimes dones not dismiss when changing to CLI (after switching back and forth)
+# - Figure out role of admin vs. user as far as program configuration is concerned
+# - Fix relative path issue for getting files (make sure working directory does not influence)
 
 
 # To-do Legend:
@@ -67,13 +71,14 @@
 # TODO: (ENSURE) Add text export
 # TODO: (ENSURE) Does not work when loaded courses or catalog file is bad extension/format
 # TODO: (ENSURE) Make GUI update needed courses data when loading
+# TODO: (ENSURE) Open config from src not the working the directory
 # TODO: (ENSURE/WISH) Allow switching to CLI from GUI (adding confirmation popup breaks this)
 # TODO: (WISH) Add README and seperate file for general tasks (or maybe just have that external)
 # TODO: (WISH) No warning about filename collision because of extension (take all selected export types into consideration)
 # TODO: (WISH) Have the GUI display errors (like warnings)
 # TODO: (FIX) Add "silient=True" to tabula calls so there are no error print outs
-# TODO: (FIX) Open config from src not the working the directory
 # TODO: (FIX) Fix issue with no availability for Sample Input3 (add default value?)
+# TODO: (FIX) Fix searching empty string in help (should print how to exit and how to search)
 # TODO: (ASK) Decide if course_info_parser.py can be removed
 # TODO: (ASK) Ask how file extension are handled by module methods/functions
 # TODO: (NEED) Need to select/handle electives
@@ -84,7 +89,7 @@
 from PySide6 import QtWidgets, QtGui
 
 # MERINO: Uncomment this if you want to run memory profiling
-# from guppy import hpy; heap = hpy() # MERINO: added this for testing! (memory leak detecting; this requires loading in cli)
+#from guppy import hpy; heap = hpy() # MERINO: added this for testing! (memory leak detecting; this requires loading in cli)
 
 # MERINO: added imports
 from sys import exit
@@ -129,6 +134,11 @@ class ConfigFileError(Exception):
     pass
 
 
+def get_source_path():
+    '''Get the path of the program's directory.'''
+    return path.dirname(__file__)
+    
+
 # This class manages the interactions between the interface of the program and the model (mostly the scheduler).
 # The class also manages the destination directory and filename.
 # Menuing is performed by having an interface stack--alike chain of responsibility and/or state machine.
@@ -148,7 +158,6 @@ class SmartPlannerController:
         
         # The scheduler functions as the program's model. It may be serialized to save the save of the process.
         
-        # TODO: IMPLEMENT HERE ->
         # Initialize important variables
         self._scheduler = Scheduler()                           # Create a scheduler object for heading the model
         self._destination_directory = Path.home()               # Create the default directoty to export to (set initially to home directory)
@@ -193,7 +202,8 @@ class SmartPlannerController:
         
         try:
             # Get the config file
-            with open(CONFIG_FILENAME, 'r') as configuration_file:
+            config_filename = path.join(get_source_path(), CONFIG_FILENAME)
+            with open(config_filename, 'r') as configuration_file:
                 
                 # MERINO: fixed reading escape character
                 # Get the first three lines of the file (locations of the catalog and whether presenting graphics initially)
@@ -221,19 +231,21 @@ class SmartPlannerController:
         '''Configure the scheduler with the course info file with the passed filename. This may re-raise a
         NonDAGCourseInfoError if one was raised during loading the course info.'''
         
+        # Get the filepaths relative to the source path
+        source_code_path = get_source_path()
+        course_info_relative_path = get_source_relative_path(source_code_path, course_info_filename)
+        course_availability_relative_path = get_source_relative_path(source_code_path, course_availability_filename)
+        
         # Attempt to load the course info data and pass it to the scheduler
         try:
             # TODO: IMPLEMENT HERE ->
             # MERINO: implemented changes
-            # NOTE: I am not sure how course_availability_filename plays a role yet (y'all just need to socket it in however you like)
-            # course_info_container = get_course_info(course_info_filename)
-            # OR: course_info_container = get_course_info(course_info_filename, course_availability_filename)
-            course_info_container = CourseInfoContainer(load_course_info(course_info_filename))
+            course_info_container = CourseInfoContainer(load_course_info(course_info_relative_path))
             self._scheduler.configure_course_info(course_info_container)
             
         except (FileNotFoundError, IOError) as file_error:
             # Course info could not be found/read (report to the user and re-raise the error to enter error menu)
-            self.output_error('Invalid course catalog file. Please rename the catalog to {0}, make sure it is accessible, and reload the catalog (enter "reload").'.format(course_info_filename))
+            self.output_error('Invalid course catalog file. Please rename the catalog to {0}, make sure it is accessible, and reload the catalog (enter "reload").'.format(course_info_relative_path))
             raise file_error
             
         except (NonDAGCourseInfoError, ValueError) as config_error: # MERINO: added exception handling
@@ -287,7 +299,7 @@ class SmartPlannerController:
         current_interface = self.get_current_interface()
         # MERINO: Added this for testing! Uncomment to print new heap allocations at every input
         # MERINO: Uncomment this if you want to run memory profiling
-        # print(heap.heap().more)
+        #print(heap.heap())
         return input('{0}: '.format(current_interface.name))
     
     
@@ -493,7 +505,7 @@ class SmartPlannerController:
         
         
         # Save the config file to this file's directory
-        config_filename = path.join(path.dirname(__file__), CONFIG_FILENAME)
+        config_filename = path.join(get_source_path(), CONFIG_FILENAME)
         with open(config_filename, 'w') as config_file:
             
             # Write config contents
@@ -566,10 +578,11 @@ class SmartPlannerController:
             # MERINO: implemented changes
             if self._export_types:
                 semesters_listing = self._scheduler.generate_schedule()
+                template_path = Path(get_source_path(), 'input_files')
                 
                 if PATH_TO_GRADUATION_EXPORT_TYPE in self._export_types:
                     unique_ptg_destination = get_next_free_filename(desired_destination.with_suffix('.xlsx'))
-                    excel_formatter('input_files/Path To Graduation X.xlsx', unique_ptg_destination, semesters_listing, self._scheduler.get_course_info())
+                    excel_formatter(Path(template_path, 'Path To Graduation X.xlsx'), unique_ptg_destination, semesters_listing, self._scheduler.get_course_info())
                     self.output('Schedule (Path to Graduation) exported as {0}'.format(unique_ptg_destination))
                 
                 if PLAIN_TEXT_EXPORT_TYPE in self._export_types:

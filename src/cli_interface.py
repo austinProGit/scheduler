@@ -9,6 +9,7 @@
 from PySide6 import QtCore, QtWidgets, QtGui
 from sys import exit
 from difflib import SequenceMatcher
+import os # TODO: this is only used for one thing, and it not good (see below)
 
 from driver_fs_functions import *
 from graphical_interface import MainProgramWindow
@@ -180,7 +181,8 @@ class GraphicalUserMenuInterface(GeneralInterface):
         '''Method that is called upon the interface being pushed onto the interface stack.'''
         
         application = controller.get_graphical_application()    # Get the application object from the controller
-        application.setWindowIcon(QtGui.QIcon(ICON_FILENAME))   # Set the window icon
+        # TODO: This is not sustainable (using __file__)
+        application.setWindowIcon(QtGui.QIcon(str(os.path.join(os.path.dirname(__file__), ICON_FILENAME))))   # Set the window icon
         main_window = MainProgramWindow(controller)             # Create a new window for the application to present
         main_window.resize(800, 400)                            # Set the initial window size
         main_window.show()                                      # Present the window
@@ -236,7 +238,7 @@ def list_available_commands_command(controller, argument):
 
 def help_command(controller, argument):
     '''Push a help menu object onto the caller's stack and pass any arguments (if any) to the new menu as user input.'''
-    controller.output('Welcome to the help menu. Type keywords to search for a help article.')
+    controller.output('Welcome to the help menu. Type keywords to search for a help article. Type "all" to see all articles and "exit" to exit the help menu.')
     new_help_interface = HelpMenu()                             # Initialize the new interface
     controller.push_interface(new_help_interface)               # Push the new interface onto the controller's stack
     

@@ -3,8 +3,10 @@
 # CPSC 4175 Group Project
 
 # This file contains constants and functions for the the driver/controller and the interface components.
+# TODO: rename get_real_filepath (it looks like "relative filepath")
 
 from pathlib import Path
+import os
 
 # Constants for export types
 PATH_TO_GRADUATION_EXPORT_TYPE = 0x00
@@ -35,6 +37,14 @@ def get_real_filepath(filepath):
     corrected_filepath = Path(filepath).expanduser()                        # Change "~" to the user's home address if present
     return corrected_filepath if corrected_filepath.exists() else None      # Return the path if it exists (otherwise None)
 
+def get_source_relative_path(directory_path, additional_path):
+    '''Get the absolute path of the passed path as if the working directory is the passed directory. directory is
+    assumed to be absolute.'''
+    possible_path = Path(additional_path)
+    if possible_path.is_absolute():
+        return possible_path
+    else:
+        return Path(directory_path, additional_path)
 
 def get_next_free_filename(filepath):
     '''Function that checks if the passed filepath already has a file/directory. If it doesn't, simply return the passed path,
