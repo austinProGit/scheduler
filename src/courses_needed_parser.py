@@ -1,10 +1,6 @@
 # Author: Vincent Miller
 # Date: 31 August 2022
-"""
-TODO: fix one of the dataframes from tabula gets included as column title data, needs to be data
-TODO: find solution for electives, Ex: 6 Credits in CPSC 3@ or 4@ or 5@
-TODO: decide on regex pattern
-"""
+# Updated: 28 September 2022, Added exceptions for MATH 1113, 2125, 5125, and electives
 import pandas as pd
 import tabula
 import re
@@ -16,8 +12,6 @@ def get_courses_needed(file_name):
        adds course id's to list, and returns list"""
 
     # read and import tables from pdf, returns as list of dataframes
-    
-    # MERINO: removed "input_files/" from file_name, turned off guess search area, and turned silent (no error output) on
     courses_needed_df_list = tabula.read_pdf(file_name, guess=False, pages='all', silent=False)
     
     # merge list of dataframes into one dataframe
@@ -27,37 +21,77 @@ def get_courses_needed(file_name):
 
     # regex pattern is used to find course id, Ex: CPSC 1301, MATH 2125, etc.
     # course_pattern = r'[A-Z]{4}\s{1}\d{4}'  # pattern for all courses
-    course_pattern2 = r'CPSC\s{1}\d{4}'  # pattern for CPSC courses
-    course_pattern3 = r'CYBR\s{1}\d{4}'  # pattern for CYBR courses
+    cpsc_pattern = r'CPSC\s{1}\d{4}'
+    cybr_pattern = r'CYBR\s{1}\d{4}'
+    pre_cal_pattern = r'MATH 1113'
+    intro_discrete_pattern = r'MATH 2125'
+    discrete_pattern = r'MATH 5125'
+    elective_pattern1 = r'6 Credits in CPSC 3@'
+    elective_pattern2 = r'3 Credits in CPSC 3@'
 
-    # MERINO: Commented out the origianl code in place of ugly code that handles dumbass inputs
-    
+    # MERINO: Commented out the original code in place of ugly code that handles dumbass inputs
+
     # search dataframe for course id pattern, adds to list
-#    courses_needed_list = list()
-#    for element in courses_needed_df['Unnamed: 0']:
-#        cspc_match = re.search(course_pattern2, str(element))
-#        cybr_match = re.search(course_pattern3, str(element))
-#        if cspc_match:
-#            courses_needed_list.append(cspc_match.group())
-#        elif cybr_match:
-#            courses_needed_list.append(cybr_match.group())
-    
     courses_needed_list = list()
     for col_name, _ in courses_needed_df.iteritems():
-    
-        cspc_col_match = re.search(course_pattern2, str(col_name))
-        cybr_col_match = re.search(course_pattern3, str(col_name))
+        # check column names for pattern
+        cspc_col_match = re.search(cpsc_pattern, str(col_name))
+        cybr_col_match = re.search(cybr_pattern, str(col_name))
+        pre_cal_col_match = re.search(pre_cal_pattern, str(col_name))
+        intro_discrete_col_match = re.search(intro_discrete_pattern, str(col_name))
+        discrete_col_match = re.search(discrete_pattern, str(col_name))
+        elective_col_match1 = re.search(elective_pattern1, str(col_name))
+        elective_col_match2 = re.search(elective_pattern2, str(col_name))
+
+        # add to list if found
         if cspc_col_match:
             courses_needed_list.append(cspc_col_match.group())
         elif cybr_col_match:
             courses_needed_list.append(cybr_col_match.group())
+        elif pre_cal_col_match:
+            courses_needed_list.append(pre_cal_col_match.group())
+        elif intro_discrete_col_match:
+            courses_needed_list.append(intro_discrete_col_match.group())
+        elif discrete_col_match:
+            courses_needed_list.append(discrete_col_match.group())
+        elif elective_col_match1:
+            courses_needed_list.append('CPSC 3XXX')
+            courses_needed_list.append('CPSC 3XXX')
+        elif elective_col_match2:
+            courses_needed_list.append('CPSC 3XXX')
     
         for element in courses_needed_df[col_name]:
-            cspc_match = re.search(course_pattern2, str(element))
-            cybr_match = re.search(course_pattern3, str(element))
+            # check data in column for pattern
+            cspc_match = re.search(cpsc_pattern, str(element))
+            cybr_match = re.search(cybr_pattern, str(element))
+            pre_cal_match = re.search(pre_cal_pattern, str(element))
+            intro_discrete_match = re.search(intro_discrete_pattern, str(element))
+            discrete_match = re.search(discrete_pattern, str(element))
+            elective_match1 = re.search(elective_pattern1, str(element))
+            elective_match2 = re.search(elective_pattern2, str(element))
+
+            # add to list if found
             if cspc_match:
                 courses_needed_list.append(cspc_match.group())
             elif cybr_match:
                 courses_needed_list.append(cybr_match.group())
+            elif pre_cal_match:
+                courses_needed_list.append(pre_cal_match.group())
+            elif intro_discrete_match:
+                courses_needed_list.append(intro_discrete_match.group())
+            elif discrete_match:
+                courses_needed_list.append(discrete_match.group())
+            elif elective_match1:
+                courses_needed_list.append('CPSC 3XXX')
+                courses_needed_list.append('CPSC 3XXX')
+            elif elective_match2:
+                courses_needed_list.append('CPSC 3XXX')
 
+    # sample inputs have CPSC 4115 mislabeled as CPSC 5115
+    if 'CPSC 5115' in courses_needed_list:
+        courses_needed_list.remove('CPSC 5115')
+        if 'CPSC 4115' not in courses_needed_list:
+            courses_needed_list.append('CPSC 4115')
+
+    courses_needed_list.sort()
     return courses_needed_list
