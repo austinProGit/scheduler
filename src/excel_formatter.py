@@ -59,7 +59,7 @@ def clear_contents(sheet):
 #    minRo, maxCo, maxRo, minCo = 4, 6, 10, 5
     
     for i in range(5):# clear all but sub headers
-        for col in sheet.iter_cols(min_row = minR, max_col = maxC, max_row = maxR):# clear Fall, Spring, and Summer cells
+        for col in sheet.iter_cols(min_row = minR, max_col = maxC, max_row = maxR):# clear Fall, Spring, Summer cells
             for cell in col:
                 cell.value = None
         minR = minR + 9
