@@ -17,10 +17,15 @@ def validate_user_submitted_path(container, schedule):
         for course in semester:
             processed_list.append(course)
         for course in semester:
+            # Check if the course is being scheduled multiple times
+            if processed_list.count(course) > 1:
+                err_str = (f'{course} scheduled multiple times.')
+                if err_str not in err_list:
+                    err_list.append(err_str)
             course_prereqs = container.get_prereqs(course)
             for prereq in course_prereqs:
                 if prereq in processed_list:
-                    err_str = (f'{course} taken before {prereq}.')
+                    err_str = (f'{course} taken before/during {prereq}.')
                     err_list.append(err_str)
     return err_list
 

@@ -1,5 +1,5 @@
 # Thomas Merino
-# 9/25/22
+# 9/29/22
 # CPSC 4175 Group Project
 
 # NOTE: you must have PySide6 (QT) installed. To use the GUI, use the gui-i command.
@@ -563,9 +563,9 @@ class SmartPlannerController:
                 # This is list (empty is valid)
                 error_reports = validate_user_submitted_path(self._scheduler.get_course_info(), schedule)
                 if not error_reports:
-                    self.output('Path valid!')
+                    self.output('Path valid.')
                 else:
-                    self.output_warning('Invalid path! Infraction:')
+                    self.output_warning('Invalid path! Please correct the following errors.')
                     for infraction in error_reports:
                         self.output(infraction)
                 

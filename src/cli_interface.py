@@ -1,5 +1,5 @@
 # Thomas Merino
-# 9/23/22
+# 9/29/22
 # CPSC 4175 Group Project
 
 # TODO: (ENSURE) help file parser ends predictably at "<END>" (no extra blank lines)
@@ -17,8 +17,9 @@ from item_selection_interface import ItemSelectionInterface
 from menu_interface_base import GeneralInterface
 
 
-HELP_FILENAME = 'help'                          # The filename of the program's help documentation (this must be kept in a specific format)
-HELP_TERMINATOR = '<END>'                       # The string that ends help documentation parsing
+HELP_FILENAME = 'help.html'                     # The filename of the program's help documentation (this must be kept in a specific format)
+HELP_TERMINATOR = '</body>'                     # The string that ends help documentation parsing
+HELP_PRE_START = '<h1>'                         # The string that will start help documentation parsing
 ICON_FILENAME = 'icon.png'                      # The filename of the program's icon (when GUI)
 HELP_QUERY_ACCEPTANCE = 0.7                     # Level of tolerance (0.0 to 1.0) while searching help documentation
 
@@ -85,12 +86,17 @@ class HelpMenu(GeneralInterface):
         # The help file is expected to have the following format (breaks are indicated by \n escapes):
         # Header \n Keywords seperated by white spaces \n Article contents \n Line seperator (for easier editing) \n ... \n <END>
         
-        with open(HELP_FILENAME, 'r') as documentation:
+        # TODO: This is not sustainable (using __file__)
+        help_filename = os.path.join(os.path.dirname(__file__), HELP_FILENAME)
+        with open(help_filename, 'r') as documentation:
+            # Consume head and other starting content
+            while HELP_PRE_START not in documentation.readline(): pass
+            
             header = documentation.readline()
             while HELP_TERMINATOR not in header and header:
-                self.headers.append(header[:-1])
-                self.keywords.append(documentation.readline().split())
-                self.articles.append(documentation.readline())
+                self.headers.append(header[4:-6])
+                self.keywords.append(documentation.readline()[4:-6].split())
+                self.articles.append(documentation.readline()[3:-5] + '\n')
                 documentation.readline()    # Consume separation line
                 self.article_count += 1
                 header = documentation.readline()
@@ -419,7 +425,7 @@ def schedule_verify_command(controller, filename):
         controller.output_error('Please enter the file\'s path.')
 
 
-def explore_schedule_verify_command(controller, filename):
+def explore_schedule_verify_command(controller, argument):
     '''Verify the schedule for prequisite cycles (with file explorer).'''
     
     # Check if the user passed some argument(s) (report error and return if so)

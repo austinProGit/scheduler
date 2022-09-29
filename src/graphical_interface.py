@@ -1,9 +1,6 @@
 # Thomas Merino
-# 9/25/22
+# 9/29/22
 # CPSC 4175 Group Project
-
-
-# TO THOSE INTERESTED: place YES as the second line of the "config" file to try out the GUI. This has fewer features right now, but it should give you a taste of what QT can provide (or least the minimum). I would still need to add labels and instructions, of course.
 
 # TODO: TEST!
 # TODO: Add some meaningful comments/documentation
@@ -223,9 +220,10 @@ class MainMenuWidget(QtWidgets.QWidget):
             
             if error_report:
                 self.listing_box.setText('\n'.join(error_report))
-            else:
+            elif error_report is not None:
                 message_box = QtWidgets.QMessageBox()
-                message_box.setText('Path Valid.')
+                message_box.setIcon(QtWidgets.QMessageBox.Information)
+                message_box.setText('The loaded schedule appears to valid.')
                 message_box.exec()
         if filename == None:
             self.controller.output('Load cancelled.')

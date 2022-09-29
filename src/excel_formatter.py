@@ -55,8 +55,8 @@ def excel_formatter(input_file_name, output_file_name, sched, container):  # sec
 # ...............HELPER METHODS...............HELPER METHODS...............HELPER METHODS...............HELPER METHODS
     
 def clear_contents(sheet):
-    minR, maxC, maxR = 4, 4, 10
-    minRo, maxCo, maxRo, minCo = 4, 6, 5, 5
+    minR, maxC, maxR = 4, 6, 10
+    minRo, maxCo, maxRo, minCo = 4, 6, 10, 5
     
     for i in range(6):# clear all but sub headers
         for col in sheet.iter_cols(min_row = minR, max_col = maxC, max_row = maxR):# clear Fall and Spring cells

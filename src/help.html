@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<head>
+<title>Smart Planner Documentation</title>
+<style>
+	h1 {font-family: Gill Sans; margin: 50px 100px 50px 25px;}
+	h3 {color:orange; font-family: Gill Sans; margin: 10px 100px 10px 50px;}
+	p {font-family: Gill Sans; margin: 15px 100px 50px 100px;}
+</style>
+</head>
+<body>
+<h1>Smart Planner Documentation</h1>
+<h3>How to Load Needed Courses</h3>
+<!--load needed courses course classes class schedule input-->
+<p>In order for Smart Planner to generate a schedule, it needs the a list of courses required before graduation. Courses should be listed in a PDF document. To load the courses into the program you can either enter "load FILENAME" where FILENAME is the local or absolute path, or enter "browse" to open a file browser.</p>
+
+<h3>How to Generate a Schedule</h3>
+<!--generate run execute schedule create file export-->
+<p>To generate a schedule, first make sure all needed courses are loaded and all scheduling parameters are set correctly (see other help pages for more information). Then, enter "schedule FILENAME" where FILENAME is the name of the output file.</p>
+
+<h3>How to Set the Number of Hours Per Semester</h3>
+<!--hours set parameter per semester setup configure-->
+<p>To set the number of credit hours per semester, enter "hours NUMBER" where NUMBER is the desired number of hours per semester.</p>
+
+<h3>Adjusting Configuration Data</h3>
+<!--config configuration setup settings administrate files custom customize-->
+<p>The configuration file (called "config") has the following format: the first line is the filename of the catalog file. This is expected to be an xslx file in the working directory and follows the format in the instruction manual (see manual). The second line is whether the program launches in GUI mode (either "YES" or "NO").</p>
+</body>
