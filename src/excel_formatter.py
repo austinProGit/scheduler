@@ -55,20 +55,21 @@ def excel_formatter(input_file_name, output_file_name, sched, container):  # sec
 # ...............HELPER METHODS...............HELPER METHODS...............HELPER METHODS...............HELPER METHODS
     
 def clear_contents(sheet):
-    minR, maxC, maxR = 4, 6, 10
-    minRo, maxCo, maxRo, minCo = 4, 6, 10, 5
+    minR, maxC, maxR = 4, 6, 10 # minimum row is 1 by default
+#    minRo, maxCo, maxRo, minCo = 4, 6, 10, 5
     
-    for i in range(6):# clear all but sub headers
-        for col in sheet.iter_cols(min_row = minR, max_col = maxC, max_row = maxR):# clear Fall and Spring cells
+    for i in range(5):# clear all but sub headers
+        for col in sheet.iter_cols(min_row = minR, max_col = maxC, max_row = maxR):# clear Fall, Spring, and Summer cells
             for cell in col:
                 cell.value = None
         minR = minR + 9
         maxR = maxR + 9
-        for col in sheet.iter_cols(min_row = minRo, max_col = maxCo, max_row = maxRo, min_col = minCo):# clear Summer cells
-            for cell in col:
-                cell.value = None
-        minRo = minRo + 9
-        maxRo = maxRo + 9
+# Not needed since we changed to Path to Graduation Y.xlsx       
+#        for col in sheet.iter_cols(min_row = minRo, max_col = maxCo, max_row = maxRo, min_col = minCo):# clear Summer cells
+#            for cell in col:
+#                cell.value = None
+#        minRo = minRo + 9
+#        maxRo = maxRo + 9
 
 def current_season():
     start =[]
