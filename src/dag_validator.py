@@ -30,10 +30,12 @@ def validate_course_path(container):
             if prereq in courseids:                    # Check if the prereq is found in the list of courses
                 G.add_edge(prereq, course)             # Add a directed edge from the prereq to the course
             else:
-                is_valid_course_path = False           # If invalid course is found, course path is invalid
+                # TODO: this must be added back when the database is complete (more or less)
+                #is_valid_course_path = False           # If invalid course is found, course path is invalid
                 # MERINO: changed this from a print to an error raise
-                raise NonDAGCourseInfoError(f'Invalid course {prereq} has been found.')
-                break
+                #raise NonDAGCourseInfoError(f'Invalid course {prereq} has been found.')
+                #break
+                pass
     
     # Check to see if the created DAG has cycles; return result
     is_valid_course_path = is_valid_course_path and nx.is_directed_acyclic_graph(G)
