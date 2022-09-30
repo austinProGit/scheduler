@@ -7,6 +7,8 @@
 
 # NOTE: this uses the ":=" operator, so you must be using a more recent version of Python to run testing
 
+import sys
+import os
 import re
  
 # getting the name of the directory
