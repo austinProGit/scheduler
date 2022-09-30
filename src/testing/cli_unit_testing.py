@@ -40,9 +40,9 @@ def run_cli_unit_test():
     
     add_test('commands',                                r'(?i)(.*)(\bcommands available\b)(.*?)')
     add_test('load',                                    r'(?i)(.*)(\bplease enter\b)(.*?)')
-    add_test('load input_files/Sample Input1.pdf',      r'(.*)(\bloaded\b)(.*?)')
-    add_test('needed input_files/Sample Input2.pdf',    r'(.*)(\bloaded\b)(.*?)')
-    add_test('set input_files/Sample Input3.pdf',       r'(.*)(\bloaded\b)(.*?)')
+    add_test('load input',                              r'(.*)(\bloaded\b)(.*?)')
+    add_test('needed input file',                       r'(.*)(\bloaded\b)(.*?)')
+    add_test('set input file',                          r'(.*)(\bloaded\b)(.*?)')
     add_test('dest',                                    r'(?i)(.*)(\bplease enter\b)(.*?)')
     add_test('dest ~',                                  r'(?i)(.*)(\bset to\b)(.*?)')
     add_test('hours',                                   r'(?i)(.*)(\bsorry, that is not a valid input\b)(.*?)')
