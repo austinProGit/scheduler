@@ -4,6 +4,7 @@
 
 from dag_validator_tests import dag_validator_tests
 from container_tests import container_tests
+from user_submitted_validator_tests import user_submitted_validator_tests
 
 def all_tests():
     tests_passed = True
@@ -14,6 +15,9 @@ def all_tests():
     if not container_tests():
         tests_passed = False
         failed_tests.append('container')
+    if not user_submitted_validator_tests():
+        tests_passed = False
+        failed_tests.append('user_submitted_validator')
     # ADD ALL TESTS HERE ^^^
     if not tests_passed:
         print(f'The following tests have FAILED: {failed_tests}')
