@@ -1,5 +1,5 @@
 # Thomas Merino
-# 9/29/22
+# 9/30/22
 # CPSC 4175 Group Project
 
 # NOTE: you must have PySide6 (QT) installed. To use the GUI, use the gui-i command.
@@ -102,7 +102,7 @@ from cli_interface import MainMenuInterface, GraphicalUserMenuInterface, ErrorMe
 from scheduler_class import Scheduler
 from course_info_container import *
 from courses_needed_parser import get_courses_needed
-from dag_validator import NonDAGCourseInfoError
+from dag_validator import validate_course_path, NonDAGCourseInfoError
 from excel_formatter import excel_formatter
 from plain_text_formatter import plain_text_export
 from user_submitted_validator import validate_user_submitted_path
@@ -243,6 +243,7 @@ class SmartPlannerController:
             # TODO: IMPLEMENT HERE ->
             # MERINO: implemented changes
             course_info_container = CourseInfoContainer(load_course_info(course_info_relative_path))
+            validate_course_path(course_info_container)
             self._scheduler.configure_course_info(course_info_container)
             
         except (FileNotFoundError, IOError) as file_error:
