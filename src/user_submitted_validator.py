@@ -20,7 +20,7 @@ def validate_user_submitted_path(container, schedule):
             # Check if the course is being scheduled multiple times
             if processed_list.count(course) > 1:
                 err_str = (f'{course} scheduled multiple times.')
-                if err_str not in err_list:
+                if err_str not in err_list and 'XXX' not in course:
                     err_list.append(err_str)
             course_prereqs = container.get_prereqs(course)
             for prereq in course_prereqs:
