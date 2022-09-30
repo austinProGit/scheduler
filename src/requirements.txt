@@ -1,6 +1,5 @@
 auto_mix_prep==0.2.0
 beautifulsoup4==4.11.1
-DAG==0
 networkx==2.8.6
 openpyxl==3.0.10
 pandas==1.4.3
