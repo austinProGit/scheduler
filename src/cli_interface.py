@@ -107,7 +107,7 @@ class HelpMenu(GeneralInterface):
         '''Handle input on behalf of the program.'''
         
         # TODO: make exit and all command better (make sense).
-        if 'exit' in input or 'quit' in input:
+        if 'exit' in input or 'quit' in input or input == '':
             # Exit the help menu
             controller.pop_interface(self)
         
