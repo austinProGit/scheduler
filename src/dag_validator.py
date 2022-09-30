@@ -36,6 +36,7 @@ def validate_course_path(container):
                 #raise NonDAGCourseInfoError(f'Invalid course {prereq} has been found.')
                 #break
                 pass
+                
     
     # Check to see if the created DAG has cycles; return result
     is_valid_course_path = is_valid_course_path and nx.is_directed_acyclic_graph(G)
