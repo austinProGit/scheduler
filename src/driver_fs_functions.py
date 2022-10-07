@@ -1,5 +1,5 @@
 # Thomas Merino
-# 9/23/22
+# 10/1/22
 # CPSC 4175 Group Project
 
 # This file contains constants and functions for the the driver/controller and the interface components.
@@ -34,8 +34,12 @@ def get_real_filepath(filepath):
     '''Function to verify the existence of a file/directory and change any "~" prefix into the user's home directory. This
     returns the corrected path if it exists and None if it does not. The argument is expected to be a string or Path and
     the function returns a Path.'''
-    corrected_filepath = Path(filepath).expanduser()                        # Change "~" to the user's home address if present
-    return corrected_filepath if corrected_filepath.exists() else None      # Return the path if it exists (otherwise None)
+    try:
+        corrected_filepath = Path(filepath).expanduser()                        # Change "~" to the user's home address if present
+        return corrected_filepath if corrected_filepath.exists() else None      # Return the path if it exists (otherwise None)
+    except RuntimeError:
+        # Runtime error occurred, which is likely a bad user directory expansion (return None)
+        return None
 
 def get_source_relative_path(directory_path, additional_path):
     '''Get the absolute path of the passed path as if the working directory is the passed directory. directory is
