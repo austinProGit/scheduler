@@ -44,14 +44,14 @@
 #           this creates an issue where the GUI sometimes dones not dismiss when changing to CLI (after switching back and forth)
 # - Figure out role of admin vs. user as far as program configuration is concerned
 # - Fix relative path issue for getting files (make sure working directory does not influence)
+# - Add validity check that checks course availability (Fall, Spring, Summer, etc.)
 
 
 # To-do Legend:
 #   Ensure: something that should work or should be fixed but has not been tested enough
-#   Organize: stuff that should be cleaned up but is not necessary
-#   Fix: suprise feature
-#   Wish: something that should be implemented but is not necessary
-#   Ask: something that needs to be decided upon
+#   Organize: stuff that should be cleaned up (is not necessary to do)
+#   Fix: something that should be fixed (or labelled "suprise feature")
+#   Wish: something that should be implemented (is not necessary to do)
 #   Need: something that needs to be done
 
 # TODO: (ORGANIZE) It might be good to clean up by replacing os.path functions with pathlib.Path methods.
@@ -73,18 +73,11 @@
 # TODO: (ENSURE) Make GUI update needed courses data when loading
 # TODO: (ENSURE) Open config from src not the working the directory
 # TODO: (ENSURE/WISH) Allow switching to CLI from GUI (adding confirmation popup breaks this)
-# TODO: (WISH) Add README and seperate file for general tasks (or maybe just have that external)
 # TODO: (WISH) No warning about filename collision because of extension (take all selected export types into consideration)
 # TODO: (WISH) Have the GUI display errors (like warnings)
 # TODO: (FIX) Add "silient=True" to tabula calls so there are no error print outs
-# TODO: (FIX) Fix issue with no availability for Sample Input3 (add default value?)
-# TODO: (FIX) Fix searching empty string in help (should print how to exit and how to search)
-# TODO: (ASK) Decide if course_info_parser.py can be removed
-# TODO: (ASK) Ask how file extension are handled by module methods/functions
-# TODO: (NEED) Need to select/handle electives
-# TODO: (NEED) Iron out summer scheduling issue (lower hours per summer)
-# TODO: (NEED) Add hours per course to Course Info.xlsx
-# TODO: (NEED) Finish unit testing.
+
+
 
 from PySide6 import QtWidgets, QtGui
 
