@@ -18,11 +18,11 @@ parent = os.path.dirname(current)
 # the sys.path.
 sys.path.append(parent)
 
-from dag_validator import NonDAGCourseInfoError, validate_course_path
+from program_generated_validator import NonDAGCourseInfoError, InvalidCourseError, validate_course_path
 
 # ================================ Unit Tests =======================================================
 
-def dag_validator_tests() :
+def program_generated_validator_tests() :
 
     # Boolean to track if all tests pass
     tests_passed = True
@@ -238,7 +238,7 @@ def dag_validator_tests() :
         'CPSC 4000': ['MATH 2158']
     }
 
-    print('=============================== Start Dag Validator Tests ===============================\n')
+    print('=============================== Start Program Generated Validator Tests ===============================\n')
 
     test_case_list = []
     
@@ -250,8 +250,8 @@ def dag_validator_tests() :
     add_test("long_cycle", long_cycle, False)
     add_test("multiple_cycles", multiple_cycles, False)
     # TODO: these need to be added back in when this feature is re-implemented
-#    add_test("single_invalid_course_prereq", single_invalid_course_prereq, False)
-#    add_test("multiple_invalid_courses_prereqs", multiple_invalid_courses_prereqs, False)
+    add_test("single_invalid_course_prereq", single_invalid_course_prereq, False)
+    add_test("multiple_invalid_courses_prereqs", multiple_invalid_courses_prereqs, False)
     
     for test in test_case_list:
         test_passed = False
@@ -266,6 +266,6 @@ def dag_validator_tests() :
             tests_passed = False
             print(f'The {test["test_name"]} test FAILED.')
 
-    print('\n=============================== End Dag Validator Tests ===============================\n')
+    print('\n=============================== End Program Generated Validator Tests ===============================\n')
 
     return tests_passed

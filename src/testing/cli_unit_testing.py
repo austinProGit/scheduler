@@ -106,7 +106,8 @@ def run_cli_unit_test():
 
     planner = SmartPlannerController(graphics_enabled=False)
     all_tests_have_passed = True
-    
+
+
     #  Execute an entire session until it quits, applying tests as it goes
     while planner.run_top_interface():
         test_arguments_dictionary = get_test_arguments_dictionary()
@@ -131,4 +132,3 @@ def run_cli_unit_test():
     
     return all_tests_have_passed
 
-run_cli_unit_test()

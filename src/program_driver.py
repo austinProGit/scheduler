@@ -95,7 +95,7 @@ from cli_interface import MainMenuInterface, GraphicalUserMenuInterface, ErrorMe
 from scheduler_class import Scheduler
 from course_info_container import *
 from courses_needed_parser import get_courses_needed
-from dag_validator import validate_course_path, NonDAGCourseInfoError
+from program_generated_validator import validate_course_path, NonDAGCourseInfoError, InvalidCourseError
 from excel_formatter import excel_formatter
 from plain_text_formatter import plain_text_export
 from user_submitted_validator import validate_user_submitted_path
@@ -181,8 +181,7 @@ class SmartPlannerController:
             
             # Load the user interface -- this should only block execution if graphics are presented
             self.load_interface(is_graphical)
-            
-        except (ConfigFileError, FileNotFoundError, IOError, NonDAGCourseInfoError, ValueError):
+        except (ConfigFileError, FileNotFoundError, IOError, NonDAGCourseInfoError, InvalidCourseError, ValueError):
             # Some error was encountered during loading (enter the error menu)
             self.output_error('A problem was encountered during loading--entering error menu...')
             self.enter_error_menu()
@@ -236,7 +235,7 @@ class SmartPlannerController:
             # TODO: IMPLEMENT HERE ->
             # MERINO: implemented changes
             course_info_container = CourseInfoContainer(load_course_info(course_info_relative_path))
-            validate_course_path(course_info_container)
+            validate_course_path(course_info_container) # Raises an exception if Course Info Container contains invalid data
             self._scheduler.configure_course_info(course_info_container)
             
         except (FileNotFoundError, IOError) as file_error:
@@ -244,7 +243,7 @@ class SmartPlannerController:
             self.output_error('Invalid course catalog file. Please rename the catalog to {0}, make sure it is accessible, and reload the catalog (enter "reload").'.format(course_info_relative_path))
             raise file_error
             
-        except (NonDAGCourseInfoError, ValueError) as config_error: # MERINO: added exception handling
+        except (NonDAGCourseInfoError, InvalidCourseError, ValueError) as config_error: # MERINO: added exception handling
             # The catalog was/is invalid (report to the user and re-raise the error to enter error menu)
             # NonDAGCourseInfoError is raised when a prequisite cycle is detected
             # ValueError is raised when the table has an invalid format or is the wrong type of file (check extension)

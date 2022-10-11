@@ -3,7 +3,7 @@
 
 import pandas as pd
 import re
-from dag_validator import validate_course_path
+from program_generated_validator import validate_course_path
 
 class CourseInfoContainer:
     
