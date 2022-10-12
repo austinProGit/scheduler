@@ -34,3 +34,5 @@ def validate_user_submitted_path(container, schedule):
     # for the semester you are 
     # on are in the big list. If the are, append to string.
     # If no problems return none
+
+    # New comment to test branch
