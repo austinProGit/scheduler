@@ -10,6 +10,7 @@ from pathlib import Path
 import os
 
 # TODO: File names as ID_Hours.pdf
+# TODO: Wrong git account
 
 
 def batch_process(input_path, output_path, template_path, course_info):
