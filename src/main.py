@@ -1,37 +1,28 @@
-# Author: Vincent Miller
+# Author: Vincent Miller, Thomas Merino
 # Date: 31 August 2022
-
-# MERINO: changed this to just run a smart planner controller
+# Description: Main file for our program, runs smart planner controller
 
 from program_driver import SmartPlannerController
 
-if __name__ == "__main__":
+# TODO: Move this to demo code file until Thomas understands how it works and implements
+# imports required to run batch_process
+from batch_process import batch_process
+from course_info_container import CourseInfoContainer
+from course_info_parser import get_course_info
 
+if __name__ == "__main__":
+    # get course_info container
+    course_info = CourseInfoContainer(get_course_info("input_files/Course Info.xlsx"))
+    # get required directory paths
+    input_path = "batch_process_input/"
+    output_path = "batch_process_schedules/"
+    template_path = "input_files/Path To Graduation Y.xlsx"
+
+    batch_process(input_path, output_path, template_path, course_info)
+
+""" COMMENTED OUT BELOW IS ORIGINAL CODE
     planner = SmartPlannerController()
 
     if planner.has_interface():
-        while planner.run_top_interface(): pass
-
-
-## currently a test bench
-## noobs
-#from courses_needed_parser import get_courses_needed
-#from scheduler import schedule
-#
-#file_name1 = 'Sample Input1.pdf'
-#file_name2 = 'Sample Input2.pdf'
-#file_name3 = 'Sample Input3.pdf'
-#
-#courses_needed1 = get_courses_needed(file_name1)
-#courses_needed2 = get_courses_needed(file_name2)
-## courses_needed3 = get_courses_needed(file_name3)  # TODO: returns empty dataframe, fix
-## print(courses_needed3)
-#
-## print full schedule, maximum 5 courses per semester
-#print("Schedule 1")
-#print(schedule(file_name1, "input_files/Course Info.xlsx", 5))
-#
-## print full schedule, maximum 3 courses per semester
-#print("Schedule 2")
-#print(schedule(file_name2, "input_files/Course Info.xlsx", 3))
-
+       while planner.run_top_interface(): pass
+"""
