@@ -38,7 +38,8 @@ def program_generated_validator_tests() :
     # Accesses the dataframe's course IDs and returns them as a list of strings.
         def get_courseIDs(self):
             courseids = []
-            courseids = list(self.course_path.keys())
+            courseids = ['MATH 1113','MATH 2125','MATH 5125','CPSC 2108','CPSC 1301','CPSC 1302','CPSC 2105','CYBR 2159','CYBR 2106','CPSC 3175','CPSC 3125','CPSC 3131','CPSC 5135','CPSC 3165','CPSC 3121','CPSC 5155','CPSC 5157','CPSC 4175','CPSC 5115','CPSC 5128','CPSC 4176','CPSC 4000']
+            # courseids = list(current_path.keys())
             return courseids
 
     # Accesses the dataframe's prerequisites for a given course and returns the prereqs as a list of strings.
@@ -50,6 +51,11 @@ def program_generated_validator_tests() :
             except:
                 prereqs = 'courseID not found'
             return prereqs
+
+    # Gets all excused prereqs that are not listed as course id's
+        def get_excused_prereqs(self):
+            prereq_list = ['MISM 3145', 'MISM 3115', 'MISM 3109', 'MATH 1111']
+            return prereq_list
     
     # Our current required path, which is known to be valid.
     current_path = {
@@ -238,6 +244,58 @@ def program_generated_validator_tests() :
         'CPSC 4000': ['MATH 2158']
     }
 
+    # excused prereq: MISM 3145 required for MATH 1113
+    single_excused_prereq = {
+        'MATH 1113': ['MISM 3145'],
+        'MATH 2125': ['MATH 1113'],
+        'MATH 5125': ['MATH 2125'],
+        'CPSC 2108': ['CPSC 1302'],
+        'CPSC 1301': [],
+        'CPSC 1302': ['CPSC 1301'],
+        'CPSC 2105': ['CPSC 1301'],
+        'CYBR 2159': ['CPSC 1301'],
+        'CYBR 2106': ['CPSC 1301'],
+        'CPSC 3175': ['CPSC 2108'],
+        'CPSC 3125': ['CPSC 2108', 'CPSC 2105'],
+        'CPSC 3131': ['CPSC 1302'],
+        'CPSC 5135': ['CPSC 3175'],
+        'CPSC 3165': [],
+        'CPSC 3121': ['CPSC 2105'],
+        'CPSC 5155': ['CPSC 3121'],
+        'CPSC 5157': ['CYBR 2159', 'CPSC 2108'],
+        'CPSC 4175': ['CPSC 3175'],
+        'CPSC 5115': ['MATH 5125', 'CPSC 2108'],
+        'CPSC 5128': ['CPSC 5115'],
+        'CPSC 4176': ['CPSC 4175'],
+        'CPSC 4000': []
+    }
+
+    # excused prereqs: MISM 3145 required for MATH 1113 and MATH 1111 required for CPSC 4176
+    multiple_excused_prereqs = {
+        'MATH 1113': ['MISM 3145'],
+        'MATH 2125': ['MATH 1113'],
+        'MATH 5125': ['MATH 2125'],
+        'CPSC 2108': ['CPSC 1302'],
+        'CPSC 1301': [],
+        'CPSC 1302': ['CPSC 1301'],
+        'CPSC 2105': ['CPSC 1301'],
+        'CYBR 2159': ['CPSC 1301'],
+        'CYBR 2106': ['CPSC 1301'],
+        'CPSC 3175': ['CPSC 2108'],
+        'CPSC 3125': ['CPSC 2108', 'CPSC 2105'],
+        'CPSC 3131': ['CPSC 1302'],
+        'CPSC 5135': ['CPSC 3175'],
+        'CPSC 3165': [],
+        'CPSC 3121': ['CPSC 2105'],
+        'CPSC 5155': ['CPSC 3121'],
+        'CPSC 5157': ['CYBR 2159', 'CPSC 2108'],
+        'CPSC 4175': ['CPSC 3175'],
+        'CPSC 5115': ['MATH 5125', 'CPSC 2108'],
+        'CPSC 5128': ['CPSC 5115'],
+        'CPSC 4176': ['CPSC 4175', 'MATH 1111'],
+        'CPSC 4000': []
+    }
+
     print('=============================== Start Program Generated Validator Tests ===============================\n')
 
     test_case_list = []
@@ -245,21 +303,28 @@ def program_generated_validator_tests() :
     def add_test(test_name, test_data, should_validate):
         test_case_list.append({"test_name": test_name, "test_data": test_data, "should_validate": should_validate})
 
-    add_test("current_path", current_path, True)
-    add_test("short_cycle", short_cycle, False)
-    add_test("long_cycle", long_cycle, False)
-    add_test("multiple_cycles", multiple_cycles, False)
-    # TODO: these need to be added back in when this feature is re-implemented
+    # add_test("current_path", current_path, True)
+    # add_test("short_cycle", short_cycle, False)
+    # add_test("long_cycle", long_cycle, False)
+    # add_test("multiple_cycles", multiple_cycles, False)
+    # TODO: make a function that auto-formats the cycle lists found. Belongs in program_generated_validator.
+    # TODO: add to tests: check that the expected cycles are present and that they have been formatted with the auto-formatter.
     add_test("single_invalid_course_prereq", single_invalid_course_prereq, False)
     add_test("multiple_invalid_courses_prereqs", multiple_invalid_courses_prereqs, False)
+    add_test("single_excused_prereq", single_excused_prereq, True)
+    add_test("multiple_excused_prereqs", multiple_excused_prereqs, True)
     
     for test in test_case_list:
         test_passed = False
         try:
             validate_course_path(dummy_course_info_dataframe_container(test["test_data"]))
             test_passed = test["should_validate"]
-        except:
+        except (NonDAGCourseInfoError) as config_error:
             test_passed = not test["should_validate"]
+            print(config_error)
+        except (InvalidCourseError) as config_error:
+            test_passed = not test["should_validate"]
+            print(config_error)
         if test_passed:
             print(f'The {test["test_name"]} test PASSED.')
         else:

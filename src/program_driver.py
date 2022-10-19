@@ -243,11 +243,17 @@ class SmartPlannerController:
             self.output_error('Invalid course catalog file. Please rename the catalog to {0}, make sure it is accessible, and reload the catalog (enter "reload").'.format(course_info_relative_path))
             raise file_error
             
-        except (NonDAGCourseInfoError, InvalidCourseError, ValueError) as config_error: # MERINO: added exception handling
+        except ValueError:
+            # ValueError is raised when the table has an invalid format or is the wrong type of file (check extension)
+            self.output_error('Course catalog is not in the correct format. Please correct all issues and reload the catalog (enter "reload").')
+            raise config_error
+        except (NonDAGCourseInfoError, InvalidCourseError) as config_error:
             # The catalog was/is invalid (report to the user and re-raise the error to enter error menu)
             # NonDAGCourseInfoError is raised when a prequisite cycle is detected
-            # ValueError is raised when the table has an invalid format or is the wrong type of file (check extension)
+            # InvalidCourseError is raised when an unrecognized prequisite cycle is encountered
+            
             self.output_error('Course catalog contains invalid data. Please correct all issues and reload the catalog (enter "reload").')
+            self.output_error(str(config_error))
             raise config_error
     
     
