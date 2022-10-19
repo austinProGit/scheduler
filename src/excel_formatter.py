@@ -4,19 +4,31 @@
 import openpyxl
 import shutil
 # MERINO: commented this out
-#from course_info_container import container
+# from course_info_container import *
 from datetime import date
 
-def excel_formatter(input_file_name, output_file_name, sched, container):  # second param needs to be destination path for copy
-    edit_excel = openpyxl.load_workbook(input_file_name)
-    sheet = edit_excel.active
-    previous_seas = False # Use this boolean as an easy way to skip 1st iteration of outside loop
-    current_seas = current_season() # Determined by actual date; depicts the next semester to schedule
-    clear_contents(sheet)
+def excel_formatter(input_path, output_file_name, sched, container):  # first param is source file path
+    num = 0
+    input_file_name = input_path + '/Path To Graduation Y.xlsx'
+    for lst in sched:
+        if len(lst) > 6:
+            input_file_name = input_path + '/Path To Graduation Z.xlsx'
+            num = 4
+            break
 
+    shutil.copy2(input_file_name, output_file_name) # Copy file
+    edit_excel = openpyxl.load_workbook(output_file_name)
+    sheet = edit_excel.active
+    format(sheet, sched, container, num)
+    edit_excel.save(output_file_name) # Save the file so we can copy to specified directory
+ 
+# ...............HELPER METHODS...............HELPER METHODS...............HELPER METHODS...............HELPER METHODS
+    
+def format(sheet, sched, container, num):
+    current_seas = current_season() # Determined by actual date; depicts the next semester to schedule
     for i in range(len(sched)):
-        if(previous_seas): # Skip 1st iteration before we change semester to next
-            current_seas = next_season(current_seas)
+        if(i > 0): # Skip 1st iteration before we change semester to next
+            current_seas = next_season(current_seas, num)
         for x in range(len(sched[i])):
             if container.validate_course(sched[i][x]): # Use container to get values
                 course = sched[i][x]
@@ -32,7 +44,6 @@ def excel_formatter(input_file_name, output_file_name, sched, container):  # sec
                 r = current_seas[1] + x
                 sheet.cell(row=ro, column=co, value=data)
                 sheet.cell(row=r, column=c, value=hours)
-                previous_seas = True
             else: # course not in container or class info
                 course1 = sched[i][x]
                 co1 = current_seas[0]
@@ -42,34 +53,6 @@ def excel_formatter(input_file_name, output_file_name, sched, container):  # sec
                 data1 = course1 + ' - Name Unavailable (?? ?? ??)'
                 sheet.cell(row=ro1, column=co1, value=data1)
                 sheet.cell(row=r1, column=c1, value=3)
-                previous_seas = True
-
-    edit_excel.save(input_file_name) # Save the file so we can copy to specified directory
-    
-    shutil.copy2(input_file_name, output_file_name) # Copy file
-
-    clear_contents(sheet) # Clearing the input file; ready for next student schedule
-
-    edit_excel.save(input_file_name) # Save the cleared file
-
-# ...............HELPER METHODS...............HELPER METHODS...............HELPER METHODS...............HELPER METHODS
-    
-def clear_contents(sheet):
-    minR, maxC, maxR = 4, 6, 10 # minimum row is 1 by default
-#    minRo, maxCo, maxRo, minCo = 4, 6, 10, 5
-    
-    for i in range(5):# clear all but sub headers
-        for col in sheet.iter_cols(min_row = minR, max_col = maxC, max_row = maxR):# clear Fall, Spring, Summer cells
-            for cell in col:
-                cell.value = None
-        minR = minR + 9
-        maxR = maxR + 9
-# Not needed since we changed to Path to Graduation Y.xlsx       
-#        for col in sheet.iter_cols(min_row = minRo, max_col = maxCo, max_row = maxRo, min_col = minCo):# clear Summer cells
-#            for cell in col:
-#                cell.value = None
-#        minRo = minRo + 9
-#        maxRo = maxRo + 9
 
 def current_season():
     start =[]
@@ -79,10 +62,10 @@ def current_season():
     if month >= 8 and month <= 12: start = [3, 4] # [column, row] Spring table
     return start
 
-def next_season(current_season):
+def next_season(current_season, num):
     next_season = []
     if current_season[0] == 5:
-        next_row = current_season[1] + 9
+        next_row = current_season[1] + 8 + num
         next_season = [1, next_row]
     if current_season[0] == 1:
         next_season = [3, current_season[1]]
@@ -93,12 +76,10 @@ def next_season(current_season):
 # ...............END OF HELPER METHODS...............END OF HELPER METHODS...............END OF HELPER METHODS
 
 # ***************END OF EXCEL_FORMATTER MODULE***************END OF EXCEL_FORMATTER MODULE********************
-
-# list below is not in scheduler order; it is just random list; including generic classes and classes not listed
-# in container; the limits are 6 max course per Fall or Spring, 2 max for Summer
-
-# MERINO: commented this out
-#rando_list = [['CPSC 3121', 'CPSC 3165', 'CPSC 4000', 'CPSC 4135', 'POLS 1101'],
+#Internal testing below
+#container = CourseInfoContainer(load_course_info('scheduler/src/input_files/Course Info.xlsx'))
+#rando_list = [['CPSC 3121', 'CPSC 3165', 'CPSC 4000', 'CPSC 4135', 'POLS 1101', 'MATH 1113'],
 #              ['STAT 3127', 'CPSC 2108'], ['CPSC 3125', 'MATH 1113']]
-#
-#excel_formatter('src\input_files\Path To Graduation X.xlsx', 'src\output_files', rando_list, container)
+
+#excel_formatter('scheduler/src/input_files', 'C:/Users/mel91/Desktop/output_files/Path.xlsx', rando_list, container)
+#"C:\Users\mel91\Desktop\output_files"

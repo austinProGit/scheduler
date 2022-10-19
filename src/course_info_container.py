@@ -7,8 +7,12 @@ from program_generated_validator import validate_course_path
 
 class CourseInfoContainer:
     
-    def __init__(self, df):
+    def __init__(self, df, excused_prereqs):
         self._df = df
+        self._excused_prereqs = excused_prereqs
+
+    def get_excused_prereqs(self):
+        return self._excused_prereqs
 
     def display(self):
         print(self._df)
@@ -130,8 +134,15 @@ def load_course_info(file_name):
     df = pd.read_excel(file_name, sheet_name='Sheet1') # !!! insert this sheet name or ClassInfo if using ClassInfo.xlsx!!!
     return df
 
+def load_course_info_excused_prereqs(file_name):
+    # MERINO: changed name to "Sheet1"
+    df = pd.read_excel(file_name, sheet_name='ExcusedPrereqs') # !!! insert this sheet name or ClassInfo if using ClassInfo.xlsx!!!
+    return df.courseID.value.tolist()
+
 # ******ending of course_info_parser**********ending of course_info_parser***************************************
 # Line below will be deleted when we merge all files
 # MERINO: commented this out
-#container = CourseInfoContainer(load_course_info('src/input_files/course_info.xlsx'))
+# df = load_course_info(src/input_files/Course Info.xlsx)
+# lst = load_course_info_excused_prereqs(src/input_files/Course Info.xlsx)
+#container = CourseInfoContainer(load_course_info(df, lst))
 #print(validate_course_path(container))
