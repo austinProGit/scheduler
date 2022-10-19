@@ -1,8 +1,7 @@
 # Thomas Merino
-# 9/30/22
+# 10/17/22
 # CPSC 4175 Group Project
 
-# NOTE: you must have PySide6 (QT) installed. To use the GUI, use the gui-i command.
 
 # NOTE: the config file needs to be in the same directory as this file.
 #   The config file stores in the first line the name of the course info filename. This is what's passed into the parser as input.
@@ -32,6 +31,11 @@
 # - Use number of courses OR number of credit hours
 # - Open finished schedule once generated
 # - Easy openning (PATH and/or desktop shortcut)
+# - Be able to manage config file with text editor (from software)
+# - Make config file more flexible (like JSON)
+# - Make the content panel better
+#           Have the content panel display the output schedule (so there aren't hundreds of windows opening during batch)
+# - Add a log file (tracks commands entered and outputs generated)
 
 # - Accept any/all courses
 # - Make path to graduation start on any semester
@@ -45,6 +49,8 @@
 # - Figure out role of admin vs. user as far as program configuration is concerned
 # - Fix relative path issue for getting files (make sure working directory does not influence)
 # - Add validity check that checks course availability (Fall, Spring, Summer, etc.)
+# - Finish help documentation
+# - ??? Should we have some database host (source of truth) that other copies of the program source from?
 
 
 # To-do Legend:
@@ -586,7 +592,7 @@ class SmartPlannerController:
             self.output_warning('No schedule exported.')
             self.output_error('No needed courses loaded.')
             return
-           
+        
         # Check if no export types are selected (empty)
         if not self._export_types:
             self.output_warning('No schedule exported.')
@@ -598,13 +604,10 @@ class SmartPlannerController:
         # Set _destination_filename to the passed filename if one was passed
         if filename:
             self._destination_filename = filename
-            
-        # MERINO: moved unique destination
+        
         desired_destination = self.get_destination()
         
         try:
-            # TODO: IMPLEMENT HERE ->
-            # MERINO: implemented changes
             if self._export_types:
                 semesters_listing = self._scheduler.generate_schedule()
                 template_path = Path(get_source_path(), 'input_files')
@@ -626,18 +629,43 @@ class SmartPlannerController:
             self.output_error('File system error ecountered while attempting an export (please try re-entering parameters). Some files may have exported.')
         
     
-    def batch_schedule(self, inputs_directory, filename_prefix):
+    def batch_schedule(self, pathname):
         
-        # This may or may not be implemented (because of the testing requirements, I would say we should wait)
-        """
-        pseudo code:
-        NOTE: we may be able to create multiple schedulers and run them on different threads
+        # NOTE: we may be able to create multiple schedulers and run them on different threads
         
-        get list of files in inputs_directory
-        loop in files list:
-            load file as courses needed
-            schedule as filename_prefix + filename (this is saved to working directory)
-        """
+        # Verify the passed filename exists
+        filepath = get_real_filepath(pathname)   # Get the verified path (this is a Path object that exists, but it is not necessarily a directory)
+        
+        if filepath:
+            try:
+                if filepath.is_dir():
+                    # The path is a directory (iterate over the file inside)
+                    course_info_paths = []
+                    for course_info in filepath.iterdir():
+                        course_info_paths.append(course_info)
+                    
+                    # *Verification here*
+                    
+                    unique_destination_directory = get_next_free_filename(self.get_destination())
+                    unique_destination_directory.mkdir()
+                    
+                    for course_info_path in course_info_paths:
+                        
+                        # TODO: make the smarter--this only excepts files of the form 909######_HR.pdf
+                        student_id = str(course_info_path)[-16:-7]
+                        hours_per_semester = int(str(course_info_path)[-6:-4])
+                        destination_filename = Path(unique_destination_directory, student_id)
+                        
+                        # *Generate schedule here*
+                        self.output(f'GENERATING {student_id} w/ {hours_per_semester} to {destination_filename}')
+                   
+                elif filepath.is_file():
+                    # TODO: Implement this
+                    self.output('Not supported yet')
+                    
+            except IOError:
+                self.output_error('File system error ecountered while attempting batch export.')
+            
         pass
     
     
@@ -652,5 +680,3 @@ class SmartPlannerController:
 
 
 # End of SmartPlannerController definition
-
-# MERINO: removed main entrance (that's main.py's job now)
