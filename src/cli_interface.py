@@ -1,5 +1,5 @@
 # Thomas Merino
-# 10/1/22
+# 10/17/22
 # CPSC 4175 Group Project
 
 # TODO: (ENSURE) help file parser ends predictably at "<END>" (no extra blank lines)
@@ -41,7 +41,6 @@ class MainMenuInterface(GeneralInterface):
         # e: explorer
         # i: immediate
         
-        # MERINO: added command aliases
         # Add commands to the command dictionary
         self.add_command(list_available_commands_command,       '', 'commands', 'list-commands')
         self.add_command(load_needed_courses_command,           'load', 'needed', 'set')
@@ -52,6 +51,7 @@ class MainMenuInterface(GeneralInterface):
         self.add_command(select_export_command,                 'as', 'exports', 'set-exports', 'type', 'types', 'set-types',)
         self.add_command(list_parameters_command,               'courses', 'list-courses', 'parameters', 'list-parameters', 'arguments', 'list-arguments', 'args')
         self.add_command(generate_schedule_command,             'schedule', 'generate', 'done', 'save')
+        self.add_command(batch_schedule_command,                'batch-schedule', 'batch', 'group-schedule', 'group')
         self.add_command(schedule_verify_command,               'verify', 'validate', 'check')
         self.add_command(explore_schedule_verify_command,       'verify-e', 'validate-e', 'check-e')
         self.add_command(set_gui_interface_command,             'gui')
@@ -101,13 +101,11 @@ class HelpMenu(GeneralInterface):
                 self.article_count += 1
                 header = documentation.readline()
     
-    # MERINO: removed deconstruct method
-    
     def parse_input(self, controller, input):
         '''Handle input on behalf of the program.'''
         
         # TODO: make exit and all command better (make sense).
-        if 'exit' in input or 'quit' in input or input == '':
+        if input == 'exit' or input == 'quit' or input == '':
             # Exit the help menu
             controller.pop_interface(self)
         
@@ -239,7 +237,7 @@ class ErrorMenu(GeneralInterface):
 
 def list_available_commands_command(controller, argument):
     '''Output the commands that may be entered.'''
-    # MERINO: corrected commands
+    
     controller.output('Here are the commands available:\ncommands, load, load-e, destination, destination-e, set-hours, set-exports, list-parameters, schedule, verify, verify-e, gui, cli, gui-i, help, quit')
     # TODO: maybe use a listing from help resourses or the main menu interface class.
 
@@ -357,7 +355,6 @@ def select_export_command(controller, argument):
         
     # Initialize and construct the item selection menu
     list_interface = ItemSelectionInterface(list(EXPORT_TYPE_DESCRIPTIONS.values()), modify, complete, cancel)
-    # MERINO: corrected this line's call
     list_interface.set_selected(set(controller.get_export_type()))
     controller.push_interface(list_interface)
     
@@ -394,7 +391,6 @@ def set_gui_interface_command(controller, arguements):
     '''Change the user interface mode to GUI (this does not reload the interface, though).'''
     if not arguements:
         controller.configure_user_interface_mode(is_graphical=True)
-        # MERINO: fixed spelling
         controller.output('Default UI mode set to graphical (enter gui-i to enter immediately).')
     else:
         controller.output_error('Arguments are not supported for this command.')
@@ -455,6 +451,13 @@ def generate_schedule_command(controller, filename):
     else:
         controller.output_error('Please enter a filename.')
 
+def batch_schedule_command(controller, filename):
+    '''Ask the provided caller to generate schedules with the passed filename (assumed listing of
+    files) or directory (assumed needed-courses files).'''
+    if filename:
+        controller.batch_schedule(filename)
+    else:
+        controller.output_error('Please enter a file or directory path/name .')
 
 def quit_command(controller, arguements):
     '''Terminate the program.'''
