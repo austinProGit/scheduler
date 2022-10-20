@@ -131,18 +131,17 @@ class CourseInfoContainer:
 # Author: Vincent
 def load_course_info(file_name):
     # MERINO: changed name to "Sheet1"
-    df = pd.read_excel(file_name, sheet_name='Sheet1') # !!! insert this sheet name or ClassInfo if using ClassInfo.xlsx!!!
+    df = pd.read_excel(file_name, sheet_name='CPSC')
     return df
 
 def load_course_info_excused_prereqs(file_name):
-    # MERINO: changed name to "Sheet1"
-    df = pd.read_excel(file_name, sheet_name='ExcusedPrereqs') # !!! insert this sheet name or ClassInfo if using ClassInfo.xlsx!!!
-    return df.courseID.value.tolist()
+    df = pd.read_excel(file_name, sheet_name='ExcusedPrereqs')
+    return df.courseID.values.tolist()
 
 # ******ending of course_info_parser**********ending of course_info_parser***************************************
-# Line below will be deleted when we merge all files
-# MERINO: commented this out
-# df = load_course_info(src/input_files/Course Info.xlsx)
-# lst = load_course_info_excused_prereqs(src/input_files/Course Info.xlsx)
+#quick test below
+#df = load_course_info('src/input_files/Course Info.xlsx')
+#lst = load_course_info_excused_prereqs('src/input_files/Course Info.xlsx')
 #container = CourseInfoContainer(df, lst)
+#print(container.get_excused_prereqs())
 #print(validate_course_path(container))
