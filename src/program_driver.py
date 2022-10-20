@@ -249,7 +249,7 @@ class SmartPlannerController:
             self.output_error('Invalid course catalog file. Please rename the catalog to {0}, make sure it is accessible, and reload the catalog (enter "reload").'.format(course_info_relative_path))
             raise file_error
             
-        except ValueError:
+        except ValueError as config_error:
             # ValueError is raised when the table has an invalid format or is the wrong type of file (check extension)
             self.output_error('Course catalog is not in the correct format. Please correct all issues and reload the catalog (enter "reload").')
             raise config_error

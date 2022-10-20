@@ -19,9 +19,9 @@ def all_tests():
     if not user_submitted_validator_tests():
         tests_passed = False
         failed_tests.append('user_submitted_validator')
-    # if not run_cli_unit_test():
-    #     tests_passed = False
-    #     failed_tests.append('cli')
+    if not run_cli_unit_test():
+        tests_passed = False
+        failed_tests.append('cli')
     # ADD ALL TESTS HERE ^^^
     if not tests_passed:
         print(f'The following tests have FAILED: {failed_tests}')

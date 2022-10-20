@@ -144,5 +144,5 @@ def load_course_info_excused_prereqs(file_name):
 # MERINO: commented this out
 # df = load_course_info(src/input_files/Course Info.xlsx)
 # lst = load_course_info_excused_prereqs(src/input_files/Course Info.xlsx)
-#container = CourseInfoContainer(load_course_info(df, lst))
+#container = CourseInfoContainer(df, lst)
 #print(validate_course_path(container))
