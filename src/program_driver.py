@@ -1,5 +1,5 @@
 # Thomas Merino
-# 10/17/22
+# 10/24/22
 # CPSC 4175 Group Project
 
 
@@ -7,11 +7,13 @@
 #   The config file stores in the first line the name of the course info filename. This is what's passed into the parser as input.
 #   The third line detemines whether to load the gui (if "YES" is in the second line)
 
+
 # POTENTIAL GOALS FOR NEXT CYCLE:
 # - General refactoring
 # - Use AI for scheduling algorithm
 # - Use UI text dictionary (maybe langauges support)
 # - Maybe add session data so the program can recover from a crash
+
 # - Have the last directory used for saving stored in the config
 #           This may be changed just for the current session with something like ("temp dirname")
 #           Using the feature may be optional: having no directory means to start with home
@@ -83,8 +85,6 @@
 # TODO: (WISH) Have the GUI display errors (like warnings)
 # TODO: (FIX) Add "silient=True" to tabula calls so there are no error print outs
 
-
-
 from PySide6 import QtWidgets, QtGui
 
 # MERINO: Uncomment this if you want to run memory profiling
@@ -96,6 +96,7 @@ from pathlib import Path
 from os import path
 from subprocess import CalledProcessError   # This is used for handling errors raised by tabula parses
 
+from configuration_manager import *
 from driver_fs_functions import *
 from cli_interface import MainMenuInterface, GraphicalUserMenuInterface, ErrorMenu
 from scheduler_class import Scheduler
@@ -105,20 +106,8 @@ from program_generated_validator import validate_course_path, NonDAGCourseInfoEr
 from excel_formatter import excel_formatter
 from plain_text_formatter import plain_text_export
 from user_submitted_validator import validate_user_submitted_path
-from path_to_grad_parser import parse_path_to_grad 
+from path_to_grad_parser import parse_path_to_grad
 
-# MERINO: Added min constant
-DEFAULT_CATALOG_NAME = 'input_files/Course Info.xlsx'           # The default name for the catalog/course info file
-DEFAULT_AVAILABILITY_FILENAME = 'input_files/Course Info.xlsx'  # The default name for the catalog/course availability file
-CONFIG_FILENAME = 'config'                                      # The name of the config file
-DEFAULT_SCHEDULE_NAME = 'Path to Graduation'                    # The default filename for exporting schedules
-NORMAL_HOURS_LIMIT = 18                                         # The upper limit of credit hours students can take per semester (recommended)
-STRONG_HOURS_LIMIT = 30                                         # The absolute limit of credit hours students can take per semester (cannot exceed)
-STRONG_HOURS_MINIMUM = 4                                        # The absolute minimum of credit hours students can take per semester (cannot be below)
-
-# MERINO: removed redefinition of export types
-
-# MERINO: removed dummies
 
 ## --------------------------------------------------------------------- ##
 ## ---------------------- Smart Planner Controller --------------------- ##
@@ -130,15 +119,6 @@ class InterfaceProcedureError(Exception):
     pass
 
 
-# This exception is used when an issue with the config file is encountered.
-class ConfigFileError(Exception):
-    pass
-
-
-def get_source_path():
-    '''Get the path of the program's directory.'''
-    return path.dirname(__file__)
-    
 
 # This class manages the interactions between the interface of the program and the model (mostly the scheduler).
 # The class also manages the destination directory and filename.
@@ -163,7 +143,6 @@ class SmartPlannerController:
         self._scheduler = Scheduler()                           # Create a scheduler object for heading the model
         self._destination_directory = Path.home()               # Create the default directoty to export to (set initially to home directory)
                                                                 # This is always expected to be an existing path. Do not set it purely based on user input
-        self._destination_filename = DEFAULT_SCHEDULE_NAME      # Create the default destination filename (used when relevant)
         self._export_types = [PATH_TO_GRADUATION_EXPORT_TYPE]   # Create a list to track the export methods to use
         self._interface_stack = []                              # Create a stack (list) for storing the active interfaces
         
@@ -179,14 +158,16 @@ class SmartPlannerController:
 
         try:
             # Attempt to get the program parameters from the config file
-            course_info_filename, course_availability_filename, is_graphical = self.load_config_parameters()
-            is_graphical = is_graphical and graphics_enabled    # Override conifg settings if graphics are suppressed
+            self.session_configuration = self.load_config_parameters()
             
             # Load the course info file
-            self.load_course_info(course_info_filename, course_availability_filename)
+            self.load_course_info(self.session_configuration)
+            
+            # Create the default destination filename (used when relevant)
+            self._destination_filename = self.session_configuration.initial_schedule_name
             
             # Load the user interface -- this should only block execution if graphics are presented
-            self.load_interface(is_graphical)
+            self.load_interface(self.session_configuration.is_graphical and graphics_enabled) # Override conifg settings if graphics are suppressed
         except (ConfigFileError, FileNotFoundError, IOError, NonDAGCourseInfoError, InvalidCourseError, ValueError):
             # Some error was encountered during loading (enter the error menu)
             self.output_error('A problem was encountered during loading--entering error menu...')
@@ -197,50 +178,43 @@ class SmartPlannerController:
     
     
     def load_config_parameters(self):
-        '''Load program configuration information from the config file. The goal of this method is to load the config file
-        and ensure information about setup is not missing (if so, raise a ConfigFileError).'''
+        '''Load program configuration information from the config file. This returns a SessionConfiguration object or raises a ConfigFileError if the file is invalid.'''
         
         try:
-            # Get the config file
-            config_filename = path.join(get_source_path(), CONFIG_FILENAME)
-            with open(config_filename, 'r') as configuration_file:
-                
-                # MERINO: fixed reading escape character
-                # Get the first three lines of the file (locations of the catalog and whether presenting graphics initially)
-                course_info_filename = configuration_file.readline()[:-1]
-                course_availability_filename = configuration_file.readline()[:-1]
-                is_graphical_line = configuration_file.readline()
-                
-                
-                # Check if all lines exist and are not empty strings
-                if course_info_filename and course_availability_filename and is_graphical_line:
-                    is_graphical = 'YES' in is_graphical_line                                   # Get boolean meaning from the second line
-                    return (course_info_filename, course_availability_filename, is_graphical)   # Return the results
-                else:
-                    # Configuration is missing important data (report to the user and raise a config error)
-                    self.output_error('Invalid config file contents. Please see instructions on how to reconfigure.')
-                    raise ConfigFileError()
-                
+            # Return the session object
+            return load_configuration_session()
+            
+        except ConfigFileError as config_file_error:
+            # Configuration is missing important data (report to the user and raise a config error)
+            self.output_error(f'Invalid config file contents. Please see instructions on how to reconfigure. {str(config_file_error)}')
+            raise config_file_error
+                    
         except (FileNotFoundError, IOError):
             # Configuration file could not be found (report to the user and raise a ConfigFileError)
             self.output_error('Could not get config file. Please see instructions on how to reconfigure.')
             raise ConfigFileError()
     
     
-    def load_course_info(self, course_info_filename, course_availability_filename):
-        '''Configure the scheduler with the course info file with the passed filename. This may re-raise a
+    def load_course_info(self, session_configuration):
+        '''Configure the scheduler with the course info file from the passes session object. This may re-raise a
         NonDAGCourseInfoError if one was raised during loading the course info.'''
+                    
+        course_info_filename = session_configuration.course_info_filename
+        excused_prereqs_filename = session_configuration.excused_prereqs
         
         # Get the filepaths relative to the source path
         source_code_path = get_source_path()
         course_info_relative_path = get_source_relative_path(source_code_path, course_info_filename)
-        course_availability_relative_path = get_source_relative_path(source_code_path, course_availability_filename)
+        excused_prereqs_relative_path = get_source_relative_path(source_code_path, excused_prereqs_filename)
+        
+        # TODO: this is NOT in use at the moment (neither is availability in general...)
+        #course_availability_relative_path = get_source_relative_path(source_code_path, course_availability_filename)
         
         # Attempt to load the course info data and pass it to the scheduler
         try:
-            # TODO: IMPLEMENT HERE ->
-            # MERINO: implemented changes
-            course_info_container = CourseInfoContainer(load_course_info(course_info_relative_path))
+            course_info = load_course_info(course_info_relative_path)
+            excused_prereqs = load_course_info_excused_prereqs(excused_prereqs_relative_path)
+            course_info_container = CourseInfoContainer(course_info, excused_prereqs)
             validate_course_path(course_info_container) # Raises an exception if Course Info Container contains invalid data
             self._scheduler.configure_course_info(course_info_container)
             
@@ -249,7 +223,7 @@ class SmartPlannerController:
             self.output_error('Invalid course catalog file. Please rename the catalog to {0}, make sure it is accessible, and reload the catalog (enter "reload").'.format(course_info_relative_path))
             raise file_error
             
-        except ValueError as config_error:
+        except ValueError:
             # ValueError is raised when the table has an invalid format or is the wrong type of file (check extension)
             self.output_error('Course catalog is not in the correct format. Please correct all issues and reload the catalog (enter "reload").')
             raise config_error
@@ -449,12 +423,14 @@ class SmartPlannerController:
         '''Set the number of hours that are scheduled per semester. This return the success of the load.'''
         
         # MERINO: added minimum hours
-        if number_of_hours <= STRONG_HOURS_MINIMUM or STRONG_HOURS_LIMIT < number_of_hours:
-            self.output_warning('Please enter between {0} and {1} hours per semester.'.format(STRONG_HOURS_MINIMUM, STRONG_HOURS_LIMIT))
+        if number_of_hours <= self.session_configuration.strong_hours_minimum \
+           or self.session_configuration.strong_hours_limit < number_of_hours:
+           
+            self.output_warning('Please enter between {0} and {1} hours per semester.'.format(self.session_configuration.strong_hours_minimum, self.session_configuration.strong_hours_limit))
             return False
         
-        if number_of_hours > NORMAL_HOURS_LIMIT:
-            self.output_warning('Taking over {0} credit hours per semester is not recommended.'.format(NORMAL_HOURS_LIMIT))
+        if number_of_hours > self.session_configuration.normal_hours_limit:
+            self.output_warning('Taking over {0} credit hours per semester is not recommended.'.format(self.session_configuration.normal_hours_limit))
             
         
         self._scheduler.configure_hours_per_semester(number_of_hours)
@@ -503,43 +479,41 @@ class SmartPlannerController:
     
     # TODO: TEST - this still has not been tested enough
     def create_default_config_file(self, catalog_name=None, availability_name=None):
-        '''Create a default config file for the program. This uses DEFAULT_CATALOG_NAME if
+        '''Create a default config file for the program. This uses the default catalog name if
         catalog name is empty or None and saves the config file to this file's directory '''
         
-        # Set catalog_field to catalog_name unless it is None or '' (set catalog_field to the default value if so)
-        catalog_field = catalog_name if catalog_name else DEFAULT_CATALOG_NAME
-        availability_field = availability_name if availability_name else DEFAULT_AVAILABILITY_FILENAME
+        new_session_configuration = SessionConfiguration.make_default()
         
+        # Set catalog_field to catalog_name unless it is None or ''
+        if catalog_name:
+            new_session_configuration.course_info_filename = catalog_name
         
-        # Save the config file to this file's directory
-        config_filename = path.join(get_source_path(), CONFIG_FILENAME)
-        with open(config_filename, 'w') as config_file:
-            
-            # Write config contents
-            config_file.write(catalog_field + '\n')
-            config_file.write(availability_field + '\n')
-            config_file.write('GUI: NO\n')
-            
-        # MERINO: added output
-        self.output('Config file created.')
+        if availability_name:
+            new_session_configuration.availability_filename = availability_name
+        
+        missing_attributes = save_configuration_session(new_session_configuration)
+        
+        if missing_attributes:
+            self.output_error(f'Error encountered while saving default config file. Missing attributes: {", ".join(missing_attributes)}.')
+        else:
+            self.output('Config file created.')
     
     
     def configure_user_interface_mode(self, is_graphical):
         '''Set the user interface mode to GUI is passed true and CLI if passed false.'''
         try:
             # Get the config file as a list of strings/lines
-            config_lines = []
-            with open(CONFIG_FILENAME, 'r') as configuration_file:
-                config_lines = configuration_file.readlines()
-                
-            # Change the third line to reflect is_graphical
-            is_graphical_string = 'YES' if is_graphical else 'NO'
-            config_lines[2] = 'GUI: {0}\n'.format(is_graphical_string)
+            new_session_configuration = self.load_config_parameters()
+            new_session_configuration.is_graphical = is_graphical
+            missing_attributes = save_configuration_session(new_session_configuration)
             
-            # Save/overwrite the file
-            with open(CONFIG_FILENAME, 'w') as configuration_file:
-                configuration_file.writelines(config_lines)
-                
+            if missing_attributes:
+                self.output_error(f'Error encountered while saving config file. Missing attributes: {", ".join(missing_attributes)}.')
+            else:
+                self.output('Config modified.')
+            
+        except ConfigFileError:
+            self.output_error('Some program has made illegal changes to the config file. Please correct those changes before proceeding.')
         except (FileNotFoundError, IOError):
             self.output_error('Failed to access config file.')
         

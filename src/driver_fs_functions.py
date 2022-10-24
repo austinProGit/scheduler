@@ -1,9 +1,11 @@
 # Thomas Merino
-# 10/1/22
+# 10/24/22
 # CPSC 4175 Group Project
 
 # This file contains constants and functions for the the driver/controller and the interface components.
 # TODO: rename get_real_filepath (it looks like "relative filepath")
+
+# NOTE: keep this file in the same directory as the config file
 
 from pathlib import Path
 import os
@@ -18,7 +20,17 @@ EXPORT_TYPE_DESCRIPTIONS = {
     PLAIN_TEXT_EXPORT_TYPE: 'Plain txt'
 }
 
-# MERINO: Added a handy splitting function for getting the numeric end of a filename
+
+# This exception is used when an issue with the config file is encountered.
+class ConfigFileError(Exception):
+    pass
+
+
+def get_source_path():
+    '''Get the path of the program's directory.'''
+    return Path(__file__).parent
+    
+
 def suffix_split(filtr, sequence):
     '''Split the passed sequence by a suffix: end section of the sequence such that every item meets the passed filter--
     the suffix ends as soon as one item doesn't meet the filter, and the entire sequence may be the suffix if all pass.
