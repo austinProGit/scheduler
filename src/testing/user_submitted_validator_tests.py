@@ -77,7 +77,9 @@ def user_submitted_validator_tests():
     ['CPSC 4157'], ['CPSC 3125', 'CPSC 3175', 'CPSC 4115'], ['CPSC 4135', 'CPSC 4148'], [], 
     ['CPSC 4155', 'CPSC 4175'], ['CPSC 4176', 'CPSC 4000']]
 
-    container = CourseInfoContainer(load_course_info('src/input_files/Course Info.xlsx'))
+    excused_prereqs = ['MISM 3145', 'MISM 3115', 'MISM 3109', 'MATH 1111']
+
+    container = CourseInfoContainer(load_course_info('src/input_files/Course Info.xlsx'), excused_prereqs)
 
     test_case_list = []
 
