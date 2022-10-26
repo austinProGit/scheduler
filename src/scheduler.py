@@ -5,9 +5,7 @@
 # MERINO: All I have done is encapsulated it in a class with configuration methods, added support for co-reqs,
 # added support for starting on any semester, reorganized a bit of stuff (to my weird liking), and fixed a rare bug.
 
-"""
-TODO: CPSC 3165, junior+ requirement, honestly unsure of how to handle this
-"""
+# TODO: CPSC 3165, junior+ requirement, honestly unsure of how to handle this
 
 SEMESTER_TYPE_SUCCESSOR = {'Fa': 'Sp', 'Sp': 'Su', 'Su': 'Fa'}    # Translation map from semester K to the next
 DEFAULT_HOURS_PER_SEMESTER = 15  # MERINO: updated value
