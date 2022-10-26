@@ -34,7 +34,7 @@ def full_schedule(input_path, courses_needed_filename, output_path, template_pat
                template_path for the Path to Grad template,
                course_info container
        outputs: places schedule in the output path folder"""
-    print(f"Starting schedule for {courses_needed_filename}", input_path)
+   
     # read courses needed
     courses_needed = get_courses_needed(input_path + courses_needed_filename)
 
@@ -49,7 +49,6 @@ def full_schedule(input_path, courses_needed_filename, output_path, template_pat
     schedule = scheduler.generate_schedule()
 
     output_file_path = output_path + Path(courses_needed_filename).stem + ".xlsx"
-    print(f"Exporting {courses_needed_filename} to excel")
-    # TODO: formatter is broken?
+   
     # export to excel
     excel_formatter(template_path, output_file_path, schedule, course_info)
