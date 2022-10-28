@@ -584,6 +584,7 @@ class SmartPlannerController:
         try:
             if self._export_types:
                 semesters_listing = self._scheduler.generate_schedule()
+                
                 template_path = Path(get_source_path(), 'input_files')
                 
                 if PATH_TO_GRADUATION_EXPORT_TYPE in self._export_types:
@@ -599,9 +600,10 @@ class SmartPlannerController:
                 
             else:
                 self.output_error('Please select an export type.')
+                
         except (FileNotFoundError, IOError):
             # This code will probably execute when file system permissions/organization change after setting parameters
-            self.output_error('File system error ecountered while attempting an export (please try re-entering parameters). Some files may have exported.')
+            self.output_error('File system error encountered while attempting an export (please try re-entering parameters). Some files may have exported.')
         
     
     def batch_schedule(self, pathname):
@@ -639,7 +641,7 @@ class SmartPlannerController:
                     self.output('Not supported yet')
                     
             except IOError:
-                self.output_error('File system error ecountered while attempting batch export.')
+                self.output_error('File system error encountered while attempting batch export.')
             
         pass
     

@@ -3,10 +3,8 @@
 
 import openpyxl
 import shutil
-# MERINO: commented this out
-# from course_info_container import *
-from pathlib import Path
 from datetime import date
+from pathlib import Path
 
 def excel_formatter(input_path, output_file_name, sched, container):  # first param is source file path
     num = 0
