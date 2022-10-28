@@ -36,3 +36,6 @@ def parse_path_to_grad(file_name):
             schedule.append(parse_semester(start, end, column))
             
     return schedule
+
+# if __name__ == "__main__":
+#     print(parse_path_to_grad('input_files/Path to Graduation3.xlsx'))

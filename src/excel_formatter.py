@@ -3,16 +3,15 @@
 
 import openpyxl
 import shutil
-# MERINO: commented this out
-# from course_info_container import *
 from datetime import date
+from pathlib import Path
 
 def excel_formatter(input_path, output_file_name, sched, container):  # first param is source file path
     num = 0
-    input_file_name = input_path + '/Path To Graduation Y.xlsx'
+    input_file_name = Path(input_path, 'Path To Graduation Y.xlsx')
     for lst in sched:
         if len(lst) > 6:
-            input_file_name = input_path + '/Path To Graduation Z.xlsx'
+            input_file_name = Path(input_path, 'Path To Graduation Z.xlsx')
             num = 4
             break
 
