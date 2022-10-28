@@ -588,7 +588,8 @@ class SmartPlannerController:
                 
                 if PATH_TO_GRADUATION_EXPORT_TYPE in self._export_types:
                     unique_ptg_destination = get_next_free_filename(desired_destination.with_suffix('.xlsx'))
-                    excel_formatter(Path(template_path, 'Path To Graduation Y.xlsx'), unique_ptg_destination, semesters_listing, self._scheduler.get_course_info())
+                    # Lew erased 'Path To Graduation' from here to work with excel_formatter
+                    excel_formatter(Path(template_path), unique_ptg_destination, semesters_listing, self._scheduler.get_course_info())
                     self.output('Schedule (Path to Graduation) exported as {0}'.format(unique_ptg_destination))
                 
                 if PLAIN_TEXT_EXPORT_TYPE in self._export_types:
