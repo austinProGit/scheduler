@@ -3,6 +3,7 @@
 # Description: Main file for our program, runs smart planner controller
 
 from program_driver import SmartPlannerController
+# Lew decreased line indentation accordingly
 planner = SmartPlannerController()
 
 if planner.has_interface():
