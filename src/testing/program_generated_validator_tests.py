@@ -18,7 +18,7 @@ parent = os.path.dirname(current)
 # the sys.path.
 sys.path.append(parent)
 
-from program_generated_validator import NonDAGCourseInfoError, InvalidCourseError, validate_course_path
+from program_generated_evaluator import NonDAGCourseInfoError, InvalidCourseError, validate_course_path
 
 # ================================ Unit Tests =======================================================
 

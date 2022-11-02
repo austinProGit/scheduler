@@ -3,7 +3,7 @@
 
 import pandas as pd
 import re
-from program_generated_validator import validate_course_path
+from program_generated_evaluator import evaluate_container
 
 class CourseInfoContainer:
     

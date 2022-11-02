@@ -102,7 +102,7 @@ from cli_interface import MainMenuInterface, GraphicalUserMenuInterface, ErrorMe
 from scheduler_class import Scheduler
 from course_info_container import *
 from courses_needed_parser import get_courses_needed
-from program_generated_validator import validate_course_path, NonDAGCourseInfoError, InvalidCourseError
+from program_generated_evaluator import validate_course_path, NonDAGCourseInfoError, InvalidCourseError
 from excel_formatter import excel_formatter
 from plain_text_formatter import plain_text_export
 from user_submitted_validator import validate_user_submitted_path
