@@ -3,13 +3,21 @@
 
 import pandas as pd
 import re
-from program_generated_validator import validate_course_path
+from program_generated_evaluator import evaluate_container
 
 class CourseInfoContainer:
     
     def __init__(self, df, excused_prereqs):
         self._df = df
         self._excused_prereqs = excused_prereqs
+        self._report = None
+
+    def create_report(self, report):
+        self._report = report
+
+    def get_weight(self, courseid):
+        weight = self._report.course_descendants[courseid]
+        return weight
 
     def get_excused_prereqs(self):
         return self._excused_prereqs
@@ -76,8 +84,6 @@ class CourseInfoContainer:
         note = self.get_data('note', courseid)
         return note
 
-    # Need get electives list
-
     # ............helper methods............................helper methods...........................helper methods
     # methods now account for None, 'none', or '??' values, and still return lists
 
@@ -130,7 +136,7 @@ class CourseInfoContainer:
 # MERINO: probably should give Vincent credit here (I believe this is his)
 # Author: Vincent
 def load_course_info(file_name):
-    # MERINO: changed name to "Sheet1"
+    # MERINO: changed name to "Sheet1" # Lew changed sheet name back to "CPSC", since sheet name changed again
     df = pd.read_excel(file_name, sheet_name='CPSC')
     return df
 
@@ -139,9 +145,18 @@ def load_course_info_excused_prereqs(file_name):
     return df.courseID.values.tolist()
 
 # ******ending of course_info_parser**********ending of course_info_parser***************************************
-#quick test below
+# quick test below
 #df = load_course_info('src/input_files/Course Info.xlsx')
 #lst = load_course_info_excused_prereqs('src/input_files/Course Info.xlsx')
 #container = CourseInfoContainer(df, lst)
+#report = evaluate_container(container)
+#container.create_report(report)
+#print()
+#print(container._report.course_descendants)
+#print()
+#print(container._report.graph)
+#print()
+#print(container.get_weight('CPSC 2105'))
+#print(container.validate_course('CPSC 2105'))
+#print(container.validate_course('CPSC 1111'))
 #print(container.get_excused_prereqs())
-#print(validate_course_path(container))
