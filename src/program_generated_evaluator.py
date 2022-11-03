@@ -13,9 +13,10 @@ class NonDAGCourseInfoError(Exception):
 class InvalidCourseError(Exception):
     pass
 
-class Report:
-    def __init__(self,course_descendants_dict):
+class Report: # Lew added graph to Report
+    def __init__(self,course_descendants_dict, graph):
         self.course_descendants = course_descendants_dict
+        self.graph = graph
 
 def make_graph(container, courseids):
     # Assume that the course path will be valid
@@ -65,14 +66,15 @@ def make_course_descendants_dict(graph):
     course_descendants_dict = {key: 0 for key in nodes_in_graph}
     for key in course_descendants_dict.keys():
         course_descendants_dict[key] = len(list(nx.descendants(graph, key)))
-    print(course_descendants_dict)
+    print(course_descendants_dict) 
     return course_descendants_dict
 
 def evaluate_container(container):
     courseids = container.get_courseIDs()
     graph = make_graph(container, courseids)
-    make_course_descendants_dict(graph)
-    return Report(make_course_descendants_dict)
+    # Lew made annotation here to pass dictionary and graph
+    dic = make_course_descendants_dict(graph)
+    return Report(dic, graph)
 
 # df = load_course_info('src/input_files/Course Info.xlsx')
 # lst = load_course_info_excused_prereqs('src/input_files/Course Info.xlsx')
