@@ -10,20 +10,34 @@ class CourseInfoContainer:
     def __init__(self, df, excused_prereqs):
         self._df = df
         self._excused_prereqs = excused_prereqs
-        self._report = None
 
+    # This method should only be used to instantiate Report Object after construction of container and graph
     def create_report(self, report):
         self._report = report
 
+    # This method should only be used after instantiating Report Object in create_report(self, report)
     def get_weight(self, courseid):
-        weight = self._report.course_descendants[courseid]
+        weight = 0
+        if courseid in self._report.course_descendants:
+            weight = self._report.course_descendants[courseid]
         return weight
+
+    # This returns boolean if course is in dictionary of report.  Note we already have a method to do this without report
+    # called validate_course(courseid).  Can only use this method after report is created.
+    def is_course_in_report(self, courseid):
+        return courseid in self._report.course_descendants
 
     def get_excused_prereqs(self):
         return self._excused_prereqs
 
-    def display(self):
+    def display_df(self):
         print(self._df)
+
+    def display_weights(self):
+        print(self._report.course_descendants)
+
+    def display_graph(self):
+        print(self._report.graph)
 
     def get_name(self, courseid): 
         name = self.get_data('courseName', courseid)
@@ -35,7 +49,6 @@ class CourseInfoContainer:
         hours_refined = self.get_imbedded_hours(hours)
         return hours_refined
 
-
     def get_courseIDs(self):
         courseID_list = []
         if self.validate_header('courseID'):
@@ -46,7 +59,7 @@ class CourseInfoContainer:
         availability_list = self.get_space_split_list(self.get_data('availability', courseid))
         # MERINO: We may want to send an error (notification pattern or error raise) when list is empty or use something like "availability_list if availability_list else ['Fa', 'Sp', 'Su']" to default to always available. This is necessary to prevent infinite loops on the scheduler when a unrecognized course is entered.
         # Lew complied
-        if availability_list ==[]:
+        if availability_list ==[]: # If list is empty we default to below availability
             availability_list = ['Fa', 'Sp', '--']
         return availability_list
 
@@ -157,6 +170,18 @@ def load_course_info_excused_prereqs(file_name):
 #print(container._report.graph)
 #print()
 #print(container.get_weight('CPSC 2105'))
+#print()
+#print(container.get_weight('CPSC 1111'))
+#print()
+#container.display_df()
+#print()
+#container.display_weights()
+#print()
+#container.display_graph()
+#print()
 #print(container.validate_course('CPSC 2105'))
 #print(container.validate_course('CPSC 1111'))
+#print()
+#print(container.is_course_in_report('CPSC 2105'))
+#print(container.is_course_in_report('CPSC 1111'))
 #print(container.get_excused_prereqs())
