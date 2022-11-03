@@ -17,7 +17,7 @@ class CourseInfoContainer:
 
     # This method should only be used after instantiating Report Object in create_report(self, report)
     def get_weight(self, courseid):
-        weight = 0
+        weight = None
         if courseid in self._report.course_descendants:
             weight = self._report.course_descendants[courseid]
         return weight
