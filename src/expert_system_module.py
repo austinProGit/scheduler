@@ -34,8 +34,10 @@ def availability_rule(courseID, course_info_container):
     for availability_list in ['Fa', 'Sp', 'Su']:
         if availability_list in availability_list:
             availability_cardinality += 1
-    return FITNESS_LISTING[availability_cardinality]
+    return FITNESS_LISTING[3-availability_cardinality]
 
+
+# Add rule of arb. imprt.
 
 # This is a corequisite rule that may be used by the get_fittest_courses function to ensure
 # no coreq rules are broken (and apply fitness points when taking courses together)
@@ -204,12 +206,6 @@ def _get_best_possibilities(hours, possibilities):
 # ---------------------------------------- Expert System ----------------------------------------
 
 
-# 'Courses' have the following format:
-# <COURSE>: the process
-# Needs_<COURSE>: the fact that the course need to be taken
-# Can_Take_<COURSE>: the fact that the course can be taken for the current semester
-
-
 # NOTE/README:
 # I had the realization that the model I had been working on should not apply to individual semesters. We should
 # instead judge an entire path per expert system call. The format when all is said and done should be creating
@@ -265,6 +261,10 @@ def _get_best_possibilities(hours, possibilities):
 # Outer most CF rules should have a confidence of 1 (partial rules can be less when used in conjuction with "+" operation)
 
 
+# Potential rules:
+# Standard deviation, 1000 courses taken with 4000 courses
+# taking high-weight courses early, taking recommended pairs close to each other (from perspective of later course)
+# Taking courses at a given time/semester
 
 
 # Translation map from semester K to the next
