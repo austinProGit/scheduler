@@ -4,10 +4,58 @@ from urllib.request import urlopen
 from bs4 import BeautifulSoup
 import re
 import pandas as pd
-# TODO: handle restrictions, Honestly think this can be ignored
 
 
-def parse_catalog(department):
+def update_course_info():
+    """One click update Course Info.xlsx
+       This function will go to the Course Descriptions for CPSC, CYBR, and MATH to pull information
+       in order to recreate our current Course Info.xlsx"""
+    # create new file and write cpsc courses
+    excel_writer = pd.ExcelWriter('output_files/NEW Course Info.xlsx')
+    parse_catalog(excel_writer, 'cpsc')
+    excel_writer.close()
+    # open file to append cybr courses to it
+    excel_writer = pd.ExcelWriter('output_files/NEW Course Info.xlsx', mode='a')
+    parse_catalog(excel_writer, 'cybr')
+    excel_writer.close()
+    # open file to append math courses to it
+    excel_writer = pd.ExcelWriter('output_files/NEW Course Info.xlsx', mode='a')
+    parse_catalog(excel_writer, 'math')
+    excel_writer.close()
+
+    # because our program just reads the first sheet, some data needs to be merged to the first sheet
+    # read each sheet as a dataframe
+    main_df = pd.read_excel('output_files/NEW Course Info.xlsx', sheet_name='CPSC')
+    cyber_df = pd.read_excel('output_files/NEW Course Info.xlsx', sheet_name='CYBR')
+    math_df = pd.read_excel('output_files/NEW Course Info.xlsx', sheet_name='MATH')
+
+    # append cybr
+    main_df = pd.concat([main_df, cyber_df])
+    # append ONLY MATH 1113, MATH 2125, MATH 5125
+    main_df = pd.concat([main_df, math_df[math_df["courseID"] == "MATH 1113"]])
+    main_df = pd.concat([main_df, math_df[math_df["courseID"] == "MATH 2125"]])
+    main_df = pd.concat([main_df, math_df[math_df["courseID"] == "MATH 5125U"]])
+    # we don't use the letters, so remove to avoid errors
+    main_df = main_df.replace("MATH 5125U", "MATH 5125")
+    # some of these courses don't show an availability, Ex: Selected Topics, changed to available
+    main_df = main_df.replace("-- -- --", "Fa Sp Su")
+    # add cpsc generic elective
+    main_df.loc[len(main_df.index)] = ["CPSC 3XXX", "Generic Elective", "(3-0-3)", "Fa Sp Su",
+                                       '', '', '', 0, '', '']
+    # write final New Course Info.xlsx
+    excel_writer = pd.ExcelWriter('output_files/NEW Course Info.xlsx')
+    main_df.to_excel(excel_writer, sheet_name="CPSC", index=False)
+    excel_writer.close()
+
+    # add Excused Prerequisites, MISM 3145, MISM 3115, MISM 3109, MATH 1111
+    excel_writer = pd.ExcelWriter('output_files/NEW Course Info.xlsx', mode='a')
+    excused_prereq = {'courseID': ["MISM 3145", "MISM 3115", "MISM 3109", "MATH 1111"]}
+    excused_df = pd.DataFrame(excused_prereq)
+    excused_df.to_excel(excel_writer, sheet_name="ExcusedPrereqs", index=False)
+    excel_writer.close()
+
+
+def parse_catalog(excel_writer, department):
     """inputs 4 letter department acronym, parses website catalog for accurate information
        creates and saves Course Info.xlsx """
     def extract_requisites():
@@ -64,7 +112,7 @@ def parse_catalog(department):
             return 'Fa Sp Su'
 
     # open url, load into bs4 object
-    url = "https://catalog.columbusstate.edu/course-descriptions/"+department+"/"
+    url = "https://catalog.columbusstate.edu/course-descriptions/"+str(department).lower()+"/"
     html = urlopen(url).read()
     soup = BeautifulSoup(html, features="html.parser")
 
@@ -82,6 +130,8 @@ def parse_catalog(department):
         course_body = all_course_blocks[index].find_all('p', class_='courseblockextra noindent')
         # extract course id
         course_id = course_header[0].find('span', class_='text col-3 detail-code margin--tiny text--semibold text--huge')
+        if re.search(r'CPSC 6', course_id.text):
+            break
         # extract course name
         course_name = course_header[0].find('span', class_='text col-3 detail-title margin--tiny text--bold text--huge')
         # extract course hours
@@ -95,7 +145,5 @@ def parse_catalog(department):
         course_info_df.loc[len(course_info_df.index)] = [course_id.text, course_name.text, course_hours.text,
                                                          availability, prerequisites, co_requisites, '', 0, '', '']
 
-    # export to excel, and save to specific sheets
-    excel = pd.ExcelWriter('Course Info.xlsx')
-    course_info_df.to_excel(excel, 'Sheet1', index=False)
-    excel.save()
+    course_info_df.to_excel(excel_writer, sheet_name=str(department).upper(), index=False)
+    excel_writer.save()
