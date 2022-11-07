@@ -96,13 +96,14 @@ from pathlib import Path
 from os import path
 from subprocess import CalledProcessError   # This is used for handling errors raised by tabula parses
 
+from alias_module import *
 from configuration_manager import *
 from driver_fs_functions import *
 from cli_interface import MainMenuInterface, GraphicalUserMenuInterface, ErrorMenu
 from scheduler_class import Scheduler
 from course_info_container import *
 from courses_needed_parser import get_courses_needed
-from program_generated_evaluator import validate_course_path, NonDAGCourseInfoError, InvalidCourseError
+from program_generated_evaluator import evaluate_container, NonDAGCourseInfoError, InvalidCourseError
 from excel_formatter import excel_formatter
 from plain_text_formatter import plain_text_export
 from user_submitted_validator import validate_user_submitted_path
@@ -201,21 +202,28 @@ class SmartPlannerController:
                     
         course_info_filename = session_configuration.course_info_filename
         excused_prereqs_filename = session_configuration.excused_prereqs
+        alias_filename = session_configuration.alias_filename
         
         # Get the filepaths relative to the source path
         source_code_path = get_source_path()
         course_info_relative_path = get_source_relative_path(source_code_path, course_info_filename)
         excused_prereqs_relative_path = get_source_relative_path(source_code_path, excused_prereqs_filename)
+        alias_relative_path = get_source_relative_path(source_code_path, alias_filename)
         
         # TODO: this is NOT in use at the moment (neither is availability in general...)
         #course_availability_relative_path = get_source_relative_path(source_code_path, course_availability_filename)
         
         # Attempt to load the course info data and pass it to the scheduler
         try:
+            setup_aliases(alias_relative_path)
             course_info = load_course_info(course_info_relative_path)
             excused_prereqs = load_course_info_excused_prereqs(excused_prereqs_relative_path)
             course_info_container = CourseInfoContainer(course_info, excused_prereqs)
-            validate_course_path(course_info_container) # Raises an exception if Course Info Container contains invalid data
+            
+            # This raises an exception if Course Info Container contains invalid data
+            evaluation_report = evaluate_container(course_info_container)
+            course_info_container.create_report(evaluation_report)
+            
             self._scheduler.configure_course_info(course_info_container)
             
         except (FileNotFoundError, IOError) as file_error:

@@ -12,10 +12,10 @@ class CourseInfoContainer:
         self._excused_prereqs = excused_prereqs
 
     # This method should only be used to instantiate Report Object after construction of container and graph
-    def create_report(self, report):
+    def load_report(self, report):
         self._report = report
 
-    # This method should only be used after instantiating Report Object in create_report(self, report)
+    # This method should only be used after instantiating Report Object in load_report(self, report)
     def get_weight(self, courseid):
         weight = None
         if courseid in self._report.course_descendants:

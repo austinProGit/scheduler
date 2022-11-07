@@ -11,6 +11,7 @@ from driver_fs_functions import *
 DEFAULT_CATALOG_NAME = 'input_files/Course Info.xlsx'           # The default name for the catalog/course info file
 DEFAULT_EXCUSED_PREREQS_NAME = 'input_files/Course Info.xlsx'   # The default name for the excused prereq.s file
 DEFAULT_AVAILABILITY_FILENAME = 'input_files/Course Info.xlsx'  # The default name for the catalog/course availability file
+DEFAULT_ALAIS_FILENAME = 'Aliases.xlsx'                         # The default name for the alias file
 CONFIG_FILENAME = 'config.json'                                 # The name of the config file
 DEFAULT_SCHEDULE_NAME = 'Path to Graduation'                    # The default filename for exporting schedules
 DEFAULT_NORMAL_HOURS_LIMIT = 18                                 # The upper limit of credit hours students can take per semester (recommended)
@@ -30,6 +31,7 @@ class SessionConfiguration():
             DEFAULT_CATALOG_NAME,
             DEFAULT_EXCUSED_PREREQS_NAME,
             DEFAULT_AVAILABILITY_FILENAME,
+            DEFAULT_ALAIS_FILENAME,
             True,
             DEFAULT_SCHEDULE_NAME,
             DEFAULT_NORMAL_HOURS_LIMIT,
@@ -42,6 +44,7 @@ class SessionConfiguration():
         'course_info_filename',
         'excused_prereqs',
         'availability_filename',
+        'alias_filename',
         'is_graphical',
         'initial_schedule_name',
         'normal_hours_limit',
@@ -55,6 +58,7 @@ class SessionConfiguration():
                  course_info_filename=DEFAULT_CATALOG_NAME,
                  excused_prereqs=DEFAULT_EXCUSED_PREREQS_NAME,
                  availability_filename=DEFAULT_AVAILABILITY_FILENAME,
+                 alias_filename=DEFAULT_ALAIS_FILENAME,
                  is_graphical=True,
                  initial_schedule_name=DEFAULT_SCHEDULE_NAME,
                  normal_hours_limit=DEFAULT_NORMAL_HOURS_LIMIT,
@@ -64,6 +68,7 @@ class SessionConfiguration():
         self.course_info_filename = course_info_filename
         self.excused_prereqs = excused_prereqs
         self.availability_filename = availability_filename
+        self.alias_filename = alias_filename
         self.is_graphical = is_graphical
         self.initial_schedule_name = initial_schedule_name
         self.normal_hours_limit = normal_hours_limit
