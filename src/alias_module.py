@@ -5,7 +5,7 @@
 
 import pandas as pd
 
-ALIAS_FILE = 'TestFile.xlsx'
+ALIAS_FILE = 'Aliases.xlsx'
 
 alias_translations = {}
 OLD_LABEL = 'old_id'
