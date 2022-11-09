@@ -485,8 +485,7 @@ class ExpertSystem:
     @rulepart(confidence=0.9)
     def rule_b(course, facts, semester_info, course_info):
         return 1 if '13' in course or '21' in course else 0
-        
-            
+    
     @confidencerule()
     def new_rule1(course, facts, semester_info, course_info):
         es = ExpertSystem
@@ -496,7 +495,7 @@ class ExpertSystem:
     @rulebuilder()
     def new_rule2():
         es = ExpertSystem
-        rule = (es.rule_a1 + es.rule_a2 + es.rule_a3) + es.rule_b
+        rule = (es.rule_a1 + es.rule_a2 + es.rule_a3) & es.rule_b
         return rule
 
 
