@@ -97,10 +97,12 @@ from os import path
 from subprocess import CalledProcessError   # This is used for handling errors raised by tabula parses
 
 from alias_module import *
+from catalog_parser import update_course_info
+from batch_process import batch_process
 from configuration_manager import *
 from driver_fs_functions import *
 from cli_interface import MainMenuInterface, GraphicalUserMenuInterface, ErrorMenu
-from scheduler_class import Scheduler
+from scheduler import Scheduler
 from course_info_container import *
 from courses_needed_parser import get_courses_needed
 from program_generated_evaluator import evaluate_container, NonDAGCourseInfoError, InvalidCourseError
@@ -118,7 +120,6 @@ from path_to_grad_parser import parse_path_to_grad
 # Handling one should only be done for the sake of saving important data.
 class InterfaceProcedureError(Exception):
     pass
-
 
 
 # This class manages the interactions between the interface of the program and the model (mostly the scheduler).
@@ -222,7 +223,7 @@ class SmartPlannerController:
             
             # This raises an exception if Course Info Container contains invalid data
             evaluation_report = evaluate_container(course_info_container)
-            course_info_container.create_report(evaluation_report)
+            course_info_container.load_report(evaluation_report)
             
             self._scheduler.configure_course_info(course_info_container)
             
@@ -530,7 +531,7 @@ class SmartPlannerController:
         
         self.output('Fetching data...')
         
-        # TODO: add implementation if/when needed
+        update_course_info()
         
         self.output('Course catalog info updated.')
         
@@ -621,7 +622,11 @@ class SmartPlannerController:
         # Verify the passed filename exists
         filepath = get_real_filepath(pathname)   # Get the verified path (this is a Path object that exists, but it is not necessarily a directory)
         
+        template_path = Path(get_source_path(), 'input_files')
+                
         if filepath:
+            course_info_container = self.scheduler.get_course_info()
+            
             try:
                 if filepath.is_dir():
                     # The path is a directory (iterate over the file inside)
@@ -633,16 +638,17 @@ class SmartPlannerController:
                     
                     unique_destination_directory = get_next_free_filename(self.get_destination())
                     unique_destination_directory.mkdir()
-                    
-                    for course_info_path in course_info_paths:
+                                            
+                    batch_process(course_info_paths, unique_destination_directory, template_path, course_info_container)
                         
-                        # TODO: make the smarter--this only excepts files of the form 909######_HR.pdf
-                        student_id = str(course_info_path)[-16:-7]
-                        hours_per_semester = int(str(course_info_path)[-6:-4])
-                        destination_filename = Path(unique_destination_directory, student_id)
-                        
-                        # *Generate schedule here*
-                        self.output(f'GENERATING {student_id} w/ {hours_per_semester} to {destination_filename}')
+#                    for course_info_path in course_info_paths:
+#
+#                        # TODO: make the smarter--this only excepts files of the form 909######_HR.pdf
+#                        student_id = str(course_info_path)[-16:-7]
+#                        hours_per_semester = int(str(course_info_path)[-6:-4])
+#                        destination_filename = Path(unique_destination_directory, student_id)
+#
+#                        self.output(f'GENERATING {student_id} w/ {hours_per_semester} to {destination_filename}')
                    
                 elif filepath.is_file():
                     # TODO: Implement this
