@@ -6,7 +6,7 @@ from program_generated_validator_tests import program_generated_validator_tests
 from container_tests import container_tests
 from user_submitted_validator_tests import user_submitted_validator_tests
 from cli_unit_testing import run_cli_unit_test
-import traceback
+from traceback import print_exc
 
 def all_tests():
 
@@ -31,7 +31,7 @@ def all_tests():
                 tests_passed = False
                 failed_tests.append(test_name)
         except Exception as error:
-            traceback.print_exc()
+            print_exc()
             tests_passed = False
             failed_tests.append(test_name)
     if not tests_passed:
@@ -41,5 +41,6 @@ def all_tests():
 
     return tests_passed
 
+# Allow for local execution
 if __name__ == '__main__':
     all_tests()

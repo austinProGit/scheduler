@@ -2,22 +2,20 @@
 # 9/21/22
 # CPSC 4175 Group Project
 
-from dataclasses import dataclass
 import sys
 import os
 
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-sys.path.append(parent)
+current = os.path.dirname(os.path.realpath(__file__)) # Gets the name of the directory where this file is present.
+parent = os.path.dirname(current) # Gets the parent directory name where the current directory is present.
+sys.path.append(parent) # Adds the parent directory to the sys.path.
 
 from user_submitted_validator import validate_user_submitted_path
-from course_info_container import *
-import pandas as pd
-import collections
+from course_info_container import CourseInfoContainer, load_course_info
+from collections import Counter
 
 def user_submitted_validator_tests():
     
-    tests_passed = True
+    tests_passed = True # Boolean to track if all tests pass
     
     #==============================================Test Cases==============================================
 
@@ -94,13 +92,16 @@ def user_submitted_validator_tests():
     ['CPSC 4157'], ['CPSC 3175', 'CPSC 4115'], ['CPSC 4135', 'CPSC 4148'], ['CPSC 3125', 'CPSC 3131'], 
     ['CPSC 4155', 'CPSC 4175'], ['CPSC 4176', 'CPSC 4000'],[]]
 
+    # Known prereqs that will appear as prereqs in Course Info but not as courses in column 1 of Course Info
     excused_prereqs = ['MISM 3145', 'MISM 3115', 'MISM 3109', 'MATH 1111']
 
+    # Create a course info container from the real Course Info input
     container = CourseInfoContainer(load_course_info('src/input_files/Course Info.xlsx'), excused_prereqs)
 
     test_case_list = []
 
     def add_test(test_name, test_data, ex_out):
+        """For each test, a dictionary is added with the following information:"""
         test_case_list.append({"test_name": test_name, "test_data": test_data, "ex_out": ex_out})
 
     add_test("correct_input_1", correct_input_1, [])
@@ -120,7 +121,8 @@ def user_submitted_validator_tests():
 
     for test in test_case_list:
         test_passed = False
-        if collections.Counter(validate_user_submitted_path(container, test["test_data"])) == collections.Counter(test["ex_out"]):
+        # Controls for unpredictable list orders
+        if Counter(validate_user_submitted_path(container, test["test_data"])) == Counter(test["ex_out"]):
             test_passed = True
             print(f'The {test["test_name"]} test PASSED.')
         else:
