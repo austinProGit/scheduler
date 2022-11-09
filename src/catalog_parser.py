@@ -4,6 +4,7 @@ from urllib.request import urlopen
 from bs4 import BeautifulSoup
 import re
 import pandas as pd
+from alias_module import *
 
 
 def update_course_info():
@@ -42,6 +43,7 @@ def update_course_info():
     # add cpsc generic elective
     main_df.loc[len(main_df.index)] = ["CPSC 3XXX", "Generic Elective", "(3-0-3)", "Fa Sp Su",
                                        '', '', '', 0, '', '']
+
     # write final New Course Info.xlsx
     excel_writer = pd.ExcelWriter('output_files/NEW Course Info.xlsx')
     main_df.to_excel(excel_writer, sheet_name="CPSC", index=False)
@@ -79,6 +81,13 @@ def parse_catalog(excel_writer, department):
             for element in _co_requisites:
                 if element in _prerequisites:
                     _prerequisites.remove(element)
+
+            # CPSC 2106 became CYBR 2160
+            for element in _prerequisites:
+                if element == "CPSC 2106":
+                    _prerequisites.remove(element)
+                    _prerequisites.append("CYBR 2160")
+
             # remove duplicates by converting to set
             _prerequisites = [*set(_prerequisites)]
             _co_requisites = [*set(_co_requisites)]
@@ -140,7 +149,6 @@ def parse_catalog(excel_writer, department):
         prerequisites, co_requisites = extract_requisites()
         # get availability
         availability = get_availability(course_id.text)
-        # TODO: handle restrictions ('p', class_='cls noindent')
         # add course to dataframe
         course_info_df.loc[len(course_info_df.index)] = [course_id.text, course_name.text, course_hours.text,
                                                          availability, prerequisites, co_requisites, '', 0, '', '']
