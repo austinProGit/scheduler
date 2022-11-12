@@ -10,6 +10,9 @@ from pathlib import Path
 import os
 
 
+import traceback
+
+
 def batch_process(input_path, output_path, template_path, course_info):
     """function performs multiprocessing using ProcessPoolExecutor
         which will create as many processes as your computer has cores.
@@ -34,21 +37,23 @@ def full_schedule(input_path, courses_needed_filename, output_path, template_pat
                template_path for the Path to Grad template,
                course_info container
        outputs: places schedule in the output path folder"""
-   
-    # read courses needed
-    courses_needed = get_courses_needed(input_path + courses_needed_filename)
+    try:
+        # read courses needed
+        courses_needed = get_courses_needed(input_path.joinpath(courses_needed_filename))
 
-    # get hours per semester
-    semester_hours = int(courses_needed_filename[10:12])
+        # get hours per semester
+        semester_hours = int(courses_needed_filename[10:12])
 
-    # run scheduler
-    scheduler = Scheduler()
-    scheduler.configure_course_info(course_info)
-    scheduler.configure_courses_needed(courses_needed)
-    scheduler.configure_hours_per_semester(semester_hours)
-    schedule = scheduler.generate_schedule()
+        # run scheduler
+        scheduler = Scheduler()
+        scheduler.configure_course_info(course_info)
+        scheduler.configure_courses_needed(courses_needed)
+        scheduler.configure_hours_per_semester(semester_hours)
+        schedule = scheduler.generate_schedule()
 
-    output_file_path = output_path + Path(courses_needed_filename).stem + ".xlsx"
-   
-    # export to excel
-    excel_formatter(template_path, output_file_path, schedule, course_info)
+        output_file_path = Path(output_path).joinpath(Path(courses_needed_filename).stem).with_suffix(".xlsx")
+       
+        # export to excel
+        excel_formatter(template_path, output_file_path, schedule, course_info)
+    except:
+        print(traceback.format_exc())

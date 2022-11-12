@@ -4,7 +4,8 @@
 
 from program_driver import SmartPlannerController
 # Lew decreased line indentation accordingly
-planner = SmartPlannerController()
-
-if planner.has_interface():
-    while planner.run_top_interface(): pass
+if __name__ == '__main__':
+    planner = SmartPlannerController()
+    
+    if planner.has_interface():
+        while planner.run_top_interface(): pass
