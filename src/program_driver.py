@@ -87,14 +87,13 @@
 
 from PySide6 import QtWidgets, QtGui
 
-# MERINO: Uncomment this if you want to run memory profiling
-#from guppy import hpy; heap = hpy() # MERINO: added this for testing! (memory leak detecting; this requires loading in cli)
+# NOTE: Uncomment this if you want to run memory profiling
+#from guppy import hpy; heap = hpy() # NOTE: added this for testing! (memory leak detecting; this requires loading in cli)
 
-# MERINO: added imports
 from sys import exit
 from pathlib import Path
 from os import path
-from subprocess import CalledProcessError   # This is used for handling errors raised by tabula parses
+from subprocess import CalledProcessError # This is used for handling errors raised by tabula parses
 
 from alias_module import *
 from catalog_parser import update_course_info
@@ -130,8 +129,8 @@ class SmartPlannerController:
     
     def __init__(self, graphics_enabled=True):
         self.setup(graphics_enabled)
-        # MERINO: adding this for testing! (set size for relative heap comparison; you must launch in cli mode to use this)
-        # MERINO: Uncomment this if you want to run memory profiling
+        # NOTE: adding this for testing! (set size for relative heap comparison; you must launch in cli mode to use this)
+        # NOTE: Uncomment this if you want to run memory profiling
         #heap.setrelheap()
     
     
@@ -142,16 +141,17 @@ class SmartPlannerController:
         # The scheduler functions as the program's model. It may be serialized to save the save of the process.
         
         # Initialize important variables
-        self._scheduler = Scheduler()                           # Create a scheduler object for heading the model
-        self._destination_directory = Path.home()               # Create the default directoty to export to (set initially to home directory)
-                                                                # This is always expected to be an existing path. Do not set it purely based on user input
-        self._export_types = [PATH_TO_GRADUATION_EXPORT_TYPE]   # Create a list to track the export methods to use
-        self._interface_stack = []                              # Create a stack (list) for storing the active interfaces
+        self._scheduler = Scheduler() # Create a scheduler object for heading the model
+        # Create the default directoty to export to (set initially to home directory) This is always
+        # expected to be an existing path. Do not set it purely based on user input
+        self._destination_directory = Path.home()
+        self._export_types = [PATH_TO_GRADUATION_EXPORT_TYPE] # Create a list to track the export methods to use
+        self._interface_stack = [] # Create a stack (list) for storing the active interfaces
         
         # The following are IO listeners that respond to process output. Only one listener per channel can be active; these should only
         # be used for adding custom GUI elements and for testing.
-        self.output_callback = None                             # A callback that is invoked when output is presented to the user
-        self.warning_callback = None                            # A callback that is invoked when a warning is presented to the user
+        self.output_callback = None # A callback that is invoked when output is presented to the user
+        self.warning_callback = None # A callback that is invoked when a warning is presented to the user
         
         # In this context, an 'interface' is an object that handles user input and performs actions on the passed
         # controller given those inputs. Interfaces are not expected to directly interact with the user (input or
@@ -333,11 +333,11 @@ class SmartPlannerController:
         
         # Check if the passed interface resides on the top of the stack
         if interface == self.get_current_interface():
-            top_interface = self._interface_stack.pop()     # Pop the passed interface
-            top_interface.deconstruct(self)                 # Call the interface's deconstruct method
+            top_interface = self._interface_stack.pop() # Pop the passed interface
+            top_interface.deconstruct(self) # Call the interface's deconstruct method
             return top_interface
         else:
-            raise InterfaceProcedureError()                 # Raise an error about the illegal procedure
+            raise InterfaceProcedureError() # Raise an error about the illegal procedure
     
     
     def clear_all_interfaces(self):
@@ -412,26 +412,24 @@ class SmartPlannerController:
         This return the success of the load.'''
         success = False
         try:
-            filepath = get_real_filepath(filename)                                          # Get the file's path and check if it exists
+            filepath = get_real_filepath(filename) # Get the file's path and check if it exists
             if filepath:
-                courses_needed_list = get_courses_needed(filepath)                          # Get the needed courses from the file
-                self._scheduler.configure_courses_needed(courses_needed_list)               # Load the course list into the scheduler
-                self.output('Course requirements loaded from {0}.'.format(filepath))        # Report success to the user
-                success = True                                                              # Set success to true
+                courses_needed_list = get_courses_needed(filepath) # Get the needed courses from the file
+                self._scheduler.configure_courses_needed(courses_needed_list) # Load the course list into the scheduler
+                self.output('Course requirements loaded from {0}.'.format(filepath)) # Report success to the user
+                success = True # Set success to true
             else:
-                self.output_error('Sorry, {0} file could not be found.'.format(filename))   # Report if the file could not be found
+                self.output_error('Sorry, {0} file could not be found.'.format(filename)) # Report if the file could not be found
         except IOError:
-            self.output_error('Sorry, {0} file could not be openned.'.format(filename))     # Report if the file could not be openned
+            self.output_error('Sorry, {0} file could not be openned.'.format(filename)) # Report if the file could not be openned
         except CalledProcessError: # MERINO: added exception handling
-            # MERINO: fixed spelling
-            self.output_error('Sorry, invalid format while parsing {0}.'.format(filename))  # Report if the file could not be openned
+            self.output_error('Sorry, invalid format while parsing {0}.'.format(filename)) # Report if the file could not be openned
         return success
     
     
     def configure_hours_per_semester(self, number_of_hours):
         '''Set the number of hours that are scheduled per semester. This return the success of the load.'''
         
-        # MERINO: added minimum hours
         if number_of_hours <= self.session_configuration.strong_hours_minimum \
            or self.session_configuration.strong_hours_limit < number_of_hours:
            
@@ -543,7 +541,7 @@ class SmartPlannerController:
         error_reports = None
                 
         # Verify the passed filename exists
-        filepath = get_real_filepath(filename)   # Get the verified path (this is a Path object that exists, but it is not necessarily a directory)
+        filepath = get_real_filepath(filename) # Get the verified path (this is a Path object that exists, but it is not necessarily a directory)
         if filepath:
             try:
                 schedule = parse_path_to_grad(filepath)
@@ -569,7 +567,6 @@ class SmartPlannerController:
     def generate_schedule(self, filename=None):
         '''Generate the schedule with a given filename or the current default filename if nothing is provided.'''
         
-        # MERINO: added needed courses and export types check (empty)
         # Check if any courses are loaded
         if not self._scheduler.get_courses_needed():
             self.output_warning('No schedule exported.')
@@ -620,12 +617,12 @@ class SmartPlannerController:
         # NOTE: we may be able to create multiple schedulers and run them on different threads
         
         # Verify the passed filename exists
-        filepath = get_real_filepath(pathname)   # Get the verified path (this is a Path object that exists, but it is not necessarily a directory)
+        filepath = get_real_filepath(pathname) # Get the verified path (this is a Path object that exists, but it is not necessarily a directory)
         
         template_path = Path(get_source_path(), 'input_files')
                 
         if filepath:
-            course_info_container = self.scheduler.get_course_info()
+            course_info_container = self._scheduler.get_course_info()
             
             try:
                 if filepath.is_dir():
@@ -639,7 +636,7 @@ class SmartPlannerController:
                     unique_destination_directory = get_next_free_filename(self.get_destination())
                     unique_destination_directory.mkdir()
                                             
-                    batch_process(course_info_paths, unique_destination_directory, template_path, course_info_container)
+                    batch_process(filepath, unique_destination_directory, template_path, course_info_container)
                         
 #                    for course_info_path in course_info_paths:
 #
@@ -664,10 +661,9 @@ class SmartPlannerController:
         '''Gets input from the user and passed that input into the presenting interface/menu. The method then returns whether
         there are any interfaces left presenting. In the case there aren't any, the method should not be called again. This may
         act as the process's entire loop.'''
-        user_input = self.get_input()                            # Get input from the user
-        current_interface = self.get_current_interface()         # Get the current interface/menu
-        current_interface.parse_input(self, user_input)          # Pass the user's input to the current menu
-        return len(self._interface_stack) != 0                   # return whether there are still any interfaces presenting
-
+        user_input = self.get_input() # Get input from the user
+        current_interface = self.get_current_interface() # Get the current interface/menu
+        current_interface.parse_input(self, user_input) # Pass the user's input to the current menu
+        return len(self._interface_stack) != 0 # return whether there are still any interfaces presenting
 
 # End of SmartPlannerController definition

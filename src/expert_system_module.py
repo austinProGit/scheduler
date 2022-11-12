@@ -5,6 +5,9 @@
 import math
 import itertools
 
+
+# TODO: add path to grad rules
+
 # ---------------------------------------- Scheduling System ----------------------------------------
 
 # This module needs to perform 2 functions: pick a set of courses with the highest confidence value given the number of credit hours and the available courses.
@@ -269,7 +272,8 @@ def _get_best_possibilities(hours, possibilities):
 
 # Translation map from semester K to the next
 SEMESTER_TYPE_SUCCESSOR = {'Fa': 'Sp', 'Sp': 'Su', 'Su': 'Fa'}
-
+COURSE_RULE = 0b0001
+PATH_RULE = 0b0010
 
 class ConfidenceRule:
 
@@ -338,9 +342,11 @@ class ConfidenceRule:
     
 
 # This is a method decorator that lets a method pass as a ConfidenceRule.
-def confidencerule(confidence=1.0):
+def confidencerule(confidence=1.0, rule_mask=PATH_RULE):
     def get(method):
-        return ConfidenceRule(method, confidence, True)
+        rule = ConfidenceRule(method, confidence, True)
+        rule.rule_mask = rule_mask
+        return rule
     return get
 
 
@@ -363,9 +369,11 @@ class _LazyRule:
 
 
 # This is a method decorator that lets a method pass as a ConfidenceRule.
-def rulebuilder(confidence=1.0):
+def rulebuilder(confidence=1.0, rule_mask=PATH_RULE):
     def get(method):
-        return ConfidenceRule(_LazyRule(method), confidence, True)
+        rule = ConfidenceRule(_LazyRule(method), confidence, True)
+        rule.rule_mask = rule_mask
+        return rule
     return get
 
 
@@ -414,7 +422,8 @@ class ExpertSystem:
     def __init__(self):
         
         # These are the rules for the system
-        self.rules = []
+        self.course_rules = []
+        self.path_rules = []
         
         for attribute_name in dir(self):
             attribute = getattr(self, attribute_name)
@@ -423,12 +432,16 @@ class ExpertSystem:
             
     
     def add_rule(self, confidence_rule):
-        self.rules.append(confidence_rule)
+        if confidence_rule.rule_mask & COURSE_RULE != 0:
+            self.course_rules.append(confidence_rule)
+            
+        if confidence_rule.rule_mask & PATH_RULE != 0:
+            self.path_rules.append(confidence_rule)
     
     # This is the inference engine
     def calculate_confidence(self, dynamic_knowledge, course_info):
         
-        path_cf_sum = 0
+        courses_path_cf_sum = 0
         schedule = dynamic_knowledge.get_schedule()
         semester_type = 'Fa'
         
@@ -440,29 +453,46 @@ class ExpertSystem:
             
             for course in semester:
                 course_cf = 1
-                for rule in self.rules:
+                for rule in self.course_rules:
                     rule_factor = rule(course, dynamic_knowledge.facts, semester_info, course_info)
                     course_cf = min(course_cf, rule_factor)
                 semester_cf_sum += course_cf
             
             semester_average = semester_cf_sum / len(semester)
-            path_cf_sum += semester_average
+            courses_path_cf_sum += semester_average
             
             semester_type = SEMESTER_TYPE_SUCCESSOR[semester_type]
         
-        average_cf = path_cf_sum / len(schedule)
-        return average_cf
+        courses_average_cf = courses_path_cf_sum / len(schedule)
+        
+        # Path to graduation rules (complete schedule taken into account)
+        # TODO: make this not look dumb
+        path_path_cf_sum = 0
+        for rule in self.path_rules:
+            path_path_cf_sum += rule(schedule, dynamic_knowledge.facts, course_info)
+            
+        path_rules_count = len(self.path_rules)
+        path_average_cf = path_path_cf_sum / path_rules_count if path_rules_count != 0 else courses_average_cf
+        
+        # TODO: make something better here (such as weighted average)
+        return (courses_average_cf + path_average_cf) / 2.0
     
     
-    @confidencerule(confidence=1.0)
+    @confidencerule(confidence=1.0, rule_mask=COURSE_RULE)
     def coreq_fitness(course, facts, semester_info, course_info):
         # TODO: implement
         return 1 # False
     
-    @confidencerule(confidence=1.0)
+    @confidencerule(confidence=1.0, rule_mask=COURSE_RULE)
     def gatekeeper_rule(course, facts, semester_info, course_info):
         # TODO: implement
         #return course_info.get_weight(course) > 2
+        return 1 # False
+    
+        
+    @confidencerule(confidence=1.0, rule_mask=PATH_RULE)
+    def path_rule1(schedule, facts, course_info):
+        # TODO: implement
         return 1 # False
     
     
@@ -486,18 +516,20 @@ class ExpertSystem:
     def rule_b(course, facts, semester_info, course_info):
         return 1 if '13' in course or '21' in course else 0
     
-    @confidencerule()
+    @confidencerule(rule_mask=COURSE_RULE)
     def new_rule1(course, facts, semester_info, course_info):
         es = ExpertSystem
         rule = es.rule_b + es.rule_b + es.rule_b + es.rule_b | es.rule_a3
         return rule(course, facts, semester_info, course_info)
         
-    @rulebuilder()
+    @rulebuilder(rule_mask=COURSE_RULE)
     def new_rule2():
         es = ExpertSystem
         rule = (es.rule_a1 + es.rule_a2 + es.rule_a3) & es.rule_b
         return rule
 
+
+# new_rule([[courseID, courseID, ...], [], [], ...], facts, course_info) -> float between 0 and 1
 
 
 # ---------------------------------------- Testing ----------------------------------------
@@ -550,3 +582,5 @@ if __name__ == '__main__':
     kb.set_schedule(schedule)
     
     print(es.calculate_confidence(kb, DummyContainer()))
+
+
