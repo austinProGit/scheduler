@@ -4,7 +4,7 @@ from urllib.request import urlopen
 from bs4 import BeautifulSoup
 import re
 import pandas as pd
-from alias_module import *
+from alias_module import Alias
 
 
 def update_course_info():
@@ -121,7 +121,7 @@ def parse_catalog(excel_writer, department):
             return 'Fa Sp Su'
 
     def get_importance(_course_id):
-        """helper function to get course importance"""
+        """helper function to get course availabilities"""
         try:
             _df = pd.read_excel("input_files/course_availabilities.xlsx", sheet_name='Sheet1')
             _importance = _df.loc[_df.index[_df['course_ID'] == _course_id]]['importance'].to_list()
@@ -141,6 +141,8 @@ def parse_catalog(excel_writer, department):
     course_info_df = pd.DataFrame(columns=['courseID', 'courseName', 'hours', 'availability', 'prerequisites',
                                            'co-requisites', 'recommended', 'isElective', 'restrictions', 'note',
                                            'importance'])
+    # create alias instance
+    alias = Alias('input_files/Aliases.xlsx')
 
     # loop to add course data to dataframe
     for index in range(len(all_course_blocks)):
@@ -151,6 +153,7 @@ def parse_catalog(excel_writer, department):
         course_id = course_header[0].find('span', class_='text col-3 detail-code margin--tiny text--semibold text--huge')
         if re.search(r'CPSC 6', course_id.text):
             break
+        course_id = alias.update_alias(course_id.text)
         # extract course name
         course_name = course_header[0].find('span', class_='text col-3 detail-title margin--tiny text--bold text--huge')
         # extract course hours
@@ -158,11 +161,11 @@ def parse_catalog(excel_writer, department):
         # extract prerequisites
         prerequisites, co_requisites = extract_requisites()
         # get availability
-        availability = get_availability(course_id.text)
+        availability = get_availability(course_id)
         # get importance
-        importance = get_importance(course_id.text)
+        importance = get_importance(course_id)
         # add course to dataframe
-        course_info_df.loc[len(course_info_df.index)] = [course_id.text, course_name.text, course_hours.text,
+        course_info_df.loc[len(course_info_df.index)] = [course_id, course_name.text, course_hours.text,
                                                          availability, prerequisites, co_requisites, '', 0, '', '',
                                                          importance]
 
