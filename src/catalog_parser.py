@@ -42,7 +42,7 @@ def update_course_info():
     main_df = main_df.replace("-- -- --", "Fa Sp Su")
     # add cpsc generic elective
     main_df.loc[len(main_df.index)] = ["CPSC 3XXX", "Generic Elective", "(3-0-3)", "Fa Sp Su",
-                                       '', '', '', 0, '', '']
+                                       '', '', '', 0, '', '', '']
 
     # write final New Course Info.xlsx
     excel_writer = pd.ExcelWriter('output_files/NEW Course Info.xlsx')
@@ -120,6 +120,15 @@ def parse_catalog(excel_writer, department):
         except IndexError:
             return 'Fa Sp Su'
 
+    def get_importance(_course_id):
+        """helper function to get course availabilities"""
+        try:
+            _df = pd.read_excel("input_files/course_availabilities.xlsx", sheet_name='Sheet1')
+            _importance = _df.loc[_df.index[_df['course_ID'] == _course_id]]['importance'].to_list()
+            return _importance[0]
+        except IndexError:
+            return '-1'
+
     # open url, load into bs4 object
     url = "https://catalog.columbusstate.edu/course-descriptions/"+str(department).lower()+"/"
     html = urlopen(url).read()
@@ -130,7 +139,8 @@ def parse_catalog(excel_writer, department):
 
     # create dataframe to hold course info
     course_info_df = pd.DataFrame(columns=['courseID', 'courseName', 'hours', 'availability', 'prerequisites',
-                                           'co-requisites', 'recommended', 'isElective', 'restrictions', 'note'])
+                                           'co-requisites', 'recommended', 'isElective', 'restrictions', 'note',
+                                           'importance'])
 
     # loop to add course data to dataframe
     for index in range(len(all_course_blocks)):
@@ -149,9 +159,12 @@ def parse_catalog(excel_writer, department):
         prerequisites, co_requisites = extract_requisites()
         # get availability
         availability = get_availability(course_id.text)
+        # get importance
+        importance = get_importance(course_id.text)
         # add course to dataframe
         course_info_df.loc[len(course_info_df.index)] = [course_id.text, course_name.text, course_hours.text,
-                                                         availability, prerequisites, co_requisites, '', 0, '', '']
+                                                         availability, prerequisites, co_requisites, '', 0, '', '',
+                                                         importance]
 
     course_info_df.to_excel(excel_writer, sheet_name=str(department).upper(), index=False)
     excel_writer.save()
