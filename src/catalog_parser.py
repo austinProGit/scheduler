@@ -121,7 +121,7 @@ def parse_catalog(excel_writer, department):
             return 'Fa Sp Su'
 
     def get_importance(_course_id):
-        """helper function to get course availabilities"""
+        """helper function to get course importance"""
         try:
             _df = pd.read_excel("input_files/course_availabilities.xlsx", sheet_name='Sheet1')
             _importance = _df.loc[_df.index[_df['course_ID'] == _course_id]]['importance'].to_list()
