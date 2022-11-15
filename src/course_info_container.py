@@ -23,7 +23,7 @@ class CourseInfoContainer:
         return weight
 
     # This returns boolean if course is in dictionary of report.  Note we already have a method to do this without report
-    # called validate_course(courseid).  Can only use this method after report is created.
+    # called validate_course(courseid).  Can only use this method after report is loaded.
     def is_course_in_report(self, courseid):
         return courseid in self._report.course_descendants
 
