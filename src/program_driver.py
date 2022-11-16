@@ -590,7 +590,7 @@ class SmartPlannerController:
         try:
             if self._export_types:
                 semesters_listing = self._scheduler.generate_schedule()
-                
+                print(type(semesters_listing), semesters_listing)
                 template_path = Path(get_source_path(), 'input_files')
                 
                 if PATH_TO_GRADUATION_EXPORT_TYPE in self._export_types:
