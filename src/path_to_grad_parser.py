@@ -1,6 +1,7 @@
 # Author: Vincent Miller, Thomas Merino
 # Date: 11 November 2022
 
+from alias_module import get_latest_id
 import pandas as pd
 import re
 
@@ -45,7 +46,7 @@ def parse_path_to_grad(file_name):
             course_consume_counter += 1
             
             if course is not None:
-                _semester.append(course.group())
+                _semester.append(get_latest_id(course.group()))
             elif delimiter is not None:
                 break
         
@@ -68,8 +69,14 @@ def parse_path_to_grad(file_name):
         for index in [FALL_CURSOR_INDEX, SPRING_CURSOR_INDEX, SUMMER_CURSOR_INDEX]:
             schedule.append(parse_semester_from_column(index, row_count))
     
-    # Remove the empty semesters at the end of the schedule (do not make empty, though)
-    while len(schedule) > 1 and not schedule[-1]:
+    # Remove the empty YEARS at the end of the schedule (do not make empty, though)
+    # This should ensure the end is always consistent (Summer in this case)
+    while len(schedule) > 3 and not schedule[-1] and \
+                                not schedule[-2] and \
+                                not schedule[-3]:
+        # Pop an entire year of courses
+        schedule.pop()
+        schedule.pop()
         schedule.pop()
     
     return schedule

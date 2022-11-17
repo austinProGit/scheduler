@@ -8,6 +8,9 @@
 #   The third line detemines whether to load the gui (if "YES" is in the second line)
 
 
+# TODO: the labels in the path to graduation template are out of date
+# TODO: make the alias module work in all other modules
+
 # POTENTIAL GOALS FOR NEXT CYCLE:
 # - General refactoring
 # - Use AI for scheduling algorithm
