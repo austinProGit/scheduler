@@ -119,25 +119,29 @@ class HelpMenu(GeneralInterface):
             #     header = documentation.readline()
     
     # Helper function for reading the contents of the help documentation
-    def parse_file_with_tokens(file, start_token, end_token):
+    def parse_file_with_tokens(self, file, start_token, end_token):
         result = ''
         line = file.readline()
         while line and start_token not in line:
             line = file.readline()
         if not line:
             return None # EOF
-        result = line[line.index(start_token + len(start_token)):]
+        if end_token in line:
+            return line[line.index(start_token) + len(start_token):line.index(end_token)]
+        result = line[line.index(start_token) + len(start_token):]
         line = file.readline()
         while end_token not in line:
             result += line
             line = file.readline()
         result += line[:line.index(end_token)]
+        print(f'result: {result}')
+        return result
 
-    def remove_tokens_from_string(string, start_token, end_token):
+    def remove_tokens_from_string(self, string, start_token, end_token):
         start_index = string.find(start_token)
         end_index = string.find(end_token)
         if start_index != -1 and end_index != -1:
-            result = remove_tokens_from_string(string[:start_index] + string[:end_index+len(end_token)], start_token, end_token)
+            result = self.remove_tokens_from_string(string[:start_index] + string[:end_index+len(end_token)], start_token, end_token)
         return string
 
     def parse_input(self, controller, input):
