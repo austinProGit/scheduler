@@ -1,27 +1,179 @@
 <!DOCTYPE html>
 <head>
-<title>Smart Planner Documentation</title>
-<style>
-	h1 {font-family: Gill Sans; margin: 50px 100px 50px 25px;}
-	h3 {color:orange; font-family: Gill Sans; margin: 10px 100px 10px 50px;}
-	p {font-family: Gill Sans; margin: 15px 100px 50px 100px;}
-</style>
+	<title>Smart Planner Documentation</title>
+	<link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<h1>Smart Planner Documentation</h1>
-<h3>How to Load Needed Courses</h3>
-<!--load needed courses course classes class schedule input-->
-<p>In order for Smart Planner to generate a schedule, it needs the a list of courses required before graduation. Courses should be listed in a PDF document. To load the courses into the program you can either enter "load FILENAME" where FILENAME is the local or absolute path, or enter "browse" to open a file browser.</p>
+	<h1>Smart Planner Documentation</h1>
+	<h3>Load Needed Courses</h3>
+	<!--load needed courses course classes class schedule input-->
+	<p>
+		In order for Smart Planner to generate a schedule, it needs the a list of courses required before graduation. 
+		Courses should be listed in a PDF document. To load the courses into the program you can either enter 
+		"load FILENAME" where FILENAME is the local or absolute path, or enter "browse" to open a file browser.
+	</p>
 
-<h3>How to Generate a Schedule</h3>
-<!--generate run execute schedule create file export-->
-<p>To generate a schedule, first make sure all needed courses are loaded and all scheduling parameters are set correctly (see other help pages for more information). Then, enter "schedule FILENAME" where FILENAME is the name of the output file.</p>
+	<h3>Set the Number of Hours Per Semester</h3>
+	<!--hours set parameter per semester setup configure-->
+	<p>
+		To set the number of credit hours per semester, enter "hours NUMBER" where NUMBER is the desired number of hours 
+		per semester.
+	</p>
 
-<h3>How to Set the Number of Hours Per Semester</h3>
-<!--hours set parameter per semester setup configure-->
-<p>To set the number of credit hours per semester, enter "hours NUMBER" where NUMBER is the desired number of hours per semester.</p>
+	<h3>Adjusting Configuration Data</h3>
+	<!--config configuration setup settings administrate files custom customize-->
+	<p>
+		The configuration file (called "config") has the following format: the first line is the filename of the catalog 
+		file. This is expected to be an xslx file in the working directory and follows the format in the instruction 
+		manual (see manual). The second line is whether the program launches in GUI mode (either "YES" or "NO").
+	</p>
 
-<h3>Adjusting Configuration Data</h3>
-<!--config configuration setup settings administrate files custom customize-->
-<p>The configuration file (called "config") has the following format: the first line is the filename of the catalog file. This is expected to be an xslx file in the working directory and follows the format in the instruction manual (see manual). The second line is whether the program launches in GUI mode (either "YES" or "NO").</p>
+	<h3>CLI Scheduling</h3>
+	<!-- generate run execute schedule create scheduling CLI userstory -->
+	<p>
+		From the command line, user launches main.py. User loads needed courses with syntax 'load fileName'. The user 
+		should verify the parameters of the current configuration with the parameters command, syntax 'parameters', which 
+		will output the file destination, the maximum hours per semester, and all loaded courses. Then, the user will 
+		generate a schedule with the 'schedule' command, receiving a positive completion output message. The user can then 
+		access their schedule.
+	</p>
+
+	<h3>GUI Scheduling</h3>
+	<!-- graphical GUI schedule scheduling userstory -->
+	<p>
+		From the command line, user launches main.py. If the program has been previously configured to open immediately to 
+		the GUI, then the GUI will launch automatically. If not, the user will then enter 'gui-i' to launch the GUI. Once 
+		the GUI is launched, the user will have access to the following parameters: load needed courses, set destination 
+		directory, set maximum hours per semester, set output format, and set output file name. After the user modifies 
+		desired parameters, they press the 'generate schedule' button. The schedule is now generated.
+	</p>
+
+	<h3>Handling Bad Course Info Input</h3>
+	<!-- error exception courseinfo input-->
+	<p>
+		The administrator has configured the program with a prerequisite that is definitionally unsatisfiable. As soon as 
+		the user launches the program, the user is notified that the catalog contains invalid data and is then redirected 
+		to an error menu. The user must seek the administrator's assistance in creating a valid course information input. 
+		Once in the error menu, the administrator has the option to create a new default configuration file or attempt to 
+		reload. The user cannot access the GUI if there is an error.
+	</p>
+
+	<h3>Administrator Familiarization and Program Configuration</h3>
+	<!-- admin administrator familiarization configuration -->
+	<p>
+		After launching, the administrator accesses the help menu with command 'help'. On the help menu, the administrator 
+		sees a prompt to search by keywords for help articles. The administrator decides to instead see all help articles 
+		by entering the command 'all'. The administrator learns about the main functions of the program, including loading 
+		courses needed, generating the hours, selecting the schedule export types, and many other functions. The administrator 
+		then begins configuration. The administrator configures the courses by editing the Course Info excel file. The 
+		administrator then changes the source directory for the Course Info file as desired by editing the config file. Next, 
+		the administrator sets the output format with the commands 'exports [exportNum]'. Next, the administrator configures 
+		the destination path with the command 'destination [path]'. The administrator then sets the default user interface 
+		to GUI with command 'gui'. The program is now configured for student use.
+	</p>
+
+	<h3>Validate Existing Path to Graduation</h3>
+	<!-- existing validate user submit path -->
+	<p>
+		User launches program in CLI and enters 'verify [filePath]'', where filePath is the location of the Path to Graduation. 
+		If the Path to Graduation is valid, the program outputs 'path valid'. Otherwise, it outputs a list of the errors 
+		found in the path.
+	</p>
+
+	<h3>Batch Processing</h3>
+	<!-- batch schedule scheduling -->
+	<p>
+		The administrator has a folder containing all of the Courses Needed PDF files. The admin enters the destination directory 
+		with command 'destination [path]'. Then, he enters the hours per semester with command 'hours [numberOfHoursPerSemester]'. 
+		Then, he begins batch process execution with command 'batch [directoryOfNeededCourseFiles], [destinationDirectoryName]'. 
+		Valid results will be found in the destination folder. Invalid inputs will result in no corresponding output, and an error 
+		message will be displayed.
+	</p>
+
+	<h3>AI Output Interpretation</h3>
+	<!-- AI ES artificial intelligence expert system interpretation -->
+	<p>
+		After scheduling, the user will receive an output in the form of a decimal value between 0 and 1, where 0 reflects that 
+		the Expert System is very unconfident in the goodness of the Path to Graduation, and 1 reflects absolute confidence. All 
+		Paths to Graduation are valid and satisfy CSU graduation requirements; this measure reflects a subjective judgment based 
+		on rules provided by human scheduling experts.
+	</p>
+
+	<h3>Configure Course Importance</h3>
+	<!-- importance configure configuration -->
+	<p>
+		Course importance is used to prioritize some classes over others in scheduling, provided that the importance does not conflict 
+		with existing scheduling rules. The aministrator accesses the Importance column in the Course Info Excel file. For a given class, 
+		a rating of 0 to 100 can be given.
+	</p>
+
+	<h3>Format of Course Info Input File</h3>
+	<!-- format Course Info input columns -->
+	<p>
+		courseID: Unique identifier for courses.
+		courseName: Common name for course.
+		hours: Hours by semester.
+		availability: When a course is offered during the year by season.
+		prerequisites: Courses required to be taken before a given course.
+		co-requisites: Courses that must be taken before or concurrently with a given course.
+		recommended: Courses recommended to take together.
+		isElective: 1 if a course is an elective, 0 otherwise.
+		restrictions: Restrictions on when a course can be taken, ex: must be senior.
+		note: Misc notes.
+		importance: Importance that a class be taken sooner than other courses from 1 to 100.
+	</p>
+	<table>
+		<tr class="table_title">
+			<th colspan="2">Course Info Column Descriptions</th>
+		</tr>
+		<tr>
+			<th>Column Name</th>
+			<th>Description</th>
+		</tr>
+		<tr>
+			<td>courseID</td>
+			<td>Unique identifier for courses.</td>
+		</tr>
+		<tr>
+			<td>courseName</td>
+			<td>Common name for course.</td>
+		</tr>
+		<tr>
+			<td>hours</td>
+			<td>Hours by semester.</td>
+		</tr>
+		<tr>
+			<td>availability</td>
+			<td>When a course is offered during the year by season.</td>
+		</tr>
+		<tr>
+			<td>prerequisites</td>
+			<td>Courses required to be taken before a given course.</td>
+		</tr>
+		<tr>
+			<td>co-requisites</td>
+			<td>Courses that must be taken before or concurrently with a given course.</td>
+		</tr>
+		<tr>
+			<td>recommended</td>
+			<td>Courses recommended to take together.</td>
+		</tr>
+		<tr>
+			<td>isElective</td>
+			<td>1 if a course is an elective, 0 otherwise.</td>
+		</tr>
+		<tr>
+			<td>restrictions</td>
+			<td>Restrictions on when a course can be taken, ex: must be senior.</td>
+		</tr>
+		<tr>
+			<td>note</td>
+			<td>Misc notes.</td>
+		</tr>
+		<tr>
+			<td>importance</td>
+			<td>Importance that a class be taken sooner than other courses from 1 to 100.</td>
+		</tr>
+		</table>
+<!-- configuring rule weights, submit premade schedule, format of Course Info file -->
 </body>
