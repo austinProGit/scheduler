@@ -114,8 +114,6 @@ class Scheduler:
             possible_course = []
             
             possible_course = list(filter(lambda x: check_availability(x) and check_prerequisites(x), courses_needed))
-            for course in courses_needed:
-                print(course, check_availability(course) and check_prerequisites(course))
             
             max_hours = self.hours_per_semester if working_semester_type != 'Su' else 6
             
