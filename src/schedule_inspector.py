@@ -118,39 +118,43 @@ def senior_year_semesters_list(schedule):
 def senior_with_1000_level_courses(schedule):
     found = False
     senior_year = senior_year_semesters_list(schedule)
-    for course in senior_year:
-        if ' 1' in course:
-            found = True
-            break
+    if senior_year != None:
+        for course in senior_year:
+            if ' 1' in course:
+                found = True
+                break
     return found
 
 def senior_with_1000_level_count(schedule):
     message = ''
     count = 0
     senior_year = senior_year_semesters_list(schedule)
-    for course in senior_year:
-        if ' 1' in course:
-            count += 1
-            message += '1000 level course ' + course + ' detected in senior year.\n'
+    if senior_year != None:
+        for course in senior_year:
+            if ' 1' in course:
+                count += 1
+                message += '1000 level course ' + course + ' detected in senior year.\n'
     return count, message
 
 def senior_with_2000_level_courses(schedule):
     found = False
     senior_year = senior_year_semesters_list(schedule)
-    for course in senior_year:
-        if ' 2' in course:
-            found = True
-            break
+    if senior_year != None:
+        for course in senior_year:
+            if ' 2' in course:
+                found = True
+                break
     return found
 
 def senior_with_2000_level_count(schedule):
     message = ''
     count = 0
     senior_year = senior_year_semesters_list(schedule)
-    for course in senior_year:
-        if ' 2' in course:
-            count += 1
-            message += '2000 level course ' + course + ' detected in senior year.\n'
+    if senior_year != None:
+        for course in senior_year:
+            if ' 2' in course:
+                count += 1
+                message += '2000 level course ' + course + ' detected in senior year.\n'
     return count, message
 
 def junior_interval(schedule):
@@ -181,20 +185,22 @@ def junior_year_semesters_list(schedule):
 def junior_with_1000_level_courses(schedule):
     found = False
     junior_year = junior_year_semesters_list(schedule)
-    for course in junior_year:
-        if ' 1' in course:
-            found = True
-            break
+    if junior_year != None:
+        for course in junior_year:
+            if ' 1' in course:
+                found = True
+                break
     return found
 
 def junior_with_1000_level_count(schedule):
     message = ''
     count = 0
     junior_year = junior_year_semesters_list(schedule)
-    for course in junior_year:
-        if ' 1' in course:
-            count += 1
-            message += '1000 level course ' + course + ' detected in junior year.\n'
+    if junior_year != None:
+        for course in junior_year:
+            if ' 1' in course:
+                count += 1
+                message += '1000 level course ' + course + ' detected in junior year.\n'
     return count, message
 
 def sophmore_interval(schedule):
@@ -225,20 +231,22 @@ def sophmore_year_semesters_list(schedule):
 def sophmore_with_4000_level_courses(schedule):
     found = False
     sophmore_year = sophmore_year_semesters_list(schedule)
-    for course in sophmore_year:
-        if ' 4' in course:
-            found = True
-            break
+    if sophmore_year != None:
+        for course in sophmore_year:
+            if ' 4' in course:
+                found = True
+                break
     return found
 
 def sophmore_with_4000_level_count(schedule):
     count = 0
     message = ''
     sophmore_year = sophmore_year_semesters_list(schedule)
-    for course in sophmore_year:
-        if ' 4' in course:
-            count += 1
-            message += '4000 level course ' + course + ' detected in sophmore year.\n'
+    if sophmore_year != None:
+        for course in sophmore_year:
+            if ' 4' in course:
+                count += 1
+                message += '4000 level course ' + course + ' detected in sophmore year.\n'
     return count, message
 
 def freshman_interval(schedule):
@@ -269,39 +277,43 @@ def freshman_year_semesters_list(schedule):
 def freshman_with_3000_level_courses(schedule):
     found = False
     freshman_year = freshman_year_semesters_list(schedule)
-    for course in freshman_year:
-        if ' 3' in course:
-            found = True
-            break
+    if freshman_year != None:
+        for course in freshman_year:
+            if ' 3' in course:
+                found = True
+                break
     return found
 
 def freshman_with_3000_level_count(schedule):
     message = ''
     count = 0
     freshman_year = freshman_year_semesters_list(schedule)
-    for course in freshman_year:
-        if ' 3' in course:
-            count += 1
-            message += '3000 level course ' + course + ' detected in freshman year.\n'
+    if freshman_year != None:
+        for course in freshman_year:
+            if ' 3' in course:
+                count += 1
+                message += '3000 level course ' + course + ' detected in freshman year.\n'
     return count, message
 
 def freshman_with_4000_level_courses(schedule):
     found = False
     freshman_year = freshman_year_semesters_list(schedule)
-    for course in freshman_year:
-        if ' 4' in course:
-            found = True
-            break
+    if freshman_year != None:
+        for course in freshman_year:
+            if ' 4' in course:
+                found = True
+                break
     return found
 
 def freshman_with_4000_level_count(schedule):
     message = ''
     count = 0
     freshman_year = freshman_year_semesters_list(schedule)
-    for course in freshman_year:
-        if ' 4' in course:
-            count += 1
-            message += '4000 level course ' + course + ' detected in freshman year.\n'
+    if freshman_year != None:
+        for course in freshman_year:
+            if ' 4' in course:
+                count += 1
+                message += '4000 level course ' + course + ' detected in freshman year.\n'
     return count, message
 
 def coreqs_invalid(schedule, course_info):

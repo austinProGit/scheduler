@@ -303,8 +303,6 @@ class ExpertSystem:
         count2000, message2000 = info2000[0], info2000[1]  
         cf -= (high() * count1000)  
         cf -= (low() * count2000)
-        if message1000 != '': print(message1000) 
-        if message2000 != '': print(message2000)
         return cf
 
     # ------------------------------------ Junior Rule ------------------------------------
@@ -327,7 +325,6 @@ class ExpertSystem:
         info = junior_with_1000_level_count(schedule)
         count, message = info[0], info[1]
         cf -= (high() * count)
-        print(message)
         return cf
 
      # ------------------------------------ Sophmore Rule -----------------------------------
@@ -350,7 +347,6 @@ class ExpertSystem:
         info = sophmore_with_4000_level_count(schedule)
         count, message = info[0], info[1]
         cf -= (high() * count)
-        print(message)
         return cf
 
     # ------------------------------------ Freshman Rule -----------------------------------
@@ -377,8 +373,6 @@ class ExpertSystem:
         count4000, message4000 = info4000[0], info4000[1]
         cf -= (low() * count3000)
         cf -= (high() * count4000)
-        if message3000 != '': print(message3000)
-        if message4000 != '': print(message4000)
         return cf
 
     # ------------------------------------ CoReq Rule -----------------------------------
@@ -401,7 +395,6 @@ class ExpertSystem:
         info = coreqs_invalid_count(schedule, course_info)
         count, message = info[0], info[1]
         cf -= (high() * count)
-        print(message)
         return cf
 
     # ------------------------------------ Gateway Rule ----------------------------------
@@ -424,7 +417,6 @@ class ExpertSystem:
         info = gateway_courses_invalid(schedule, course_info)
         count, message = info[0], info[1]
         cf -= (high() * count)
-        print(message)
         return cf
 
     # ------------------------------------ Importance Rule ----------------------------------
@@ -447,7 +439,6 @@ class ExpertSystem:
         info = importance_invalid(schedule, course_info)
         count, message = info[0], info[1]
         cf -= (high() * count)
-        print(message)
         return cf
 
     # ------------------------------------ Empty Rule ----------------------------------
@@ -472,7 +463,6 @@ class ExpertSystem:
         count, message = info[0], info[1]
         count -= 1
         cf -= (high() * count)
-        print(message)
         return cf
 
 # ........................................ End Lew's Rules ................................
