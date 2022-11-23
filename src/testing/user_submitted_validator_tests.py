@@ -93,7 +93,7 @@ def user_submitted_validator_tests():
     ['CPSC 4155', 'CPSC 4175'], ['CPSC 4176', 'CPSC 4000'],[]]
 
     # Known prereqs that will appear as prereqs in Course Info but not as courses in column 1 of Course Info
-    excused_prereqs = ['MISM 3145', 'MISM 3115', 'MISM 3109', 'MATH 1111']
+    excused_prereqs = ['MISM 3145', 'MISM 3115', 'MISM 3109', 'MATH 1111', 'MATH 1131', 'MATH 1132']
 
     # Create a course info container from the real Course Info input
     container = CourseInfoContainer(load_course_info('src/input_files/Course Info.xlsx'), excused_prereqs)

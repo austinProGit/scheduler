@@ -43,7 +43,7 @@ def program_generated_validator_tests() :
 
         # Gets all excused prereqs that are not listed as course id's
         def get_excused_prereqs(self):
-            prereq_list = ['MISM 3145', 'MISM 3115', 'MISM 3109', 'MATH 1111']
+            prereq_list = ['MISM 3145', 'MISM 3115', 'MISM 3109', 'MATH 1111', 'MATH 1131', 'MATH 1132']
             return prereq_list
     
     # Our current required path, which is known to be valid.

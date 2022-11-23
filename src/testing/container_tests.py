@@ -21,7 +21,7 @@ def container_tests() :
             ['CPSC 3333', None, None, None, None, None, None, '8'],
             ['CPSC 4444', 'Four', 'Fa -- --', 'none', None, '??', None, 2]]
 
-    excused_prereqs = ['MISM 3145', 'MISM 3115', 'MISM 3109', 'MATH 1111']
+    excused_prereqs = ['MISM 3145', 'MISM 3115', 'MISM 3109', 'MATH 1111', 'MATH 1131', 'MATH 1132']
 
     df = pd.DataFrame(data, columns = headers)
     container = CourseInfoContainer(df, excused_prereqs) #Updated to include excused_prereqs by Austin Lee
