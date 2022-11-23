@@ -7,6 +7,7 @@ from expert_system_module import ExpertSystem, DynamicKnowledge
 
 SEMESTER_TYPE_SUCCESSOR = {'Fa': 'Sp', 'Sp': 'Su', 'Su': 'Fa'}    # Translation map from semester K to the next
 DEFAULT_HOURS_PER_SEMESTER = 15  # MERINO: updated value
+INITIAL_SEMESTER = {'Fa': [], 'Sp': [[]], 'Su': [[], []]}
 
 LOW_FITNESS = 1
 MID_FITNESS = 5.5
@@ -97,9 +98,9 @@ class Scheduler:
         
         # Ensure CPSC 4000 is scheduled in the last semester
         contains_4000 = False
-        if 'CPSC4000' in courses_needed:
+        if 'CPSC 4000' in courses_needed:
             contains_4000 = True
-            courses_needed.remove('CPSC4000')
+            courses_needed.remove('CPSC 4000')
         
         # Helper functions
         def check_availability(course_id):
@@ -114,11 +115,11 @@ class Scheduler:
                     return False
             return True
         
-        # Create empty, final schedule, each semester list will be added to this
-        full_schedule = []
         # Create a string to track the current semester type ('Fa', 'Sp', or 'Su')
         working_semester_type = self.semester_type
-        
+                
+        # Create empty, final schedule, each semester list will be added to this
+        full_schedule = INITIAL_SEMESTER[working_semester_type][:]
         
         # loop through until courses_needed is empty
         while len(courses_needed):
@@ -144,7 +145,7 @@ class Scheduler:
             working_semester_type = SEMESTER_TYPE_SUCCESSOR[working_semester_type]
             
         if contains_4000:
-            full_schedule[-1].append('CPSC4000')
+            full_schedule[-1].append('CPSC 4000')
         
         # Calculate the confidence factor for the new schedule
         dynamic_knowledge = DynamicKnowledge()
