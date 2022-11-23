@@ -7,8 +7,6 @@ import itertools
 from schedule_inspector import *
 
 
-# TODO: add path to grad rules
-
 # ---------------------------------------- Scheduling System ----------------------------------------
 
 # This module needs to perform 2 functions: pick a set of courses with the highest confidence value given the number of credit hours and the available courses.
