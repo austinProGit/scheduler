@@ -587,6 +587,8 @@ class SmartPlannerController:
             try:
                 if filepath.is_dir():
                     
+                    self.output('Starting batch validation...')
+                    
                     # The path is a directory (iterate over the file inside)
                     graduation_paths = []
                     for graduation_path in filepath.iterdir():
@@ -615,6 +617,7 @@ class SmartPlannerController:
                     
             except IOError:
                 self.output_error('File system error encountered while attempting batch validation.')
+        self.output('Batch concluded.')
         
     
     def generate_schedule(self, filename=None):
@@ -685,6 +688,9 @@ class SmartPlannerController:
             
             try:
                 if filepath.is_dir():
+                    
+                    self.output('Starting batch output...')
+                    
                     # The path is a directory (iterate over the file inside)
                     course_info_paths = []
                     for course_info in filepath.iterdir():
@@ -713,6 +719,7 @@ class SmartPlannerController:
             except IOError:
                 self.output_error('File system error encountered while attempting batch export.')
         
+        self.output('Batch concluded.')
     
     
     def run_top_interface(self):
