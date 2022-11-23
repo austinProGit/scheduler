@@ -2,7 +2,6 @@
 # 9/29/22
 # CPSC 4175 Group Project
 
-# TODO: TEST!
 # TODO: Add some meaningful comments/documentation
 # TODO: Needed courses label and listing box do not source from the data model (fix)
 # TODO: Get @QtCore.Slot decorator to work
@@ -301,7 +300,13 @@ class MainMenuWidget(QtWidgets.QWidget):
     
     def _generate_schedule_callback(self):
         
-        self.controller.generate_schedule()
+        confidence_factor = self.controller.generate_schedule()
+        
+        if confidence_factor != -1:
+            message_box = QtWidgets.QMessageBox()
+            message_box.setIcon(QtWidgets.QMessageBox.Information)
+            message_box.setText('Schedule generated with confidence value of {0:.3f}.'.format(confidence_factor))
+            message_box.exec()
         
     
     def _reload_in_cli_callback(self):

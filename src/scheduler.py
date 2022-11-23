@@ -15,9 +15,10 @@ HIGH_FITNESS = 10
 FITNESS_LISTING = [LOW_FITNESS, MID_FITNESS, HIGH_FITNESS]
 
 from expert_system_module import CoreqRule, FitnessConfiguration, get_fittest_courses
+from expert_system_module import ExpertSystem, DynamicKnowledge
 
 
-# The following are some atomic fitness rules:
+# The following are some test atomic fitness rules:
 # ---------------------->
 def gatekeeper_rule(courseID, course_info_container):
     weight = course_info_container.get_weight(courseID)
@@ -34,21 +35,27 @@ def availability_rule(courseID, course_info_container):
         if availability_list in availability_list:
             availability_cardinality += 1
     return FITNESS_LISTING[3-availability_cardinality]
+    
+COREQ_ADDITIONAL_FITNESS = LOW_FITNESS
 # <----------------------
 
 
 class Scheduler:
     
     @staticmethod
-    def _create_default_fitness_configuration():
+    def _create_default_fitness_configuration(course_info_container=None):
+        # TODO: complete this
         atomic_rules = [
             gatekeeper_rule,
             availability_rule
         ]
-        # TODO: fill out
-        coreq_rules = [
-            # CoreqRule(required_course, optional_course, additional_fitness)
-        ]
+        
+        coreq_rules = []
+        if course_info_container is not None:
+            for courseID in course_info_container.get_courseIDs():
+                for coreq in course_info_container.get_coreqs(courseID):
+                    coreq_rules.append(CoreqRule(courseID, coreq, COREQ_ADDITIONAL_FITNESS))
+        
         return FitnessConfiguration(atomic_rules, coreq_rules)
     
     def __init__(self):
@@ -58,6 +65,7 @@ class Scheduler:
         self.semester_type = 'Sp'
         
         self.fitness_configuration = Scheduler._create_default_fitness_configuration()
+        self.expert = ExpertSystem()
     
     def get_course_info(self):
         return self.course_info_container
@@ -70,6 +78,7 @@ class Scheduler:
         
     def configure_course_info(self, container):
         self.course_info_container = container
+        self.fitness_configuration = Scheduler._create_default_fitness_configuration(container)
         
     def configure_courses_needed(self, courses_needed):
         self.courses_needed = courses_needed[:]
@@ -82,7 +91,7 @@ class Scheduler:
            Inputs: None, but requires course_info and courses_needed setup prior to running
            Returns: list of lists, inner list is one semester of courses, outer list is full schedule"""
         course_info = self.course_info_container # Get the course info container
-        courses_needed = self.courses_needed # Create a copy of the needed courses (workable list)
+        courses_needed = self.courses_needed[:] # Create a copy of the needed courses (workable list)
         
         # Helper functions
         def check_availability(course_id):
@@ -127,9 +136,15 @@ class Scheduler:
             
             # Rotate to the next semester type
             working_semester_type = SEMESTER_TYPE_SUCCESSOR[working_semester_type]
-
-        return full_schedule
-
+        
+        # Calculate the confidence factor for the new schedule
+        dynamic_knowledge = DynamicKnowledge()
+        dynamic_knowledge.set_schedule(full_schedule)
+        confidence_factor = self.expert.calculate_confidence(dynamic_knowledge, course_info)
+        
+        return full_schedule, confidence_factor
+    
+    
     def first_available(self, semester_type):
         """Performs similar as generate_schedule() without hours limitation or multi semester.
            Input: semester_type, ('Fa', 'Sp', 'Su')
@@ -185,203 +200,3 @@ class Scheduler:
         # returns list of courses and list of remaining courses needed
         return semester, courses_needed
 
-
-
-#
-#class Scheduler:
-#    def __init__(self):
-#        self.hours_per_semester = DEFAULT_HOURS_PER_SEMESTER
-#        self.courses_needed = []
-#        self.course_info_container = None
-#        self.semester_type = 'Fa'
-#
-#    def get_course_info(self):
-#        return self.course_info_container
-#
-#    def get_courses_needed(self):
-#        return self.courses_needed[:]
-#
-#    def get_hours_per_semester(self):
-#        return self.hours_per_semester
-#
-#    def configure_course_info(self, container):
-#        self.course_info_container = container
-#
-#    def configure_courses_needed(self, courses_needed):
-#        self.courses_needed = courses_needed[:]
-#
-#    def configure_hours_per_semester(self, number_of_hours):
-#        self.hours_per_semester = number_of_hours
-#
-#    def generate_schedule(self):
-#        """Primary method to schedule a path to graduation
-#           Inputs: None, but requires course_info and courses_needed setup prior to running
-#           Returns: list of lists, inner list is one semester of courses, outer list is full schedule"""
-#        course_info = self.course_info_container    # Get the course info container
-#        courses_needed = self.courses_needed[:]     # Create a copy of the needed courses (workable list)
-#
-#        # Helper functions
-#        def check_availability(course_id):
-#            availability = course_info.get_availability(course_id)
-#            return working_semester_type in availability
-#
-#        def check_precise_hours():
-#            return current_hours_counter + course_hours <= max_hours
-#
-#        def check_prerequisites(course_id):
-#            prerequisites = course_info.get_prereqs(course_id)
-#            # if prerequisite course is in courses_needed or in semester, can't take course yet.
-#            for prerequisite in prerequisites:
-#                if prerequisite in courses_needed or prerequisite in semester:
-#                    return False
-#            return True
-#
-#        def check_corequisites(course_id):
-#            corequisites = course_info.get_coreqs(course_id)
-#            # If co-requisite course is in the needed courses, can't take course yet.
-#            for corequisite in corequisites:
-#                if corequisite in courses_needed:
-#                    return False
-#            return True
-#
-#        def complete_check(course_id):
-#            # Run all three of the above checks (with short circuit evaluation)
-#            return check_availability(course_id) \
-#                and check_precise_hours() \
-#                and check_prerequisites(course_id) \
-#                and check_corequisites(course_id)
-#
-#        # Create empty, final schedule, each semester list will be added to this
-#        full_schedule = []
-#        # Create a string to track the current semester type ('Fa', 'Sp', or 'Su')
-#        working_semester_type = self.semester_type
-#        # variables for lower summer max hours
-#        summer = False
-#        temp_hours = 0
-#        cpsc_4000 = False
-#
-#        # loop through until courses_needed is empty
-#        while len(courses_needed):
-#            # if courses_needed is empty, break out of semester_types loop
-#            if not len(courses_needed):
-#                break
-#
-#            semester = []                       # the working list of courses
-#            current_hours_counter = 0           # counter to hold number of scheduled hours during the current semester
-#
-#            # MERINO: I am changing the use of this variable, so it only stops the searching cycle if it runs through
-#            # the entire needed courses list without finding any new courses to register. This is the only solution I
-#            # have for ensuring we schedule courses that may have been skipped because of co-req requirements. This also
-#            # prevents a rare bug where the while-loop would end preemptively--this was dues to courses_counter not be
-#            # corrected when the length of courses_needed was modified.
-#            # V: Great catch, thanks!
-#
-#            unregistered_courses_counter = 0    # counter to control iteration through courses_needed
-#            max_hours = self.hours_per_semester  # the number of hours (max) to register in the loop's semester
-#
-#            # lower max hours for summer semesters
-#            if summer:
-#                max_hours = temp_hours
-#                summer = False
-#            if working_semester_type == 'Su':
-#                temp_hours = max_hours
-#                max_hours = 6
-#                summer = True
-#
-#            # loop to fill out semester, don't loop over max_hours,
-#            # don't loop through courses_needed more than once, don't loop through courses_needed if empty
-#            while current_hours_counter < max_hours \
-#                    and unregistered_courses_counter < len(courses_needed) \
-#                    and len(courses_needed):
-#
-#                # get first course in list
-#                course = courses_needed.pop(0)
-#
-#                # CPSC belongs in the last semester, skip scheduling if found
-#                if course == 'CPSC 4000':
-#                    cpsc_4000 = True
-#                    continue
-#
-#                # get hours of course
-#                course_hours = course_info.get_hours(course)
-#
-#                # check availability, prerequisites, and co-requisites
-#                passes_complete_check = complete_check(course)
-#                if not passes_complete_check:
-#                    # course cannot be taken, add course back to courses_needed and skip the rest of iteration loop
-#                    courses_needed.append(course)
-#                    # Used to detect if all courses have been checked and, indeed, none can be registered
-#                    unregistered_courses_counter += 1
-#
-#                else:
-#                    # add course in semester, increment hours
-#                    semester.append(course)
-#                    current_hours_counter += course_hours
-#                    unregistered_courses_counter = 0
-#
-#            # add semester to full_schedule
-#            full_schedule.append(semester)
-#
-#            # Rotate to the next semester type
-#            working_semester_type = SEMESTER_TYPE_SUCCESSOR[working_semester_type]
-#
-#        # add CPSC 4000 to last semester
-#        if cpsc_4000:
-#            full_schedule[-1].append('CPSC 4000')
-#
-#        return full_schedule
-#
-#    def first_available(self, semester_type):
-#        """Performs similar as generate_schedule() without hours limitation or multi semester.
-#           Input: semester_type, ('Fa', 'Sp', 'Su')
-#           Returns list of first courses available to selected semester,
-#               and list of remaining courses needed"""
-#        course_info = self.course_info_container  # Get the course info container
-#        courses_needed = self.courses_needed[:]  # Create a copy of the needed courses (workable list)
-#
-#        # Helper functions TODO: duplication of code
-#        def check_availability(course_id):
-#            availability = course_info.get_availability(course_id)
-#            return working_semester_type in availability
-#
-#        def check_prerequisites(course_id):
-#            prerequisites = course_info.get_prereqs(course_id)
-#            # if prerequisite course is in courses_needed or in semester, can't take course yet.
-#            for prerequisite in prerequisites:
-#                if prerequisite in courses_needed or prerequisite in semester:
-#                    return False
-#            return True
-#
-#        def check_corequisites(course_id):
-#            corequisites = course_info.get_coreqs(course_id)
-#            # If co-requisite course is in the needed courses, can't take course yet.
-#            for corequisite in corequisites:
-#                if corequisite in courses_needed:
-#                    return False
-#            return True
-#
-#        def complete_check(course_id):
-#            # Run all three of the above checks (with short circuit evaluation)
-#            return check_availability(course_id) \
-#                   and check_prerequisites(course_id) \
-#                   and check_corequisites(course_id)
-#
-#        working_semester_type = semester_type
-#        semester = []
-#        initial_size = len(courses_needed)
-#
-#        # loop handles first semester
-#        for i in range(initial_size):
-#            # get first course in list
-#            course = courses_needed.pop(0)
-#            # check availability, prerequisites, and co-requisites
-#            passes_complete_check = complete_check(course)
-#            if not passes_complete_check:
-#                # course cannot be taken, add course back to courses_needed and skip the rest of iteration loop
-#                courses_needed.append(course)
-#                # Used to detect if all courses have been checked and, indeed, none can be registered
-#            else:
-#                # add course in semester, increment hours
-#                semester.append(course)
-#        # returns list of courses and list of remaining courses needed
-#        return semester, courses_needed

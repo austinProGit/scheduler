@@ -81,7 +81,8 @@ def parse_catalog(excel_writer, department):
             for element in _co_requisites:
                 if element in _prerequisites:
                     _prerequisites.remove(element)
-
+            
+            # TODO: is this needed?
             # CPSC 2106 became CYBR 2160
             for element in _prerequisites:
                 if element == "CPSC 2106":

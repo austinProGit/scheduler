@@ -1,10 +1,14 @@
 # Author: Vincent Miller
 # Date: 31 August 2022
 # Updated: 28 September 2022, Added exceptions for MATH 1113, 2125, 5125, and electives
+
+from alias_module import get_latest_id
+
 import pandas as pd
 import tabula
 import re
 
+# TODO: implement alias module here:
 
 def get_courses_needed(file_name):
     """Inputs file_name name as string, reads pdf tables into list of dataframes per table,
@@ -28,9 +32,8 @@ def get_courses_needed(file_name):
     discrete_pattern = r'MATH 5125'
     elective_pattern1 = r'6 Credits in CPSC 3@'
     elective_pattern2 = r'3 Credits in CPSC 3@'
-
-    # MERINO: Commented out the original code in place of ugly code that handles dumbass inputs
-
+    
+    
     # search dataframe for course id pattern, adds to list
     courses_needed_list = list()
     for col_name, _ in courses_needed_df.iteritems():

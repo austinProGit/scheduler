@@ -1,15 +1,12 @@
 # Thomas Merino
-# 10/24/22
+# 11/23/22
 # CPSC 4175 Group Project
 
-
-# NOTE: the config file needs to be in the same directory as this file.
-#   The config file stores in the first line the name of the course info filename. This is what's passed into the parser as input.
-#   The third line detemines whether to load the gui (if "YES" is in the second line)
-
-
-# TODO: the labels in the path to graduation template are out of date
-# TODO: make the alias module work in all other modules
+# TODO: make the alias module work in all other modules (some part not nec.???)
+# TODO: add final semester rule
+# TODO: needed course emptied at the end of scheduling
+# TODO: make sure the course excel formatter is exporting correctly
+# TODO: divide the AI file into two files (scheduler assistant and ES)
 
 # POTENTIAL GOALS FOR NEXT CYCLE:
 # - General refactoring
@@ -87,6 +84,7 @@
 # TODO: (WISH) No warning about filename collision because of extension (take all selected export types into consideration)
 # TODO: (WISH) Have the GUI display errors (like warnings)
 # TODO: (FIX) Add "silient=True" to tabula calls so there are no error print outs
+
 
 from PySide6 import QtWidgets, QtGui
 
@@ -631,6 +629,9 @@ class SmartPlannerController:
         
         self.output('Generating schedule...')
         
+        # Create a confidence variable to return (-1 means failed)
+        confidence_factor = -1
+        
         # Set _destination_filename to the passed filename if one was passed
         if filename:
             self._destination_filename = filename
@@ -639,7 +640,8 @@ class SmartPlannerController:
         
         try:
             if self._export_types:
-                semesters_listing = self._scheduler.generate_schedule()
+                semesters_listing, confidence_factor = self._scheduler.generate_schedule()
+                self.output('Path generated with confidence value of {0:.3f}'.format(confidence_factor))
                 
                 template_path = Path(get_source_path(), 'input_files')
                 
@@ -660,6 +662,8 @@ class SmartPlannerController:
         except (FileNotFoundError, IOError):
             # This code will probably execute when file system permissions/organization change after setting parameters
             self.output_error('File system error encountered while attempting an export (please try re-entering parameters). Some files may have exported.')
+        
+        return confidence_factor
         
     
     def batch_schedule(self, pathname):

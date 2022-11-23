@@ -1,5 +1,5 @@
 # Thomas Merino
-# 11/17/22
+# 11/23/22
 # CPSC 4175 Group Project
 
 #from itertools import repeat
@@ -9,6 +9,7 @@ from concurrent.futures import ProcessPoolExecutor
 
 
 class ValidationReport:
+    '''Class for representing a path to graduation validation report. This stores all errors if present, the path file's description (preferably printable), and the confidence factor.'''
     
     def __init__(self, file_description, confidence_factor, error_list=[], exception=None):
         self.file_description = file_description
@@ -17,10 +18,9 @@ class ValidationReport:
         self.exception = exception
 
     def is_valid(self):
+        '''Returns the validity (boolean) of the path.'''
         return self.error_list == [] and self.exception is None
     
-    def description(self):
-        return f'{self.file_description}'
 
 
 def batch_validation(input_files, course_info_container):
