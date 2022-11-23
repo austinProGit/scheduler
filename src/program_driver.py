@@ -1,12 +1,14 @@
 # Thomas Merino
-# 10/24/22
+# 11/23/22
 # CPSC 4175 Group Project
 
-
-# NOTE: the config file needs to be in the same directory as this file.
-#   The config file stores in the first line the name of the course info filename. This is what's passed into the parser as input.
-#   The third line detemines whether to load the gui (if "YES" is in the second line)
-
+# TODO: make the alias module work in all other modules (some part not nec.???)
+# TODO: add final semester rule
+# TODO: needed course emptied at the end of scheduling
+# TODO: make sure the course excel formatter is exporting correctly
+# TODO: divide the AI file into two files (scheduler assistant and ES)
+# TODO: change the name of the ES to "schedule_evaluator"
+# TODO: make sure the structure of the ES is clear
 
 # POTENTIAL GOALS FOR NEXT CYCLE:
 # - General refactoring
@@ -85,6 +87,7 @@
 # TODO: (WISH) Have the GUI display errors (like warnings)
 # TODO: (FIX) Add "silient=True" to tabula calls so there are no error print outs
 
+
 from PySide6 import QtWidgets, QtGui
 
 # NOTE: Uncomment this if you want to run memory profiling
@@ -98,6 +101,7 @@ from subprocess import CalledProcessError # This is used for handling errors rai
 from alias_module import *
 from catalog_parser import update_course_info
 from batch_process import batch_process
+from batch_validation import batch_validation
 from configuration_manager import *
 from driver_fs_functions import *
 from cli_interface import MainMenuInterface, GraphicalUserMenuInterface, ErrorMenu
@@ -216,7 +220,8 @@ class SmartPlannerController:
         
         # Attempt to load the course info data and pass it to the scheduler
         try:
-            # setup_aliases(alias_relative_path)
+            setup_aliases(alias_relative_path)
+
             course_info = load_course_info(course_info_relative_path)
             excused_prereqs = load_course_info_excused_prereqs(excused_prereqs_relative_path)
             course_info_container = CourseInfoContainer(course_info, excused_prereqs)
@@ -465,6 +470,11 @@ class SmartPlannerController:
             self.output_error('Sorry, {0} directory could not be found.'.format(directory))
             
         return success
+        
+    
+    def set_destination_filename(self, filename):
+        '''Simply set the destination filename (what to name the schedule).'''
+        self._destination_filename = filename
     
     
     def configure_destination_filename(self, filename):
@@ -472,7 +482,7 @@ class SmartPlannerController:
         it should not be invoked just before exporting. Do not use this for modifying _destination_filename in all cases.'''
         
         # Set the destination filename (not verified)
-        self._destination_filename = filename
+        self.set_destination_filename(filename)
         self.output('Result filename set to {0}.'.format(filename))
         
         # Check if a file already exists with the current destination
@@ -563,6 +573,49 @@ class SmartPlannerController:
             
         return error_reports
         
+    def batch_validate(self, pathname):
+        ''''''
+        # TODO: add documentation
+                
+        # Verify the passed filename exists
+        filepath = get_real_filepath(pathname) # Get the verified path (this is a Path object that exists, but it is not necessarily a directory)
+        
+        if filepath:
+            course_info_container = self._scheduler.get_course_info()
+            schedule_evaluator = self._scheduler.get_schedule_evaluator()
+            
+            try:
+                if filepath.is_dir():
+                    
+                    # The path is a directory (iterate over the file inside)
+                    graduation_paths = []
+                    for graduation_path in filepath.iterdir():
+                        graduation_paths.append(graduation_path)
+                    
+                    # TODO: resolve pickling issue with ES functions
+                    results = batch_validation(graduation_paths, course_info_container)
+                    
+                    # TODO: make the print appear in the same order as delivered (maybe do this from within the batch method)
+                    
+                    # Print the results
+                    for result in results:
+                        if result.is_valid():
+                            self.output('{0} appears to be correct. The confidence value for this schedule is {1:.1f}%\n'.format(result.file_description, result.confidence_factor*100))
+                        else:
+                            self.output_warning(f'{result.file_description} is invalid!:')
+                            
+                            for infraction in result.error_list:
+                                self.output(infraction)
+                            
+                            self.output(f'Please correct these issues.\n')
+                    
+                elif filepath.is_file():
+                    # TODO: Implement this
+                    self.output('Not supported yet')
+                    
+            except IOError:
+                self.output_error('File system error encountered while attempting batch validation.')
+        
     
     def generate_schedule(self, filename=None):
         '''Generate the schedule with a given filename or the current default filename if nothing is provided.'''
@@ -581,6 +634,9 @@ class SmartPlannerController:
         
         self.output('Generating schedule...')
         
+        # Create a confidence variable to return (-1 means failed)
+        confidence_factor = -1
+        
         # Set _destination_filename to the passed filename if one was passed
         if filename:
             self._destination_filename = filename
@@ -589,7 +645,8 @@ class SmartPlannerController:
         
         try:
             if self._export_types:
-                semesters_listing = self._scheduler.generate_schedule()
+                semesters_listing, confidence_factor = self._scheduler.generate_schedule()
+                self.output('Path generated with confidence value of {0:.1f}%'.format(confidence_factor*100))
                 
                 template_path = Path(get_source_path(), 'input_files')
                 
@@ -605,16 +662,18 @@ class SmartPlannerController:
                     self.output('Schedule (plain text) exported as {0}'.format(unique_ptext_destination))
                 
             else:
-                self.output_error('Please select an export type.')
+                self.output_error('Validation over a file list is not supported yet.')
                 
         except (FileNotFoundError, IOError):
             # This code will probably execute when file system permissions/organization change after setting parameters
             self.output_error('File system error encountered while attempting an export (please try re-entering parameters). Some files may have exported.')
         
+        return confidence_factor
+        
     
     def batch_schedule(self, pathname):
         
-        # NOTE: we may be able to create multiple schedulers and run them on different threads
+        # TODO: add documentation
         
         # Verify the passed filename exists
         filepath = get_real_filepath(pathname) # Get the verified path (this is a Path object that exists, but it is not necessarily a directory)
@@ -649,12 +708,11 @@ class SmartPlannerController:
                    
                 elif filepath.is_file():
                     # TODO: Implement this
-                    self.output('Not supported yet')
+                    self.output_error('Export via a file list is not supported yet.')
                     
             except IOError:
                 self.output_error('File system error encountered while attempting batch export.')
-            
-        pass
+        
     
     
     def run_top_interface(self):

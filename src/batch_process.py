@@ -8,6 +8,7 @@ from concurrent.futures import ProcessPoolExecutor
 from itertools import repeat
 from pathlib import Path
 import os
+import re
 
 
 import traceback
@@ -23,6 +24,10 @@ def batch_process(input_path, output_path, template_path, course_info):
        outputs: places schedules into the output_path folder"""
     # get list of files to process
     files_to_process = os.listdir(input_path)
+    # Lew added regex method to filter out unwanted file types in directory
+    files_to_process = batch_directory_file_excluder(files_to_process)
+    # Lew felt like we might want an indicator that we are batching
+    print('Batching in progress...')
     # perform multiprocessing, How To: map(function, *args), repeat() is for non list arguments
     with ProcessPoolExecutor() as executor:
         executor.map(full_schedule, repeat(input_path), files_to_process, repeat(output_path),
@@ -57,3 +62,9 @@ def full_schedule(input_path, courses_needed_filename, output_path, template_pat
         excel_formatter(template_path, output_file_path, schedule, course_info)
     except:
         print(traceback.format_exc())
+
+def batch_directory_file_excluder(folder):
+    for filex in folder:
+        x = re.search("909[0-9][0-9][0-9][0-9][0-9][0-9]_[0-9][0-9].pdf", filex)
+        if x == None: folder.remove(filex)
+    return folder

@@ -4,7 +4,7 @@ from urllib.request import urlopen
 from bs4 import BeautifulSoup
 import re
 import pandas as pd
-from alias_module import Alias
+from alias_module import get_latest_id
 
 
 def update_course_info():
@@ -81,7 +81,8 @@ def parse_catalog(excel_writer, department):
             for element in _co_requisites:
                 if element in _prerequisites:
                     _prerequisites.remove(element)
-
+            
+            # TODO: is this needed?
             # CPSC 2106 became CYBR 2160
             for element in _prerequisites:
                 if element == "CPSC 2106":
@@ -141,9 +142,7 @@ def parse_catalog(excel_writer, department):
     course_info_df = pd.DataFrame(columns=['courseID', 'courseName', 'hours', 'availability', 'prerequisites',
                                            'co-requisites', 'recommended', 'isElective', 'restrictions', 'note',
                                            'importance'])
-    # create alias instance
-    alias = Alias('input_files/Aliases.xlsx')
-
+    
     # loop to add course data to dataframe
     for index in range(len(all_course_blocks)):
         # extract current course header and body html data
@@ -153,7 +152,7 @@ def parse_catalog(excel_writer, department):
         course_id = course_header[0].find('span', class_='text col-3 detail-code margin--tiny text--semibold text--huge')
         if re.search(r'CPSC 6', course_id.text):
             break
-        course_id = alias.update_alias(course_id.text)
+        course_id = get_latest_id(course_id.text)
         # extract course name
         course_name = course_header[0].find('span', class_='text col-3 detail-title margin--tiny text--bold text--huge')
         # extract course hours

@@ -60,6 +60,7 @@ class MainMenuInterface(GeneralInterface):
         self.add_command(batch_schedule_command,                'batch-schedule', 'batch', 'group-schedule', 'group')
         self.add_command(schedule_verify_command,               'verify', 'validate', 'check')
         self.add_command(explore_schedule_verify_command,       'verify-e', 'validate-e', 'check-e')
+        self.add_command(batch_schedule_verify_command,         'batch-verify', 'group-verify', 'batch-validate', 'group-validate', 'batch-check', 'group-check')
         self.add_command(set_gui_interface_command,             'gui')
         self.add_command(set_cli_interface_command,             'cli', 'lui')
         self.add_command(gui_interface_immediate_command,       'gui-i', 'window', 'graphical', 'graphics')
@@ -463,7 +464,7 @@ def gui_interface_immediate_command(controller, arguements):
 
 
 def schedule_verify_command(controller, filename):
-    '''Verify the schedule for prequisite cycles.'''
+    '''Verify the schedule for prequisite cycles and correct availability.'''
     if filename:
         controller.check_schedule(filename)
     else:
@@ -500,13 +501,27 @@ def generate_schedule_command(controller, filename):
     else:
         controller.output_error('Please enter a filename.')
 
-def batch_schedule_command(controller, filename):
-    '''Ask the provided caller to generate schedules with the passed filename (assumed listing of
-    files) or directory (assumed needed-courses files).'''
-    if filename:
-        controller.batch_schedule(filename)
+def batch_schedule_command(controller, arguments):
+    '''Ask the provided caller to generate schedules with the passed directory (assumed needed-courses files) and possibly an output name (after comma).'''
+    
+    if arguments:
+        comma_position = arguments.find(',')
+        directory_name = arguments
+        if comma_position != -1:
+            controller.set_destination_filename(arguments[comma_position+1:].strip())
+            directory_name = arguments[:comma_position].strip()
+        controller.batch_schedule(directory_name)
     else:
         controller.output_error('Please enter a file or directory path/name .')
+
+def batch_schedule_verify_command(controller, directory_name):
+    '''Ask the provided caller to verify the schedules for prequisite cycles and correct availability in the passed directory (assumed to contain paths to  graduation).'''
+    
+    if directory_name:
+        controller.batch_validate(directory_name)
+    else:
+        controller.output_error('Please enter the directory\'s path.')
+    
 
 def quit_command(controller, arguements):
     '''Terminate the program.'''
