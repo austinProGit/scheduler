@@ -101,13 +101,16 @@ class HelpMenu(GeneralInterface):
             
             while documentation:
                 new_header = self.parse_file_with_tokens(documentation, HELP_HEADER_START_TOKEN, HELP_HEADER_END_TOKEN)
+                
                 if not new_header:
                     break
                 self.headers.append(new_header)
-                self.articles.append(self.parse_file_with_tokens(documentation, HELP_TAG_START_TOKEN, HELP_TAG_END_TOKEN).split())
+                new_tags = self.parse_file_with_tokens(documentation, HELP_TAG_START_TOKEN, HELP_TAG_END_TOKEN).split()
+                self.keywords.append(new_tags)
                 self.articles.append(self.remove_tokens_from_string(
                     self.parse_file_with_tokens(documentation, HELP_PARAGRAPH_START_TOKEN, HELP_PARAGRAPH_END_TOKEN), '<table>', '</table>')
                 )
+                self.article_count += 1
 
             # header = documentation.readline()
             # while HELP_TERMINATOR not in header and header:
@@ -127,6 +130,9 @@ class HelpMenu(GeneralInterface):
         if not line:
             return None # EOF
         if end_token in line:
+            # print(f'line: {line}')
+            # print(f'{line.index(start_token)} + {len(start_token)} + {line.index(end_token)}')
+            # print(line[line.index(start_token) + len(start_token):line.index(end_token)])
             return line[line.index(start_token) + len(start_token):line.index(end_token)]
         result = line[line.index(start_token) + len(start_token):]
         line = file.readline()
@@ -134,7 +140,7 @@ class HelpMenu(GeneralInterface):
             result += line
             line = file.readline()
         result += line[:line.index(end_token)]
-        print(f'result: {result}')
+        # print(f'result: {result}')
         return result
 
     def remove_tokens_from_string(self, string, start_token, end_token):
