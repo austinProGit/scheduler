@@ -7,6 +7,8 @@
 # TODO: needed course emptied at the end of scheduling
 # TODO: make sure the course excel formatter is exporting correctly
 # TODO: divide the AI file into two files (scheduler assistant and ES)
+# TODO: change the name of the ES to "schedule_evaluator"
+# TODO: make sure the structure of the ES is clear
 
 # POTENTIAL GOALS FOR NEXT CYCLE:
 # - General refactoring
@@ -579,6 +581,7 @@ class SmartPlannerController:
         
         if filepath:
             course_info_container = self._scheduler.get_course_info()
+            schedule_evaluator = self._scheduler.get_schedule_evaluator()
             
             try:
                 if filepath.is_dir():
@@ -588,14 +591,15 @@ class SmartPlannerController:
                     for graduation_path in filepath.iterdir():
                         graduation_paths.append(graduation_path)
                     
-                    results = batch_validation(graduation_paths, course_info_container)
+                    # TODO: resolve pickling issue with ES functions
+                    results = batch_validation(graduation_paths, course_info_container, None)
                     
                     # TODO: make the print appear in the same order as delivered (maybe do this from within the batch method)
                     
                     # Print the results
                     for result in results:
                         if result.is_valid():
-                            self.output(f'{result.file_description} appears to be correct.\n')
+                            self.output('{0} appears to be correct. The confidence value for this schedule is {1:.1f}%\n'.format(result.file_description, result.confidence_factor*100))
                         else:
                             self.output_warning(f'{result.file_description} is invalid!:')
                             
@@ -641,7 +645,7 @@ class SmartPlannerController:
         try:
             if self._export_types:
                 semesters_listing, confidence_factor = self._scheduler.generate_schedule()
-                self.output('Path generated with confidence value of {0:.3f}'.format(confidence_factor))
+                self.output('Path generated with confidence value of {0:.1f}%'.format(confidence_factor*100))
                 
                 template_path = Path(get_source_path(), 'input_files')
                 

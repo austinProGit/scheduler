@@ -305,7 +305,7 @@ class MainMenuWidget(QtWidgets.QWidget):
         if confidence_factor != -1:
             message_box = QtWidgets.QMessageBox()
             message_box.setIcon(QtWidgets.QMessageBox.Information)
-            message_box.setText('Schedule generated with confidence value of {0:.3f}.'.format(confidence_factor))
+            message_box.setText('Schedule generated with confidence value of {0:.1f}%.'.format(confidence_factor*100))
             message_box.exec()
         
     

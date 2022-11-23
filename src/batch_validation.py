@@ -23,13 +23,13 @@ class ValidationReport:
     
 
 
-def batch_validation(input_files, course_info_container):
-    """Check all passed files using path to graduation parser and validator. This uses the passed course info container, and return a list of ValidationReport objects."""
+def batch_validation(input_files, course_info_container, schedule_evaluator):
+    """Check all passed files using path to graduation parser and validator. This uses the passed course info container and schedule evaluator (expert system), and it returns a list of ValidationReport objects."""
     
     result = []
     
     with ProcessPoolExecutor() as executor:
-        processes = [executor.submit(_validate_file, file, course_info_container, result) for file in input_files]
+        processes = [executor.submit(_validate_file, file, course_info_container, schedule_evaluator) for file in input_files]
         
         for process in processes:
             process_result = process.result()
@@ -38,10 +38,11 @@ def batch_validation(input_files, course_info_container):
     return result
 
 
-def _validate_file(input_file, course_info_container, results_list):
+def _validate_file(input_file, course_info_container, schedule_evaluator):
     report = None
     try:
         schedule = parse_path_to_grad(input_file)
+        
         error_reports = validate_user_submitted_path(course_info_container, schedule)
         # TODO: implement confidence factor here
         report = ValidationReport(input_file, confidence_factor=1, error_list=error_reports)

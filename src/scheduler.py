@@ -65,10 +65,13 @@ class Scheduler:
         self.semester_type = 'Sp'
         
         self.fitness_configuration = Scheduler._create_default_fitness_configuration()
-        self.expert = ExpertSystem()
+        self.schedule_evaluator = ExpertSystem()
     
     def get_course_info(self):
         return self.course_info_container
+        
+    def get_schedule_evaluator(self):
+        return self.schedule_evaluator
         
     def get_courses_needed(self):
         return self.courses_needed[:]
@@ -140,7 +143,7 @@ class Scheduler:
         # Calculate the confidence factor for the new schedule
         dynamic_knowledge = DynamicKnowledge()
         dynamic_knowledge.set_schedule(full_schedule)
-        confidence_factor = self.expert.calculate_confidence(dynamic_knowledge, course_info)
+        confidence_factor = self.schedule_evaluator.calculate_confidence(dynamic_knowledge, course_info)
         
         return full_schedule, confidence_factor
     
