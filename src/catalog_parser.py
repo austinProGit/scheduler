@@ -51,7 +51,7 @@ def update_course_info():
 
     # add Excused Prerequisites, MISM 3145, MISM 3115, MISM 3109, MATH 1111
     excel_writer = pd.ExcelWriter('output_files/NEW Course Info.xlsx', mode='a')
-    excused_prereq = {'courseID': ["MISM 3145", "MISM 3115", "MISM 3109", "MATH 1111"]}
+    excused_prereq = {'courseID': ["MISM 3145", "MISM 3115", "MISM 3109", "MATH 1111", 'MATH 1131', 'MATH 1132']}
     excused_df = pd.DataFrame(excused_prereq)
     excused_df.to_excel(excel_writer, sheet_name="ExcusedPrereqs", index=False)
     excel_writer.close()
