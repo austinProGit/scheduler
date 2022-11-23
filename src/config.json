@@ -1,1 +1,2 @@
+
 {"course_info_filename": "input_files/Course Info.xlsx", "excused_prereqs": "input_files/Course Info.xlsx", "availability_filename": "input_files/Course Info.xlsx", "alias_filename": "input_files/Aliases.xlsx", "is_graphical": true, "initial_schedule_name": "Path to Graduation", "normal_hours_limit": 18, "strong_hours_limit": 30, "strong_hours_minimum": 4}

@@ -4,6 +4,7 @@
 
 import math
 import itertools
+from schedule_inspector import *
 
 
 # TODO: add path to grad rules
@@ -478,9 +479,9 @@ class ExpertSystem:
         # TODO: make something better here (such as weighted average)
         return (courses_average_cf + path_average_cf) / 2.0
 
-# ........................................ Lew's Rules ....................................
-#     ------------------------------------ Senior Rule ------------------------------------
-#     The senior_rule checks for 1000/2000 level classes in the senior year semester.
+    #  .................................... Lew's Rules ....................................
+    #  ------------------------------------ Senior Rule ------------------------------------
+    #  The senior_rule checks for 1000/2000 level classes in the senior year semester.
 
     @confidencerule(confidence=1.0, rule_mask=PATH_RULE)
     def senior_rule(schedule, facts, course_info):
@@ -490,27 +491,25 @@ class ExpertSystem:
 
     @rulepart(confidence=1)
     def rule_senior_ok(schedule, facts, course_info):
-        index = -3 if len(schedule) % 3 == 0 else -2
-        if len(schedule) >= 2:
-            for semester in range(index, 0):
-                for course in schedule[semester]:
-                    if ' 1' in course or ' 2' in course: return 0
+        if senior_with_1000_level_courses(schedule): return 0
+        if senior_with_2000_level_courses(schedule): return 0
         return 1
 
     @rulepart(confidence=1)
     def rule_senior_a(schedule, facts, course_info):
-        print('Message: Senior rule infraction detected.')
         cf = 1
-        index = -3 if len(schedule) % 3 == 0 else -2
-        if len(schedule) >= 2: 
-            for semester in range(index, 0): 
-                for course in schedule[semester]: 
-                    if ' 1' in course: cf -= 0.07
-                    if ' 2' in course: cf -= 0.05
+        info1000 = senior_with_1000_level_count(schedule)
+        info2000 = senior_with_2000_level_count(schedule)
+        count1000, message1000 = info1000[0], info1000[1]
+        count2000, message2000 = info2000[0], info2000[1]  
+        cf -= (high() * count1000)  
+        cf -= (low() * count2000)
+        if message1000 != '': print(message1000) 
+        if message2000 != '': print(message2000)
         return cf
 
     # ------------------------------------ Junior Rule ------------------------------------
-    # The junior_rule checks for 1000 level classes in junior year semester.
+    #  The junior_rule checks for 1000 level classes in junior year semester.
 
     @confidencerule(confidence=1.0, rule_mask=PATH_RULE)
     def junior_rule(schedule, facts, course_info):
@@ -520,28 +519,20 @@ class ExpertSystem:
 
     @rulepart(confidence=1)
     def rule_junior_ok(schedule, facts, course_info):
-        start = -6 if len(schedule) % 3 == 0 else -5
-        end = -3 if start == -6 else -2
-        if len(schedule) >= 5: 
-            for semester in range(start, end): 
-                for course in schedule[semester]:
-                    if ' 1' in course: return 0
+        if junior_with_1000_level_courses(schedule): return 0
         return 1
 
     @rulepart(confidence=1)
     def rule_junior_a(schedule, facts, course_info):
-        print('Message: Junior rule infraction detected.')
         cf = 1
-        start = -6 if len(schedule) % 3 == 0 else -5
-        end = -3 if start == -6 else -2
-        if len(schedule) >= 5:
-            for semester in range(start, end): 
-                for course in schedule[semester]: 
-                    if ' 1' in course: cf -= 0.07
+        info = junior_with_1000_level_count(schedule)
+        count, message = info[0], info[1]
+        cf -= (high() * count)
+        print(message)
         return cf
 
-    # ------------------------------------ Sophmore Rule -----------------------------------
-    # The sophmore_rule checks for 4000 level classes in sophmore year semester.
+     # ------------------------------------ Sophmore Rule -----------------------------------
+     # The sophmore_rule checks for 4000 level classes in sophmore year semester.
 
     @confidencerule(confidence=1.0, rule_mask=PATH_RULE)
     def sophmore_rule(schedule, facts, course_info):
@@ -551,24 +542,16 @@ class ExpertSystem:
 
     @rulepart(confidence=1)
     def rule_sophmore_ok(schedule, facts, course_info):
-        start = -9 if len(schedule) % 3 == 0 else -8
-        end = -6 if start == -6 else -5
-        if len(schedule) >= 8: 
-            for semester in range(start, end): 
-                for course in schedule[semester]:
-                    if ' 4' in course: return 0
+        if sophmore_with_4000_level_courses(schedule): return 0
         return 1
 
     @rulepart(confidence=1)
     def rule_sophmore_a(schedule, facts, course_info):
-        print('Message: Sophmore rule infraction detected.')
         cf = 1
-        start = -9 if len(schedule) % 3 == 0 else -8
-        end = -6 if start == -6 else -5
-        if len(schedule) >= 8:
-            for semester in range(start, end): 
-                for course in schedule[semester]: 
-                    if ' 4' in course: cf -= 0.07
+        info = sophmore_with_4000_level_count(schedule)
+        count, message = info[0], info[1]
+        cf -= (high() * count)
+        print(message)
         return cf
 
     # ------------------------------------ Freshman Rule -----------------------------------
@@ -582,30 +565,25 @@ class ExpertSystem:
 
     @rulepart(confidence=1)
     def rule_freshman_ok(schedule, facts, course_info):
-        start = -12 if len(schedule) % 3 == 0 else -11
-        end = -9 if start == -6 else -8
-        if len(schedule) >= 11: 
-            for semester in range(start, end): 
-                for course in schedule[semester]:
-                    if ' 4' in course: return 0
-                    if ' 3' in course: return 0
+        if freshman_with_3000_level_courses(schedule): return 0
+        if freshman_with_4000_level_courses(schedule): return 0
         return 1
 
     @rulepart(confidence=1)
     def rule_freshman_a(schedule, facts, course_info):
-        print('Message: Freshman rule infraction detected.')
         cf = 1
-        start = -12 if len(schedule) % 3 == 0 else -11
-        end = -9 if start == -6 else -8
-        if len(schedule) >= 11: 
-            for semester in range(start, end): 
-                for course in schedule[semester]:
-                    if ' 4' in course: cf -= 0.07
-                    if ' 3' in course: cf -= 0.05
+        info3000 = freshman_with_3000_level_count(schedule)
+        info4000 = freshman_with_4000_level_count(schedule)[0], freshman_with_4000_level_count(schedule)[1]
+        count3000, message3000 = info3000[0], info3000[1]
+        count4000, message4000 = info4000[0], info4000[1]
+        cf -= (low() * count3000)
+        cf -= (high() * count4000)
+        if message3000 != '': print(message3000)
+        if message4000 != '': print(message4000)
         return cf
 
     # ------------------------------------ CoReq Rule -----------------------------------
-    # The coreq_rule checks for coreqs for courses being in the same semester.
+    # The coreq_rule checks for coreqs of courses colocation within the same semester.
 
     @confidencerule(confidence=1.0, rule_mask=PATH_RULE)
     def coreq_rule(schedule, facts, course_info):
@@ -615,28 +593,20 @@ class ExpertSystem:
 
     @rulepart(confidence=1)
     def rule_coreq_ok(schedule, facts, course_info):
-        for semester in schedule: 
-            for course in semester:
-                coreqs = course_info.get_coreqs(course) if course_info.get_coreqs(course) != [] else []
-                if coreqs != []:
-                    for coreq in coreqs:
-                        if coreq not in semester: return 0
+        if coreqs_invalid(schedule, course_info): return 0
         return 1
 
     @rulepart(confidence=1)
     def rule_coreq_a(schedule, facts, course_info):
-        print('Message: Co-requisite rule infraction detected.')
         cf = 1
-        for semester in schedule: 
-            for course in semester:
-                coreqs = course_info.get_coreqs(course) if course_info.get_coreqs(course) != [] else []
-                if coreqs != []:
-                    for coreq in coreqs:
-                        if coreq not in semester: cf -= 0.07
+        info = coreqs_invalid_count(schedule, course_info)
+        count, message = info[0], info[1]
+        cf -= (high() * count)
+        print(message)
         return cf
 
     # ------------------------------------ Gateway Rule ----------------------------------
-    # The gateway_rule ensures courses with heavy weights (w > 6) are in the first half of path.
+    # The gateway_rule ensures courses with heavy weights (child descendants of courses > 6) are in the first half of path.
 
     @confidencerule(confidence=1.0, rule_mask=PATH_RULE)
     def gateway_rule(schedule, facts, course_info):
@@ -646,20 +616,64 @@ class ExpertSystem:
 
     @rulepart(confidence=1)
     def rule_gateway_ok(schedule, facts, course_info):
-        for semester in range(len(schedule)):
-            for course in schedule[semester]:
-                if course_info.get_weight(course) != None and course_info.get_weight(course) > 6:
-                    if semester > (len(schedule) / 2): return 0
+        if gateway_courses_invalid(schedule, course_info)[0]: return 0
         return 1
 
     @rulepart(confidence=1)
     def rule_gateway_a(schedule, facts, course_info):
-        print('Message: Gateway rule infraction detected.')
         cf = 1
-        for semester in range(len(schedule)):
-            for course in schedule[semester]:
-                if course_info.get_weight(course) != None and course_info.get_weight(course) > 6:
-                    if semester > (len(schedule) / 2): cf -= 0.07
+        info = gateway_courses_invalid(schedule, course_info)
+        count, message = info[0], info[1]
+        cf -= (high() * count)
+        print(message)
+        return cf
+
+    # ------------------------------------ Importance Rule ----------------------------------
+    # The importance_rule is ambigiously set by user or admin.  A rating less than 50 found in schedule drops confidence.
+
+    @confidencerule(confidence=1.0, rule_mask=PATH_RULE)
+    def importance_rule(schedule, facts, course_info):
+        es = ExpertSystem
+        rule = es.rule_importance_ok | es.rule_importance_a
+        return rule(schedule, facts, course_info)
+
+    @rulepart(confidence=1)
+    def rule_importance_ok(schedule, facts, course_info):
+        if importance_invalid(schedule, course_info)[0]: return 0
+        return 1
+
+    @rulepart(confidence=1)
+    def rule_importance_a(schedule, facts, course_info):
+        cf = 1
+        info = importance_invalid(schedule, course_info)
+        count, message = info[0], info[1]
+        cf -= (high() * count)
+        print(message)
+        return cf
+
+    # ------------------------------------ Empty Rule ----------------------------------
+    # The empty_rule detects empty semesters.  Two empty semesters is cause for concern.
+
+    @confidencerule(confidence=1.0, rule_mask=PATH_RULE)
+    def empty_rule(schedule, facts, course_info):
+        es = ExpertSystem
+        rule = es.rule_empty_ok | es.rule_empty_a
+        return rule(schedule, facts, course_info)
+
+    @rulepart(confidence=1)
+    def rule_empty_ok(schedule, facts, course_info):
+        count = empty_lists_in_schedule_count(schedule)[0]
+        if count > 1: return 0
+        return 1
+
+    @rulepart(confidence=1)
+    def rule_empty_a(schedule, facts, course_info):
+        cf = 1
+        info = empty_lists_in_schedule_count(schedule)
+        count, message = info[0], info[1]
+        count -= 1
+        cf -= (high() * count)
+        print(message)
         return cf
 
 # ........................................ End Lew's Rules ................................
@@ -718,23 +732,36 @@ class ExpertSystem:
 
 #df = load_course_info('src/input_files/Course Info.xlsx')
 #lst = load_course_info_excused_prereqs('src/input_files/Course Info.xlsx')
-#container = CourseInfoContainer(df, lst)
-#report = evaluate_container(container)
-#container.load_report(report)
+#con = CourseInfoContainer(df, lst)
+#report = evaluate_container(con)
+#con.load_report(report)
 
 ##print(container._report.course_descendants)
 
 #es = ExpertSystem.get_default_instance()
 ##print([(r, r.confidence) for r in es.rules])
 #kb = DynamicKnowledge()
-#scheduleA = [['CPSC 1105', 'CPSC 1301'], ['CPSC 0000'], ['CPSC 1115'],
+
+#a = [['CPSC 1301'], [], ['CPSC 1115', 'CPSC 4444', 'CPSC 3333'],
+#             ['CPSC 2108', 'MATH 2125'], ['CPSC 1302'], ['MATH 2125', 'CPSC 2105', 'CPSC 4000'], 
+#             ['CPSC 3165', 'CPSC 3175'], ['CPSC 3131', 'CPSC 3121', 'CPSC 1000'], [], 
+#             ['CPSC 4176', 'CPSC 4155', 'CPSC 1111', 'CPSC 2222'], ['CPSC 4175', 'CPSC 4148', 'CPSC 1301', 'CPSC 3137'], []]#, ['CPSC 4157', 'CPSC 4138']]
+
+#b = [['CPSC 2105', 'CPSC 1301'], ['CPSC 3333', 'CPSC 4444'], ['CPSC 1115'],
+#             [], ['CPSC 1302', 'MATH 1113'], ['CPSC 4444'], 
+#             ['CPSC 3165', 'CPSC 3175', 'CPSC 1111'], ['CPSC 1111'], ['CPSC 3116', 'CPSC 3415', 'CPSC 1111'], 
+#             ['CPSC 4176', 'CPSC 4155'], ['CPSC 4175', 'CPSC 4148', 'CPSC 1111'], ['CPSC 1111', 'CPSC 2222']]
+
+#c = [['CPSC 1105', 'CPSC 1301'], ['CPSC 0000'], ['CPSC 1115'],
 #             ['CPSC 2108'], ['CPSC 1302', 'MATH 1113'], ['MATH 2125', 'CPSC 2105'], 
 #             ['CPSC 3165', 'CPSC 3175'], ['CPSC 3131', 'CPSC 3121'], ['CPSC 3116', 'CPSC 3415'], 
 #             ['CPSC 4176', 'CPSC 4155'], ['CPSC 4175', 'CPSC 4148'], ['CPSC 4157', 'CPSC 4138']]
+
+#d = None
 ##kb.load_facts({'schedule': scheduleA})
-#kb.set_schedule(scheduleA)
+#kb.set_schedule(a)
 ##print(kb.facts)
-#print(es.calculate_confidence(kb, container))
+#print(es.calculate_confidence(kb, con))
 
 
 
