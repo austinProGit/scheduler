@@ -2,8 +2,8 @@
 # 18 September 2022
 # Contributor(s): Thomas Merino
 
-# MERINO: All I have done is encapsulated it in a class with configuration methods, added support for co-reqs,
-# added support for starting on any semester, reorganized a bit of stuff (to my weird liking), and fixed a rare bug.
+from scheduling_assistant import CoreqRule, FitnessConfiguration, get_fittest_courses
+from expert_system_module import ExpertSystem, DynamicKnowledge
 
 SEMESTER_TYPE_SUCCESSOR = {'Fa': 'Sp', 'Sp': 'Su', 'Su': 'Fa'}    # Translation map from semester K to the next
 DEFAULT_HOURS_PER_SEMESTER = 15  # MERINO: updated value
@@ -13,13 +13,12 @@ MID_FITNESS = 5.5
 HIGH_FITNESS = 10
 
 FITNESS_LISTING = [LOW_FITNESS, MID_FITNESS, HIGH_FITNESS]
+COREQ_ADDITIONAL_FITNESS = LOW_FITNESS
 
-from scheduling_assistant import CoreqRule, FitnessConfiguration, get_fittest_courses
-from expert_system_module import ExpertSystem, DynamicKnowledge
 
 
 # The following are some test atomic fitness rules:
-# ---------------------->
+
 def gatekeeper_rule(courseID, course_info_container):
     weight = course_info_container.get_weight(courseID)
     if weight is None:
@@ -36,8 +35,8 @@ def availability_rule(courseID, course_info_container):
             availability_cardinality += 1
     return FITNESS_LISTING[3-availability_cardinality]
     
-COREQ_ADDITIONAL_FITNESS = LOW_FITNESS
-# <----------------------
+
+
 
 
 class Scheduler:
@@ -96,6 +95,12 @@ class Scheduler:
         course_info = self.course_info_container # Get the course info container
         courses_needed = self.courses_needed[:] # Create a copy of the needed courses (workable list)
         
+        # Ensure CPSC 4000 is scheduled in the last semester
+        contains_4000 = False
+        if 'CPSC4000' in courses_needed:
+            contains_4000 = True
+            courses_needed.remove('CPSC4000')
+        
         # Helper functions
         def check_availability(course_id):
             availability = course_info.get_availability(course_id)
@@ -114,7 +119,6 @@ class Scheduler:
         # Create a string to track the current semester type ('Fa', 'Sp', or 'Su')
         working_semester_type = self.semester_type
         
-        # TODO: add 4000 to last semester
         
         # loop through until courses_needed is empty
         while len(courses_needed):
@@ -138,6 +142,9 @@ class Scheduler:
             
             # Rotate to the next semester type
             working_semester_type = SEMESTER_TYPE_SUCCESSOR[working_semester_type]
+            
+        if contains_4000:
+            full_schedule[-1].append('CPSC4000')
         
         # Calculate the confidence factor for the new schedule
         dynamic_knowledge = DynamicKnowledge()
