@@ -220,7 +220,8 @@ class SmartPlannerController:
         
         # Attempt to load the course info data and pass it to the scheduler
         try:
-            #setup_aliases(alias_relative_path)
+            setup_aliases(alias_relative_path)
+
             course_info = load_course_info(course_info_relative_path)
             excused_prereqs = load_course_info_excused_prereqs(excused_prereqs_relative_path)
             course_info_container = CourseInfoContainer(course_info, excused_prereqs)

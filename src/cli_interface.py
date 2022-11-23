@@ -20,6 +20,12 @@ from menu_interface_base import GeneralInterface
 HELP_FILENAME = 'help.html'                     # The filename of the program's help documentation (this must be kept in a specific format)
 HELP_TERMINATOR = '</body>'                     # The string that ends help documentation parsing
 HELP_PRE_START = '<h1>'                         # The string that will start help documentation parsing
+HELP_HEADER_START_TOKEN = '<h3>'
+HELP_HEADER_END_TOKEN = '</h3>'
+HELP_TAG_START_TOKEN = '<!--'
+HELP_TAG_END_TOKEN = '-->'
+HELP_PARAGRAPH_START_TOKEN = '<p>'
+HELP_PARAGRAPH_END_TOKEN = '</p>'
 ICON_FILENAME = 'icon.png'                      # The filename of the program's icon (when GUI)
 HELP_QUERY_ACCEPTANCE = 0.7                     # Level of tolerance (0.0 to 1.0) while searching help documentation
 
@@ -68,6 +74,7 @@ class MainMenuInterface(GeneralInterface):
         controller.output_error('Sorry, no command matching "{0}" was found. Use "commands" or "help" to find the command you are looking for.'.format(command_string))
         
 
+
 # The following is the help menu for the program. It handles presenting and searching for program documentation. It loads
 # the contents of the help file upon being intialized. It stores the articles' headers, keywords (for searching), and content.
 # Searching does accept slightly misspelled words.
@@ -93,15 +100,57 @@ class HelpMenu(GeneralInterface):
             # Consume head and other starting content
             while HELP_PRE_START not in documentation.readline(): pass
             
-            header = documentation.readline()
-            while HELP_TERMINATOR not in header and header:
-                self.headers.append(header[4:-6])
-                self.keywords.append(documentation.readline()[4:-6].split())
-                self.articles.append(documentation.readline()[3:-5] + '\n')
-                documentation.readline()    # Consume separation line
+            while documentation:
+                new_header = self.parse_file_with_tokens(documentation, HELP_HEADER_START_TOKEN, HELP_HEADER_END_TOKEN)
+                
+                if not new_header:
+                    break
+                self.headers.append(new_header)
+                new_tags = self.parse_file_with_tokens(documentation, HELP_TAG_START_TOKEN, HELP_TAG_END_TOKEN).split()
+                self.keywords.append(new_tags)
+                self.articles.append(self.remove_tokens_from_string(
+                    self.parse_file_with_tokens(documentation, HELP_PARAGRAPH_START_TOKEN, HELP_PARAGRAPH_END_TOKEN), '<table>', '</table>')
+                )
                 self.article_count += 1
-                header = documentation.readline()
+
+            # header = documentation.readline()
+            # while HELP_TERMINATOR not in header and header:
+            #     self.headers.append(header[4:-6])
+            #     self.keywords.append(documentation.readline()[4:-6].split())
+            #     self.articles.append(documentation.readline()[3:-5] + '\n')
+            #     documentation.readline()    # Consume separation line
+            #     self.article_count += 1
+            #     header = documentation.readline()
     
+    # Helper function for reading the contents of the help documentation
+    def parse_file_with_tokens(self, file, start_token, end_token):
+        result = ''
+        line = file.readline()
+        while line and start_token not in line:
+            line = file.readline()
+        if not line:
+            return None # EOF
+        if end_token in line:
+            # print(f'line: {line}')
+            # print(f'{line.index(start_token)} + {len(start_token)} + {line.index(end_token)}')
+            # print(line[line.index(start_token) + len(start_token):line.index(end_token)])
+            return line[line.index(start_token) + len(start_token):line.index(end_token)]
+        result = line[line.index(start_token) + len(start_token):]
+        line = file.readline()
+        while end_token not in line:
+            result += line
+            line = file.readline()
+        result += line[:line.index(end_token)]
+        # print(f'result: {result}')
+        return result
+
+    def remove_tokens_from_string(self, string, start_token, end_token):
+        start_index = string.find(start_token)
+        end_index = string.find(end_token)
+        if start_index != -1 and end_index != -1:
+            result = self.remove_tokens_from_string(string[:start_index] + string[:end_index+len(end_token)], start_token, end_token)
+        return string
+
     def parse_input(self, controller, input):
         '''Handle input on behalf of the program.'''
         
