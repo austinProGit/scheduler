@@ -14,7 +14,7 @@ HIGH_FITNESS = 10
 
 FITNESS_LISTING = [LOW_FITNESS, MID_FITNESS, HIGH_FITNESS]
 
-from expert_system_module import CoreqRule, FitnessConfiguration, get_fittest_courses
+from scheduling_assistant import CoreqRule, FitnessConfiguration, get_fittest_courses
 from expert_system_module import ExpertSystem, DynamicKnowledge
 
 
