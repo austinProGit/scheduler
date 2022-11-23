@@ -97,6 +97,10 @@ class CourseInfoContainer:
         note = self.get_data('note', courseid)
         return note
 
+    def get_importance(self, courseid):
+        importance = self.get_data('importance', courseid)
+        return importance
+
     # ............helper methods............................helper methods...........................helper methods
     # methods now account for None, 'none', or '??' values, and still return lists
 
@@ -163,25 +167,5 @@ def load_course_info_excused_prereqs(file_name):
 #lst = load_course_info_excused_prereqs('src/input_files/Course Info.xlsx')
 #container = CourseInfoContainer(df, lst)
 #report = evaluate_container(container)
-#container.create_report(report)
-#print()
-#print(container._report.course_descendants)
-#print()
-#print(container._report.graph)
-#print()
-#print(container.get_weight('CPSC 2105'))
-#print()
-#print(container.get_weight('CPSC 1111'))
-#print()
-#container.display_df()
-#print()
-#container.display_weights()
-#print()
-#container.display_graph()
-#print()
-#print(container.validate_course('CPSC 2105'))
-#print(container.validate_course('CPSC 1111'))
-#print()
-#print(container.is_course_in_report('CPSC 2105'))
-#print(container.is_course_in_report('CPSC 1111'))
-#print(container.get_excused_prereqs())
+#container.load_report(report)
+#print(container.get_importance('CPSC 1301'))
