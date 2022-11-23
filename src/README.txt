@@ -28,22 +28,48 @@ opinionated assessment that an expert (an academic advisor) would provide a stud
 Manual:
 
 CLI Scheduling
-From the command line, user launches main.py. User loads needed courses with syntax ‘load fileName’. The user should verify the parameters of the current configuration with the parameters command, syntax ‘parameters’, which will output the file destination, the maximum hours per semester, and all loaded courses. Then, the user will generate a schedule with the ‘schedule’ command, receiving a positive completion output message. The user can then access their schedule.
+From the command line, user launches main.py. User loads needed courses with syntax ‘load fileName’. The user should verify 
+the parameters of the current configuration with the parameters command, syntax ‘parameters’, which will output the file 
+destination, the maximum hours per semester, and all loaded courses. Then, the user will generate a schedule with the ‘schedule’
+command, receiving a positive completion output message. The user can then access their schedule.
 
 GUI Scheduling
-From the command line, user launches main.py. If the program has been previously configured to open immediately to the GUI, then the GUI will launch automatically. If not, the user will then enter ‘gui-i’ to launch the GUI. Once the GUI is launched, the user will have access to the following parameters: load needed courses, set destination directory, set maximum hours per semester, set output format, and set output file name. After the user modifies desired parameters, they press the ‘generate schedule’ button. The schedule is now generated.
+From the command line, user launches main.py. If the program has been previously configured to open immediately to the GUI, 
+then the GUI will launch automatically. If not, the user will then enter ‘gui-i’ to launch the GUI. Once the GUI is launched, 
+the user will have access to the following parameters: load needed courses, set destination directory, set maximum hours per 
+semester, set output format, and set output file name. After the user modifies desired parameters, they press the ‘generate 
+schedule’ button. The schedule is now generated.
  
 Scheduling with bad Course Information Input
-The administrator has configured the program with a prerequisite that is definitionally unsatisfiable. As soon as the user launches the program, the user is notified that the catalog contains invalid data and is then redirected to an error menu. The user must seek the administrator’s assistance in creating a valid course information input. Once in the error menu, the administrator has the option to create a new default configuration file or attempt to reload. The user cannot access the GUI if there is an error.
+The administrator has configured the program with a prerequisite that is definitionally unsatisfiable. As soon as the user 
+launches the program, the user is notified that the catalog contains invalid data and is then redirected to an error menu. 
+The user must seek the administrator’s assistance in creating a valid course information input. Once in the error menu, the 
+administrator has the option to create a new default configuration file or attempt to reload. The user cannot access the GUI 
+if there is an error.
 
 Administrator Familiarization and Configuration
-After launching, the administrator accesses the help menu with command ‘help’. On the help menu, the administrator sees a prompt to search by keywords for help articles. The administrator decides to instead see all help articles by entering the command ‘all’. The administrator learns about the main functions of the program, including loading courses needed, generating the hours, selecting the schedule export types, and many other functions. The administrator then begins configuration. The administrator configures the courses by editing the Course Info excel file. The administrator then changes the source directory for the Course Info file as desired by editing the config file. Next, the administrator sets the output format with the commands ‘exports [exportNum]’. Next, the administrator configures the destination path with the command ‘destination [path]’. The administrator then sets the default user interface to GUI with command ‘gui’. The program is now configured for student use.
+After launching, the administrator accesses the help menu with command ‘help’. On the help menu, the administrator sees a 
+prompt to search by keywords for help articles. The administrator decides to instead see all help articles by entering the 
+command ‘all’. The administrator learns about the main functions of the program, including loading courses needed, generating 
+the hours, selecting the schedule export types, and many other functions. The administrator then begins configuration. The 
+administrator configures the courses by editing the Course Info excel file. The administrator then changes the source directory 
+for the Course Info file as desired by editing the config file. Next, the administrator sets the output format with the 
+commands ‘exports [exportNum]’. Next, the administrator configures the destination path with the command ‘destination [path]’. 
+The administrator then sets the default user interface to GUI with command ‘gui’. The program is now configured for student use.
  
 User Submits Path to Graduation for Verification
-User launches program in CLI and enters ‘verify [filePath]’, where filePath is the location of the Path to Graduation. If the Path to Graduation is valid, the program outputs ‘path valid’. Otherwise, it outputs a list of the errors found in the path.
+User launches program in CLI and enters ‘verify [filePath]’, where filePath is the location of the Path to Graduation. If the 
+Path to Graduation is valid, the program outputs ‘path valid’. Otherwise, it outputs a list of the errors found in the path.
 
 Batch Processing
-The administrator has a folder containing all of the Courses Needed PDF files. The admin enters the destination directory with command ‘destination [path]’. Then, he enters the hours per semester with command ‘hours [numberOfHoursPerSemester]’. Then, he begins batch process execution with command ‘batch [directoryOfNeededCourseFiles], [destinationDirectoryName]’. Valid results will be found in the destination folder. Invalid inputs will result in no corresponding output, and an error message will be displayed.
+The administrator has a folder containing all of the Courses Needed PDF files. The admin enters the destination directory with 
+command ‘destination [path]’. Then, he enters the hours per semester with command ‘hours [numberOfHoursPerSemester]’. Then, he 
+begins batch process execution with command ‘batch [directoryOfNeededCourseFiles], [destinationDirectoryName]’. Valid results 
+will be found in the destination folder. Invalid inputs will result in no corresponding output, and an error message will be 
+displayed.
 
 AI Output Interpretation
-After scheduling, the user will receive an output in the form of a decimal value between 0 and 1, where 0 reflects that the Expert System is very unconfident in the goodness of the Path to Graduation, and 1 reflects absolute confidence. All Path to Graduation are valid and satisfy CSU graduation requirements; this measure reflects a subjective judgment based on rules provided by human scheduling experts.
+After scheduling, the user will receive an output in the form of a decimal value between 0 and 1, where 0 reflects that the 
+Expert System is very unconfident in the goodness of the Path to Graduation, and 1 reflects absolute confidence. All Path to 
+Graduation are valid and satisfy CSU graduation requirements; this measure reflects a subjective judgment based on rules provided 
+by human scheduling experts.
