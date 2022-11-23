@@ -54,7 +54,7 @@ def full_schedule(input_path, courses_needed_filename, output_path, template_pat
         scheduler.configure_course_info(course_info)
         scheduler.configure_courses_needed(courses_needed)
         scheduler.configure_hours_per_semester(semester_hours)
-        schedule = scheduler.generate_schedule()
+        schedule, _ = scheduler.generate_schedule()
 
         output_file_path = Path(output_path).joinpath(Path(courses_needed_filename).stem).with_suffix(".xlsx")
        
