@@ -592,7 +592,7 @@ class SmartPlannerController:
                         graduation_paths.append(graduation_path)
                     
                     # TODO: resolve pickling issue with ES functions
-                    results = batch_validation(graduation_paths, course_info_container, None)
+                    results = batch_validation(graduation_paths, course_info_container)
                     
                     # TODO: make the print appear in the same order as delivered (maybe do this from within the batch method)
                     

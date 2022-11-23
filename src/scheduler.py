@@ -109,7 +109,6 @@ class Scheduler:
                     return False
             return True
         
-        print(courses_needed)
         # Create empty, final schedule, each semester list will be added to this
         full_schedule = []
         # Create a string to track the current semester type ('Fa', 'Sp', or 'Su')
