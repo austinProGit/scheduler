@@ -27,6 +27,12 @@ opinionated assessment that an expert (an academic advisor) would provide a stud
 
 Manual:
 
+Launching
+All program dependencies are found in requirements.txt. The user must have python (and pip) installed. To install the dependencies,
+the user can use the terminal command 'pip install -r requirements.txt'. After the aforementioned installation is complete, entering
+'python main.py' or 'python3 main.py' (depending on OS) from the terminal will launch the program. This can be done my moving to the
+src directory or by just entering the path of the main file. The program will then lauch in either CLI or GUI mode.
+
 CLI Scheduling
 From the command line, user launches main.py. User loads needed courses with syntax ‘load fileName’. The user should verify 
 the parameters of the current configuration with the parameters command, syntax ‘parameters’, which will output the file 
@@ -63,10 +69,9 @@ Path to Graduation is valid, the program outputs ‘path valid’. Otherwise, it
 
 Batch Processing
 The administrator has a folder containing all of the Courses Needed PDF files. The admin enters the destination directory with 
-command ‘destination [path]’. Then, he enters the hours per semester with command ‘hours [numberOfHoursPerSemester]’. Then, he 
-begins batch process execution with command ‘batch [directoryOfNeededCourseFiles], [destinationDirectoryName]’. Valid results 
-will be found in the destination folder. Invalid inputs will result in no corresponding output, and an error message will be 
-displayed.
+command ‘destination [path]’. Then, he begins batch process execution with command ‘batch [directoryOfNeededCourseFiles],
+[destinationDirectoryName]’. Valid results will be found in the destination folder. Invalid inputs will result in no corresponding
+output, and an error message will be displayed.
 
 AI Output Interpretation
 After scheduling, the user will receive an output in the form of a decimal value between 0 and 1, where 0 reflects that the 
