@@ -28,6 +28,7 @@ opinionated assessment that an expert (an academic advisor) would provide a stud
 Manual:
 
 Launching
+This project requires that Python3 version 3.8 or above and Java be installed on the computer that will run the scheduler program. 
 All program dependencies are found in requirements.txt. The user must have python (and pip) installed. To install the dependencies,
 the user can use the terminal command 'pip install -r requirements.txt'. After the aforementioned installation is complete, entering
 'python main.py' or 'python3 main.py' (depending on OS) from the terminal will launch the program. This can be done my moving to the
