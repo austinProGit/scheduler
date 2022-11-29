@@ -48,15 +48,15 @@ def get_courses_needed(file_name):
 
         # add to list if found
         if cspc_col_match:
-            courses_needed_list.append(cspc_col_match.group())
+            courses_needed_list.append(get_latest_id(cspc_col_match.group()))
         elif cybr_col_match:
-            courses_needed_list.append(cybr_col_match.group())
+            courses_needed_list.append(get_latest_id(cybr_col_match.group()))
         elif pre_cal_col_match:
-            courses_needed_list.append(pre_cal_col_match.group())
+            courses_needed_list.append(get_latest_id(pre_cal_col_match.group()))
         elif intro_discrete_col_match:
-            courses_needed_list.append(intro_discrete_col_match.group())
+            courses_needed_list.append(get_latest_id(intro_discrete_col_match.group()))
         elif discrete_col_match:
-            courses_needed_list.append(discrete_col_match.group())
+            courses_needed_list.append(get_latest_id(discrete_col_match.group()))
         elif elective_col_match1:
             courses_needed_list.append('CPSC 3XXX')
             courses_needed_list.append('CPSC 3XXX')
@@ -75,15 +75,15 @@ def get_courses_needed(file_name):
 
             # add to list if found
             if cspc_match:
-                courses_needed_list.append(cspc_match.group())
+                courses_needed_list.append(get_latest_id(cspc_match.group()))
             elif cybr_match:
-                courses_needed_list.append(cybr_match.group())
+                courses_needed_list.append(get_latest_id(cybr_match.group()))
             elif pre_cal_match:
-                courses_needed_list.append(pre_cal_match.group())
+                courses_needed_list.append(get_latest_id(pre_cal_match.group()))
             elif intro_discrete_match:
-                courses_needed_list.append(intro_discrete_match.group())
+                courses_needed_list.append(get_latest_id(intro_discrete_match.group()))
             elif discrete_match:
-                courses_needed_list.append(discrete_match.group())
+                courses_needed_list.append(get_latest_id(discrete_match.group()))
             elif elective_match1:
                 courses_needed_list.append('CPSC 3XXX')
                 courses_needed_list.append('CPSC 3XXX')
