@@ -150,10 +150,8 @@ class CourseInfoContainer:
 
 # ******beginning of course_info_parser**********beginning of course_info_parser*********************************
 
-# MERINO: probably should give Vincent credit here (I believe this is his)
 # Author: Vincent
 def load_course_info(file_name):
-    # MERINO: changed name to "Sheet1" # Lew changed sheet name back to "CPSC", since sheet name changed again
     df = pd.read_excel(file_name, sheet_name='CPSC')
     return df
 

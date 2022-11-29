@@ -2,17 +2,11 @@
 # 11/23/22
 # CPSC 4175 Group Project
 
-# TODO: make the alias module work in all other modules (some part not nec.???)
 # TODO: add final semester rule
-# TODO: needed course emptied at the end of scheduling
-# TODO: make sure the course excel formatter is exporting correctly
-# TODO: divide the AI file into two files (scheduler assistant and ES)
 # TODO: change the name of the ES to "schedule_evaluator"
-# TODO: make sure the structure of the ES is clear
 
 # POTENTIAL GOALS FOR NEXT CYCLE:
 # - General refactoring
-# - Use AI for scheduling algorithm
 # - Use UI text dictionary (maybe langauges support)
 # - Maybe add session data so the program can recover from a crash
 
@@ -28,63 +22,32 @@
 #           Adding custom classes: specify name, availability, hours (via course info container buffer)
 #           NOTE: this might mean serializing the course info container when preserving session data
 # - Display help menu contents in GUI mode via a web browser
-# - Add aliases (course ID) Excel file
-# - Allow use of the web crawler (fetch)
-# - Add batch work functionality (schedule multiple students by running through multiple requirements)
-#           The would be a good place for multithreading
 # - Use number of courses OR number of credit hours
 # - Open finished schedule once generated
 # - Easy openning (PATH and/or desktop shortcut)
 # - Be able to manage config file with text editor (from software)
-# - Make config file more flexible (like JSON)
 # - Make the content panel better
 #           Have the content panel display the output schedule (so there aren't hundreds of windows opening during batch)
 # - Add a log file (tracks commands entered and outputs generated)
-
 # - Accept any/all courses
-# - Make path to graduation start on any semester
 # - Handle missing package errors better
-# - Maybe make the name of the help file included in config (probably not)
 # - Fix program icon appearing for file explorer (default Python icon)
 # - Handler permission check when setting output directory
 # - Implement weakref into the GUI widgets and item selection callbacks to prevent strong reference cycles
 # - Add working popup warning/verifying GUI->CLI switch (adding this at the moment is bug-laden)
 #           this creates an issue where the GUI sometimes dones not dismiss when changing to CLI (after switching back and forth)
-# - Figure out role of admin vs. user as far as program configuration is concerned
-# - Fix relative path issue for getting files (make sure working directory does not influence)
-# - Add validity check that checks course availability (Fall, Spring, Summer, etc.)
-# - Finish help documentation
-# - ??? Should we have some database host (source of truth) that other copies of the program source from?
-
 
 # To-do Legend:
 #   Ensure: something that should work or should be fixed but has not been tested enough
 #   Organize: stuff that should be cleaned up (is not necessary to do)
-#   Fix: something that should be fixed (or labelled "suprise feature")
+#   Fix: something that should be fixed ("suprise feature")
 #   Wish: something that should be implemented (is not necessary to do)
 #   Need: something that needs to be done
 
-# TODO: (ORGANIZE) It might be good to clean up by replacing os.path functions with pathlib.Path methods.
 # TODO: (ORGANIZE) Maybe have the listeners completely consume IO (otherwise, why not just use a notification pattern?)
 # TODO: (ORGANIZE) Consider useing f'{variable}' for formatting
-# TODO: (ORGANIZE) Consider using := operator for cleaner code (probably not for compatibility's sake)
 # TODO: (ORGANIZE) Clean up the mixing of string and Path objects (it is not clear what is what right now)
-# TODO: (ENSURE) the directories in the config file work no matter the OS (if not, implement)
-# TODO: (ENSURE) support for course info being in a different directoy (and different OS)
-# TODO: (ENSURE) exception raising is implemented in other modules (e.g. NonDAGCourseInfoError)
-# TODO: (ENSURE) proper setup of error codes or boolean return (other modules)
-# TODO: (ENSURE) ensure permission settings work
 # TODO: (ENSURE) File existence check does not consider the to-be file extensions (fix this) -- we could do this with Path.with_suffix('') and Path.suffix
-# TODO: (ENSURE) Add two filepaths to config file
-# TODO: (ENSURE) Add command to display needed courses
-# TODO: (ENSURE) Fix error message when entering empty string for export name in gui
-# TODO: (ENSURE) Add text export
-# TODO: (ENSURE) Does not work when loaded courses or catalog file is bad extension/format
-# TODO: (ENSURE) Make GUI update needed courses data when loading
-# TODO: (ENSURE) Open config from src not the working the directory
-# TODO: (ENSURE/WISH) Allow switching to CLI from GUI (adding confirmation popup breaks this)
-# TODO: (WISH) No warning about filename collision because of extension (take all selected export types into consideration)
-# TODO: (WISH) Have the GUI display errors (like warnings)
 # TODO: (FIX) Add "silient=True" to tabula calls so there are no error print outs
 
 
@@ -574,8 +537,7 @@ class SmartPlannerController:
         return error_reports
         
     def batch_validate(self, pathname):
-        ''''''
-        # TODO: add documentation
+        '''Perform validation batching using the files in the passed pathname.'''
                 
         # Verify the passed filename exists
         filepath = get_real_filepath(pathname) # Get the verified path (this is a Path object that exists, but it is not necessarily a directory)
@@ -696,22 +658,13 @@ class SmartPlannerController:
                     for course_info in filepath.iterdir():
                         course_info_paths.append(course_info)
                     
-                    # *Verification here*
+                    # *Verification may here*
                     
                     unique_destination_directory = get_next_free_filename(self.get_destination())
                     unique_destination_directory.mkdir()
                                             
                     batch_process(filepath, unique_destination_directory, template_path, course_info_container)
-                        
-#                    for course_info_path in course_info_paths:
-#
-#                        # TODO: make the smarter--this only excepts files of the form 909######_HR.pdf
-#                        student_id = str(course_info_path)[-16:-7]
-#                        hours_per_semester = int(str(course_info_path)[-6:-4])
-#                        destination_filename = Path(unique_destination_directory, student_id)
-#
-#                        self.output(f'GENERATING {student_id} w/ {hours_per_semester} to {destination_filename}')
-                   
+                    
                 elif filepath.is_file():
                     # TODO: Implement this
                     self.output_error('Export via a file list is not supported yet.')

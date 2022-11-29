@@ -59,8 +59,8 @@ class CoreqRule:
         normal_set = schedulables
         # Remove the optional course from the set if it is present
         if self.optional_course in schedulables:
-            normal_set = schedulables.copy()        # Make a copy of the passed schedulables before modifying
-            del normal_set[self.optional_course]    # Remove the optional course from the "normal" set
+            normal_set = schedulables.copy() # Make a copy of the passed schedulables before modifying
+            del normal_set[self.optional_course] # Remove the optional course from the "normal" set
         
         if more_coreq_rules_remain:
             # There are other coreq rules to apply (get results from next rule)
@@ -73,7 +73,7 @@ class CoreqRule:
         # Conside the case where both the required and optional courses are taken (create a composite course)
         
         if self.required_course in schedulables and self.optional_course in schedulables:
-            composite_set = schedulables.copy()     # Make a copy of the passed schedulables before modifying
+            composite_set = schedulables.copy() # Make a copy of the passed schedulables before modifying
             
             # Replace the schedulable object for the required and the optional courses with a composite
             # schedulable object that combines the courses, hours, and fitness (plus additional fitness)

@@ -8,15 +8,15 @@ from os import path
 from driver_fs_functions import *
 
 
-DEFAULT_CATALOG_NAME = 'input_files/Course Info.xlsx'           # The default name for the catalog/course info file
-DEFAULT_EXCUSED_PREREQS_NAME = 'input_files/Course Info.xlsx'   # The default name for the excused prereq.s file
-DEFAULT_AVAILABILITY_FILENAME = 'input_files/Course Info.xlsx'  # The default name for the catalog/course availability file
-DEFAULT_ALAIS_FILENAME = 'input_files/Aliases.xlsx'             # The default name for the alias file
-CONFIG_FILENAME = 'config.json'                                 # The name of the config file
-DEFAULT_SCHEDULE_NAME = 'Path to Graduation'                    # The default filename for exporting schedules
-DEFAULT_NORMAL_HOURS_LIMIT = 18                                 # The upper limit of credit hours students can take per semester (recommended)
-DEFAULT_STRONG_HOURS_LIMIT = 30                                 # The absolute limit of credit hours students can take per semester (cannot exceed)
-DEFAULT_STRONG_HOURS_MINIMUM = 4                                # The absolute minimum of credit hours students can take per semester (cannot be below)
+DEFAULT_CATALOG_NAME = 'input_files/Course Info.xlsx' # The default name for the catalog/course info file
+DEFAULT_EXCUSED_PREREQS_NAME = 'input_files/Course Info.xlsx' # The default name for the excused prereq.s file
+DEFAULT_AVAILABILITY_FILENAME = 'input_files/Course Info.xlsx' # The default name for the catalog/course availability file
+DEFAULT_ALAIS_FILENAME = 'input_files/Aliases.xlsx' # The default name for the alias file
+CONFIG_FILENAME = 'config.json' # The name of the config file
+DEFAULT_SCHEDULE_NAME = 'Path to Graduation' # The default filename for exporting schedules
+DEFAULT_NORMAL_HOURS_LIMIT = 18 # The upper limit of credit hours students can take per semester (recommended)
+DEFAULT_STRONG_HOURS_LIMIT = 30 # The absolute limit of credit hours students can take per semester (cannot exceed)
+DEFAULT_STRONG_HOURS_MINIMUM = 4 # The absolute minimum of credit hours students can take per semester (cannot be below)
 
 
 # In this case "encodable" is just a dictionary where the keys are the attribute names

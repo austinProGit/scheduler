@@ -42,20 +42,20 @@ class GeneralInterface:
     
     def parse_input(self, controller, user_input):
         '''Handle input on behalf of the program.'''
-        input_string = user_input.strip()                       # Strip the input
-        first_space_index = input_string.find(' ')              # Get the position of the first space in the input string
-        command_key = input_string                              # Set the key (string) for the command to the entire input by default
-        argument = ''                                           # Set the command arguments to an empty string by default
+        input_string = user_input.strip() # Strip the input
+        first_space_index = input_string.find(' ') # Get the position of the first space in the input string
+        command_key = input_string # Set the key (string) for the command to the entire input by default
+        argument = '' # Set the command arguments to an empty string by default
         
         # Check if the input has multiple words
         if first_space_index != -1:
-            command_key = input_string[0:first_space_index]     # Set the command key to just the first word
+            command_key = input_string[0:first_space_index] # Set the command key to just the first word
             argument = input_string[first_space_index:].strip() # Set the arguements to the rest (without extra spaces)
         
         # Check if the command key is valid
         if command_key in self._commands:
-            command = self._commands[command_key]               # Get the command (function) to execute
-            command(controller, argument)                       # Invoke the command with the controller and passed arguments
+            command = self._commands[command_key] # Get the command (function) to execute
+            command(controller, argument) # Invoke the command with the controller and passed arguments
         else:
             # Report invalid input
             self._report_invalid_command_error(controller, command_key)

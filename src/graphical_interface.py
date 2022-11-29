@@ -39,8 +39,8 @@ class TextField(QtWidgets.QLineEdit):
     
     def focusOutEvent(self, event):
         '''Custom override of QLineEdit's focusOutEvent that clears text.'''
-        super().focusOutEvent(event)    # Invoke the super's implementation
-        self.clear()                    # Remove all text (use splaceholder text)
+        super().focusOutEvent(event) # Invoke the super's implementation
+        self.clear() # Remove all text (use splaceholder text)
 
 
 class ListingField(QtWidgets.QTextEdit):
@@ -53,7 +53,6 @@ class ListingField(QtWidgets.QTextEdit):
 # Graphical interface for the main menu
 class MainMenuWidget(QtWidgets.QWidget):
     
-    # MERINO: Changed the GUI layout (reworked next two methods)
     
     def __init__(self, controller):
         # Call the super's initialization
@@ -182,7 +181,6 @@ class MainMenuWidget(QtWidgets.QWidget):
         message_box.exec()
     
     
-    # MERINO: fixed setting the wrong filename to the label (had set destination name instead of courses needed)
     def _update_needed_courses_label(self, filename):
         '''Set the needed course label to reflect what the controller has loaded and list those courses in the listing box.'''
         # Get the file's description and set the label to the description
@@ -194,7 +192,6 @@ class MainMenuWidget(QtWidgets.QWidget):
     
     def _needed_courses_load_callback(self):
         
-        # MERINO: clean up
         file_loader_dialog = QtWidgets.QFileDialog()
         file_loader_dialog.setFileMode(QtWidgets.QFileDialog.ExistingFile)
         filename = None
@@ -203,7 +200,7 @@ class MainMenuWidget(QtWidgets.QWidget):
             filename = file_loader_dialog.selectedFiles()[0]
             load_success = self.controller.load_courses_needed(filename)
             if load_success:
-                self._update_needed_courses_label(filename) # MERINO: passed filename
+                self._update_needed_courses_label(filename) 
         if filename == None:
             self.controller.output('Load cancelled.')
         
@@ -226,9 +223,7 @@ class MainMenuWidget(QtWidgets.QWidget):
                 message_box.exec()
         if filename == None:
             self.controller.output('Load cancelled.')
-        
-        
-    # MERINO: minor changes here are there (I don't remember)
+    
     def _update_destination_label(self):
         description = Path(self.controller.get_destination_directory()).stem
         self.destination_directory_label.setText('Destination Directory: {0}'.format(description))
@@ -284,7 +279,6 @@ class MainMenuWidget(QtWidgets.QWidget):
     def _schedule_name_callback(self):
         '''Callback for when enter/return is pressed while editing the schedule name text field.'''
         
-        # MERINO: added check to make sure the user entered something
         filename = self.schedule_name_field.text().strip()
         
         # Check if filename is not empty

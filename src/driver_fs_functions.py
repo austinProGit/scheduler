@@ -36,10 +36,10 @@ def suffix_split(filtr, sequence):
     the suffix ends as soon as one item doesn't meet the filter, and the entire sequence may be the suffix if all pass.
     The filter function is expeceted to take an item and returns a boolean. This returns a tuple with the sequence before
     the suffix and then the suffix (both may be esequencempty).'''
-    for index in range(len(sequence) - 1, -1, -1):              # Iterate backwards
-        if not filtr(sequence[index]):                          # Return if the filter does not pass
+    for index in range(len(sequence) - 1, -1, -1): # Iterate backwards
+        if not filtr(sequence[index]): # Return if the filter does not pass
             return (sequence[:index + 1], sequence[index + 1:]) # Split on the index
-    return (sequence[:0], sequence[:])                          # All items pass
+    return (sequence[:0], sequence[:]) # All items pass
     
 
 def get_real_filepath(filepath):
@@ -79,8 +79,6 @@ def get_next_free_filename(filepath):
         # Get the filename without any extension and as a string
         filepath_name = str(path.with_suffix(''))
         filepath_extension = path.suffix
-        
-        # MERINO: Using the new function above
         
         # Seperate the filepath into its non-digit and end-digit section
         pre_digit_path_name, path_digit_section = suffix_split(lambda c : c.isdigit(), filepath_name)

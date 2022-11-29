@@ -2,7 +2,7 @@
 # 9/28/22
 # CPSC 4175 Group Project
 
-SEMESTER_TYPE_PREDECESSOR = {'Fa': 'Su', 'Su': 'Sp', 'Sp': 'Fa'}    # Translation map from semester K to the next
+SEMESTER_TYPE_PREDECESSOR = {'Fa': 'Su', 'Su': 'Sp', 'Sp': 'Fa'} # Translation map from semester K to the next
 USER_READABLE_SEMESTER_DESCRIPTION = {'Fa': 'Fall', 'Sp': 'Spring', 'Su': 'Summer'}
 
 def validate_user_submitted_path(container, schedule):

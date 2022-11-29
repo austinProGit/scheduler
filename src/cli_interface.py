@@ -17,17 +17,17 @@ from item_selection_interface import ItemSelectionInterface
 from menu_interface_base import GeneralInterface
 
 
-HELP_FILENAME = 'help.html'                     # The filename of the program's help documentation (this must be kept in a specific format)
-HELP_TERMINATOR = '</body>'                     # The string that ends help documentation parsing
-HELP_PRE_START = '<h1>'                         # The string that will start help documentation parsing
-HELP_HEADER_START_TOKEN = '<h3>'
-HELP_HEADER_END_TOKEN = '</h3>'
-HELP_TAG_START_TOKEN = '<!--'
-HELP_TAG_END_TOKEN = '-->'
-HELP_PARAGRAPH_START_TOKEN = '<p>'
-HELP_PARAGRAPH_END_TOKEN = '</p>'
-ICON_FILENAME = 'icon.png'                      # The filename of the program's icon (when GUI)
-HELP_QUERY_ACCEPTANCE = 0.7                     # Level of tolerance (0.0 to 1.0) while searching help documentation
+HELP_FILENAME = 'help.html' # The filename of the program's help documentation (this must be kept in a specific format)
+HELP_TERMINATOR = '</body>' # The string that ends help documentation parsing
+HELP_PRE_START = '<h1>' # The string that will start help documentation parsing
+HELP_HEADER_START_TOKEN = '<h3>' # The string that will start header string
+HELP_HEADER_END_TOKEN = '</h3>' # The string that will end header string
+HELP_TAG_START_TOKEN = '<!--' # The string that will start tokens string
+HELP_TAG_END_TOKEN = '-->' # The string that will end tokens string
+HELP_PARAGRAPH_START_TOKEN = '<p>' # The string that will start paragraph string
+HELP_PARAGRAPH_END_TOKEN = '</p>' # The string that will end paragraph string
+ICON_FILENAME = 'icon.png' # The filename of the program's icon (when GUI)
+HELP_QUERY_ACCEPTANCE = 0.7 # Level of tolerance (0.0 to 1.0) while searching help documentation
 
 
 
@@ -48,25 +48,25 @@ class MainMenuInterface(GeneralInterface):
         # i: immediate
         
         # Add commands to the command dictionary
-        self.add_command(list_available_commands_command,       '', 'commands', 'list-commands')
-        self.add_command(load_needed_courses_command,           'load', 'needed', 'set')
-        self.add_command(explore_needed_courses_command,         'load-e', 'needed-e', 'set-e')
-        self.add_command(load_destination_directory_command,    'destination', 'dest', 'to', 'directory')
-        self.add_command(explore_destination_directory_command, 'destination-e', 'dest-e', 'to-e', 'directory-e')
-        self.add_command(set_hours_per_semster_command,         'hours', 'set-hours', 'per', 'count', 'set-count')
-        self.add_command(select_export_command,                 'as', 'exports', 'set-exports', 'type', 'types', 'set-types',)
-        self.add_command(list_parameters_command,               'courses', 'list-courses', 'parameters', 'list-parameters', 'arguments', 'list-arguments', 'args')
-        self.add_command(generate_schedule_command,             'schedule', 'generate', 'done', 'save')
-        self.add_command(batch_schedule_command,                'batch-schedule', 'batch', 'group-schedule', 'group')
-        self.add_command(schedule_verify_command,               'verify', 'validate', 'check')
-        self.add_command(explore_schedule_verify_command,       'verify-e', 'validate-e', 'check-e')
-        self.add_command(batch_schedule_verify_command,         'batch-verify', 'group-verify', 'batch-validate', 'group-validate', 'batch-check', 'group-check')
-        self.add_command(set_gui_interface_command,             'gui')
-        self.add_command(set_cli_interface_command,             'cli', 'lui')
-        self.add_command(gui_interface_immediate_command,       'gui-i', 'window', 'graphical', 'graphics')
-        self.add_command(help_command,                          'help', 'info')
-        self.add_command(fetch_catalog_command,                 'fetch', 'update', 'catalog')
-        self.add_command(quit_command,                          'quit', 'exit')
+        self.add_command(list_available_commands_command, '', 'commands', 'list-commands')
+        self.add_command(load_needed_courses_command, 'load', 'needed', 'set')
+        self.add_command(explore_needed_courses_command, 'load-e', 'needed-e', 'set-e')
+        self.add_command(load_destination_directory_command, 'destination', 'dest', 'to', 'directory')
+        self.add_command(explore_destination_directory_command,'destination-e', 'dest-e', 'to-e', 'directory-e')
+        self.add_command(set_hours_per_semster_command, 'hours', 'set-hours', 'per', 'count', 'set-count')
+        self.add_command(select_export_command, 'as', 'exports', 'set-exports', 'type', 'types', 'set-types',)
+        self.add_command(list_parameters_command, 'courses', 'list-courses', 'parameters', 'list-parameters', 'arguments', 'list-arguments', 'args')
+        self.add_command(generate_schedule_command, 'schedule', 'generate', 'done', 'save')
+        self.add_command(batch_schedule_command, 'batch-schedule', 'batch', 'group-schedule', 'group')
+        self.add_command(schedule_verify_command, 'verify', 'validate', 'check')
+        self.add_command(explore_schedule_verify_command, 'verify-e', 'validate-e', 'check-e')
+        self.add_command(batch_schedule_verify_command, 'batch-verify', 'group-verify', 'batch-validate', 'group-validate', 'batch-check', 'group-check')
+        self.add_command(set_gui_interface_command, 'gui')
+        self.add_command(set_cli_interface_command, 'cli', 'lui')
+        self.add_command(gui_interface_immediate_command, 'gui-i', 'window', 'graphical', 'graphics')
+        self.add_command(help_command, 'help', 'info')
+        self.add_command(fetch_catalog_command, 'fetch', 'update', 'catalog')
+        self.add_command(quit_command,'quit', 'exit')
     
     
     def report_invalid_command_error(self, controller, command_string):
@@ -81,14 +81,13 @@ class MainMenuInterface(GeneralInterface):
 
 class HelpMenu(GeneralInterface):
 
-    # TODO: add code comments
     
     def __init__(self):
         self.name = 'HELP MENU'
-        self.headers = []           # List of help article headers (for displaying the title of the article)
-        self.keywords = []          # List of help article keywords (what is used to search for articles)
-        self.articles = []          # List of article contents
-        self.article_count = 0      # The number of articles loaded into the object
+        self.headers = [] # List of help article headers (for displaying the title of the article)
+        self.keywords = [] # List of help article keywords (what is used to search for articles)
+        self.articles = [] # List of article contents
+        self.article_count = 0 # The number of articles loaded into the object
         
         # Open the help file and extract the headers, keywords, and articles
         # The help file is expected to have the following format (breaks are indicated by \n escapes):
@@ -112,15 +111,6 @@ class HelpMenu(GeneralInterface):
                     self.parse_file_with_tokens(documentation, HELP_PARAGRAPH_START_TOKEN, HELP_PARAGRAPH_END_TOKEN), '<table>', '</table>')
                 )
                 self.article_count += 1
-
-            # header = documentation.readline()
-            # while HELP_TERMINATOR not in header and header:
-            #     self.headers.append(header[4:-6])
-            #     self.keywords.append(documentation.readline()[4:-6].split())
-            #     self.articles.append(documentation.readline()[3:-5] + '\n')
-            #     documentation.readline()    # Consume separation line
-            #     self.article_count += 1
-            #     header = documentation.readline()
     
     # Helper function for reading the contents of the help documentation
     def parse_file_with_tokens(self, file, start_token, end_token):
@@ -131,9 +121,6 @@ class HelpMenu(GeneralInterface):
         if not line:
             return None # EOF
         if end_token in line:
-            # print(f'line: {line}')
-            # print(f'{line.index(start_token)} + {len(start_token)} + {line.index(end_token)}')
-            # print(line[line.index(start_token) + len(start_token):line.index(end_token)])
             return line[line.index(start_token) + len(start_token):line.index(end_token)]
         result = line[line.index(start_token) + len(start_token):]
         line = file.readline()
@@ -154,7 +141,6 @@ class HelpMenu(GeneralInterface):
     def parse_input(self, controller, input):
         '''Handle input on behalf of the program.'''
         
-        # TODO: make exit and all command better (make sense).
         if input == 'exit' or input == 'quit' or input == '':
             # Exit the help menu
             controller.pop_interface(self)
@@ -173,8 +159,6 @@ class HelpMenu(GeneralInterface):
     
     def _search_for_keywords(self, query):
         '''Get a list of article indices that match the passed query.'''
-        
-        # TODO: add comments/documentation
         
         possible_article_indices = []
         matcher = SequenceMatcher()
@@ -200,8 +184,6 @@ class HelpMenu(GeneralInterface):
     
     def list_articles(self, controller, possible_article_indices):
         '''List the articles from the passed list of indices (as the result of a search).'''
-        
-        # TODO: add comments/documentation
         
         possible_articles_count = len(possible_article_indices)
         
@@ -236,13 +218,13 @@ class GraphicalUserMenuInterface(GeneralInterface):
     def was_pushed(self, controller):
         '''Method that is called upon the interface being pushed onto the interface stack.'''
         
-        application = controller.get_graphical_application()    # Get the application object from the controller
+        application = controller.get_graphical_application() # Get the application object from the controller
         # TODO: This is not sustainable (using __file__)
         application.setWindowIcon(QtGui.QIcon(str(os.path.join(os.path.dirname(__file__), ICON_FILENAME))))   # Set the window icon
-        main_window = MainProgramWindow(controller)             # Create a new window for the application to present
-        main_window.resize(800, 400)                            # Set the initial window size
-        main_window.show()                                      # Present the window
-        application.exec()                                      # Execute the application until closed (block execution)
+        main_window = MainProgramWindow(controller) # Create a new window for the application to present
+        main_window.resize(800, 400) # Set the initial window size
+        main_window.show() # Present the window
+        application.exec() # Execute the application until closed (block execution)
         
         # At this point, the GUI has been closed and the program should resume normal execution
         # Since that menu has served it's purpose, it will be popped if still in the stack
@@ -275,9 +257,9 @@ class ErrorMenu(GeneralInterface):
         self._commands = {}
         
         # Add commands to the command dictionary
-        self.add_command(attempt_error_resolve,         'reload', 'retry', 'start', 'restart')
+        self.add_command(attempt_error_resolve, 'reload', 'retry', 'start', 'restart')
         self.add_command(create_default_config_command, 'config')
-        self.add_command(quit_command,                  'quit', 'exit', 'cancel')
+        self.add_command(quit_command, 'quit', 'exit', 'cancel')
         
 
 ## --------------------------------------------------------------------- ##
@@ -320,9 +302,7 @@ def load_destination_directory_command(controller, directory):
 
 def explore_needed_courses_command(controller, argument):
     '''Command to create a new QT file explorer application so the user can load the needed courses file.'''
-    # TODO: polish this a bit
-    # TODO: combine this with explore_destination_directory_command
-        
+    
     # Check if the user passed some argument(s) (report error and return if so)
     if argument:
         controller.output_error('Arguments are not supported for this command.')
@@ -345,9 +325,7 @@ def explore_needed_courses_command(controller, argument):
 
 def explore_destination_directory_command(controller, argument):
     '''Command to create a new QT file explorer application so the user can set the destination directory.'''
-    # TODO: polish this a bit
-    # TODO: combine this with explore_needed_courses_command
-        
+    
     # Check if the user passed some argument(s) (report error and return if so)
     if argument:
         controller.output_error('Arguments are not supported for this command.')
@@ -526,8 +504,8 @@ def batch_schedule_verify_command(controller, directory_name):
 def quit_command(controller, arguements):
     '''Terminate the program.'''
     if not arguements:
-        controller.clear_all_interfaces()          # Pop all interfaces in the controller's stack
-        controller.output('Thank you. Goodbye.')   # Output goodbye message
+        controller.clear_all_interfaces() # Pop all interfaces in the controller's stack
+        controller.output('Thank you. Goodbye.') # Output goodbye message
     else:
         controller.output_error('Arguments are not supported for this command.')
 

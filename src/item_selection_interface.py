@@ -20,20 +20,20 @@ class ItemSelectionInterface(GeneralInterface):
         self._cancellation_callback = cancellation_callback
         
         # Create editing state properties
-        self._options_list = options_list          # Reference to the list (this should not be modified)
-        self._selected_options_set = set()         # This is a set of the indices used/selected
-        self._options_count = len(options_list)    # The number of options
-        self._is_adding = True                     # Create a variable to track whether the interface is in adding mode
-        self._is_completed = False                 # Create a variable to track whether the interface has finished processing the input
+        self._options_list = options_list # Reference to the list (this should not be modified)
+        self._selected_options_set = set() # This is a set of the indices used/selected
+        self._options_count = len(options_list) # The number of options
+        self._is_adding = True # Create a variable to track whether the interface is in adding mode
+        self._is_completed = False # Create a variable to track whether the interface has finished processing the input
         
         # Add commands (these work in conjuction with entering numbers)
-        # MERINO: added alias "list"
-        self.add_command(self._list_commands,       '', 'list-commands', 'commands')
-        self.add_command(self._switch_to_adding,    'add', 'append', 'include', '+')
-        self.add_command(self._switch_to_removal,   'remove', 'subtract', 'exclude', 'rm', '-')
-        self.add_command(self.list_progress,        'list-selection', 'progress', 'list')
-        self.add_command(self._complete,            'done', 'complete', 'finish')
-        self.add_command(self._cancel,              'cancel', 'exit', 'quit')
+        
+        self.add_command(self._list_commands, '', 'list-commands', 'commands')
+        self.add_command(self._switch_to_adding, 'add', 'append', 'include', '+')
+        self.add_command(self._switch_to_removal, 'remove', 'subtract', 'exclude', 'rm', '-')
+        self.add_command(self.list_progress, 'list-selection', 'progress', 'list')
+        self.add_command(self._complete, 'done', 'complete', 'finish')
+        self.add_command(self._cancel, 'cancel', 'exit', 'quit')
     
             
     def was_pushed(self, controller):
@@ -113,7 +113,7 @@ class ItemSelectionInterface(GeneralInterface):
         else:
             # Determine if the entered index is even selected
             if index not in self._selected_options_set:
-                # MERINO: fixed grammar
+                
                 controller.output_error('That item is not selected (to add an item, switch to add mode with the "add" command),')
             else:
                 self._selected_options_set.remove(index)
@@ -126,16 +126,16 @@ class ItemSelectionInterface(GeneralInterface):
     
     def parse_input(self, controller, user_input):
         '''Handle input on behalf of the program.'''
-        command_key = user_input.strip()                        # Strip the input
+        command_key = user_input.strip() # Strip the input
         
         # Determine if the input is a valid command (is so, execute it, and if not, attempt to cast it to an integer)
         if command_key in self._commands:
-            command = self._commands[command_key]               # Get the command (function) to execute
-            command(controller)                                 # Invoke the command on self (implicitly)
+            command = self._commands[command_key] # Get the command (function) to execute
+            command(controller) # Invoke the command on self (implicitly)
         else:
             if user_input.isdigit():
-                number = int(user_input)                        # Attempt to cast the input to an integer
-                self._process_item(controller, number - 1)      # Process the index (which is the number minus 1)
+                number = int(user_input) # Attempt to cast the input to an integer
+                self._process_item(controller, number - 1) # Process the index (which is the number minus 1)
             else:
                 # The input was not valid (report to the user)
                 controller.output_error('Sorry, that is not a valid input. Please use a number or a valid command (enter "commands" to list valid commands).')

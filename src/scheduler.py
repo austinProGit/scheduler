@@ -6,7 +6,7 @@ from scheduling_assistant import CoreqRule, FitnessConfiguration, get_fittest_co
 from expert_system_module import ExpertSystem, DynamicKnowledge
 
 SEMESTER_TYPE_SUCCESSOR = {'Fa': 'Sp', 'Sp': 'Su', 'Su': 'Fa'}    # Translation map from semester K to the next
-DEFAULT_HOURS_PER_SEMESTER = 15  # MERINO: updated value
+DEFAULT_HOURS_PER_SEMESTER = 15
 INITIAL_SEMESTER = {'Fa': [], 'Sp': [[]], 'Su': [[], []]}
 
 LOW_FITNESS = 1
