@@ -8,8 +8,6 @@ import pandas as pd
 import tabula
 import re
 
-# TODO: implement alias module here:
-
 def get_courses_needed(file_name):
     """Inputs file_name name as string, reads pdf tables into list of dataframes per table,
        merges list of dataframes into single dataframe, parses dataframe for CPSC and CYBR course id's,

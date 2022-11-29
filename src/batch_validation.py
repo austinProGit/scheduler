@@ -39,6 +39,7 @@ def batch_validation(input_files, course_info_container):
 
 
 def _validate_file(input_file, course_info_container):
+    '''Validate a single file given the passed file path and info container. This returns the report object.'''
     report = None
     try:
         schedule = parse_path_to_grad(input_file)

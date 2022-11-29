@@ -2,8 +2,6 @@
 # 9/24/22
 # CPSC 4175 Group Project
 
-# MERINO: Added this file:
-
 SEMESTER_TYPE_SUCCESSOR = {'Fall': 'Spring', 'Spring':'Summer', 'Summer':'Fall'}    # Translation map from semester K to the next
 
 def plain_text_export(filepath, schedule, starting_semester_type, starting_year):
@@ -21,9 +19,9 @@ def plain_text_export(filepath, schedule, starting_semester_type, starting_year)
         
         # Iterate over each semester
         for semester in schedule:
-            file_reference.write('{0} {1}:\n'.format(current_semester_type, curent_year))   # Write semester type and year
-            file_reference.write(', '.join(semester) if semester else '-No Course-')        # White courses or "-No Courses-"
-            file_reference.write('\n\n')                                                    # Create spacing in file
+            file_reference.write('{0} {1}:\n'.format(current_semester_type, curent_year)) # Write semester type and year
+            file_reference.write(', '.join(semester) if semester else '-No Course-') # White courses or "-No Courses-"
+            file_reference.write('\n\n') # Create spacing in file
             
             # Rotate the semester type and year if entering the spring
             current_semester_type = SEMESTER_TYPE_SUCCESSOR[current_semester_type]

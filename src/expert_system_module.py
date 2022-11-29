@@ -1,5 +1,5 @@
 # Thomas Merino
-# 11/7/22
+# 11/28/22
 # CPSC 4175
 
 import math
@@ -10,15 +10,14 @@ from schedule_inspector import *
 # ---------------------------------------- Expert System ----------------------------------------
 
 
-# NOTE/README:
-# I had the realization that the model I had been working on should not apply to individual semesters. We should
-# instead judge an entire path per expert system call. The format when all is said and done should be creating
-# boolean rules that have associated with them a confidence factor/value. It might be valuable to assign the
-# relevant inputs for a given rule--irrelevant courses should be assumed to return True since the antecedent
-# would be False.
+# On this expert system:
+# This is a very simple example of an expert system (not exemplary). For example, the interface component is nothing more than an
+# iteration. This is because the program has access to the path to graduation (input), and, thus, no input is needed by the user, it
+# is handled entirely by the program. The greater purpose/application of this is to judge the fitness of the path. Adjusting the values
+# of the weights and rules may need more work.
 
 
-# Guide:
+# Use Guide:
 
 # There are 3 rules:
 
