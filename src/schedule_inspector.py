@@ -2,10 +2,10 @@
 # 11/18/22
 
 def high():
-    return 0.07
+    return 0.5
 
 def low():
-    return 0.05
+    return 0.25
 
 def schedule_length(schedule):
     return len(schedule)

@@ -3,7 +3,7 @@
 
 import pandas as pd
 import re
-from program_generated_evaluator import evaluate_container
+import pickle
 
 class CourseInfoContainer:
     
@@ -11,11 +11,16 @@ class CourseInfoContainer:
         self._df = df
         self._excused_prereqs = excused_prereqs
 
-    # This method should only be used to instantiate Report Object after construction of container and graph
+    # This method pickles CourseInfoContainer class so data can be saved
+    def pickle(self):
+        pickled_data = pickle.dumps(self)
+        return pickled_data
+
+    # This method should only be used to load Report after construction of respective container and graph
     def load_report(self, report):
         self._report = report
 
-    # This method should only be used after instantiating Report Object in load_report(self, report)
+    # Used after load_report(self, report) to get number of descendants of each course
     def get_weight(self, courseid):
         weight = None
         if courseid in self._report.course_descendants:
@@ -43,7 +48,6 @@ class CourseInfoContainer:
         name = self.get_data('courseName', courseid)
         return name
 
-
     def get_hours(self, courseid): 
         hours = self.get_data('hours', courseid)
         hours_refined = self.get_imbedded_hours(hours)
@@ -57,9 +61,7 @@ class CourseInfoContainer:
 
     def get_availability(self, courseid):
         availability_list = self.get_space_split_list(self.get_data('availability', courseid))
-        # MERINO: We may want to send an error (notification pattern or error raise) when list is empty or use something like "availability_list if availability_list else ['Fa', 'Sp', 'Su']" to default to always available. This is necessary to prevent infinite loops on the scheduler when a unrecognized course is entered.
-        # Lew complied
-        if availability_list ==[]: # If list is empty we default to below availability
+        if availability_list == []: # If list is empty we default to below availability
             availability_list = ['Fa', 'Sp', '--']
         return availability_list
 
@@ -102,7 +104,7 @@ class CourseInfoContainer:
         return importance
 
     # ............helper methods............................helper methods...........................helper methods
-    # methods now account for None, 'none', or '??' values, and still return lists
+    # methods account for None, 'none', or '??' values, and still return lists
 
     def get_data(self, columnHeader, courseid): # helper method to access contents of df
         data = None
@@ -128,7 +130,8 @@ class CourseInfoContainer:
             data_list = data.split()
             return data_list
 
-    def get_imbedded_hours(self, data): # this method covers cases where hours are imbedded pulled jargon or stand alone
+    # Covers cases where hours are imbedded in CSU's website format or stand alone
+    def get_imbedded_hours(self, data):
         if data == None or data == 'none' or data == '??':
             return 0
         if (len(str(data)) == 1):
@@ -150,7 +153,7 @@ class CourseInfoContainer:
 
 # ******beginning of course_info_parser**********beginning of course_info_parser*********************************
 
-# Author: Vincent
+# Author: Vincent Miller
 def load_course_info(file_name):
     df = pd.read_excel(file_name, sheet_name='CPSC')
     return df
@@ -160,7 +163,9 @@ def load_course_info_excused_prereqs(file_name):
     return df.courseID.values.tolist()
 
 # ******ending of course_info_parser**********ending of course_info_parser***************************************
+
 # quick test below
+#from program_generated_evaluator import evaluate_container # imported for self testing purposes
 #df = load_course_info('src/input_files/Course Info.xlsx')
 #lst = load_course_info_excused_prereqs('src/input_files/Course Info.xlsx')
 #container = CourseInfoContainer(df, lst)
