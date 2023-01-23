@@ -595,7 +595,7 @@ class SmartPlannerController:
         if not self._export_types:
             self.output_warning('No schedule exported.')
             self.output_error('No export type selected.')
-            return
+            return 
         
         self.output('Generating schedule...')
         
@@ -620,11 +620,13 @@ class SmartPlannerController:
                     # Lew erased 'Path To Graduation' from here to work with excel_formatter
                     excel_formatter(Path(template_path), unique_ptg_destination, semesters_listing, self._scheduler.get_course_info())
                     self.output('Schedule (Path to Graduation) exported as {0}'.format(unique_ptg_destination))
+                    os.startfile(unique_ptg_destination)
                 
                 if PLAIN_TEXT_EXPORT_TYPE in self._export_types:
                     unique_ptext_destination = get_next_free_filename(desired_destination.with_suffix('.txt'))
                     plain_text_export(unique_ptext_destination, semesters_listing, 'Spring', 2022)
                     self.output('Schedule (plain text) exported as {0}'.format(unique_ptext_destination))
+                    os.startfile(unique_ptext_destination)
                 
             else:
                 self.output_error('Validation over a file list is not supported yet.')
