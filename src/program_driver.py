@@ -610,7 +610,10 @@ class SmartPlannerController:
         
         try:
             if self._export_types:
-                semesters_listing, confidence_factor = self._scheduler.generate_schedule()
+                container = self._scheduler.generate_schedule()
+                confidence_factor = container.get_cf()
+                semesters_listing = container.get_schedule()
+                #semesters_listing, confidence_factor = self._scheduler.generate_schedule()
                 self.output('Path generated with confidence value of {0:.1f}%'.format(confidence_factor*100))
                 
                 template_path = Path(get_source_path(), 'input_files')

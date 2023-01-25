@@ -7,6 +7,7 @@ from excel_formatter import excel_formatter
 from concurrent.futures import ProcessPoolExecutor
 from itertools import repeat
 from pathlib import Path
+from schedule_info_container import *
 import os
 import re
 
@@ -54,7 +55,9 @@ def full_schedule(input_path, courses_needed_filename, output_path, template_pat
         scheduler.configure_course_info(course_info)
         scheduler.configure_courses_needed(courses_needed)
         scheduler.configure_hours_per_semester(semester_hours)
-        schedule, _ = scheduler.generate_schedule()
+        container = scheduler.generate_schedule()
+        schedule = container.get_schedule()
+        #schedule, _ = scheduler.generate_schedule()
 
         output_file_path = Path(output_path).joinpath(Path(courses_needed_filename).stem).with_suffix(".xlsx")
        
