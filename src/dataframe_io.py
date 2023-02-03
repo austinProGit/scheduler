@@ -4,12 +4,9 @@
 
 import pandas as pd
 
-# TODO: None of this code is implemented
-
 def dataframe_xlsx_writes(filename, dataframe_mapping):
     '''Write to an xlsx file at the passed filename. This will write the to sheets (keys of dataframe mapping parameter) the contents in the dataframes (values of dataframe mapping parameter). That is, the dataframe mapping is a dictionary. This will override all of the contents of the sheets for the sheets specified. Other sheets will remain uneffected. This will also create a file if it does not exist.'''
-    
-    with pd.ExcelWriter(filename, if_sheet_exists='replace', mode='a', engine='openpyxl') as writer:
+    with pd.ExcelWriter(filename, engine='openpyxl') as writer:
         
         # Iterate over every sheet-dataframe pairing for writing
         for sheet, dataframe in dataframe_mapping.items():

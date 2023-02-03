@@ -186,8 +186,7 @@ class SmartPlannerController:
             setup_aliases(alias_relative_path)
 
             course_info = load_course_info(course_info_relative_path)
-            excused_prereqs = load_course_info_excused_prereqs(excused_prereqs_relative_path)
-            course_info_container = CourseInfoContainer(course_info, excused_prereqs)
+            course_info_container = CourseInfoContainer(course_info)
             
             # This raises an exception if Course Info Container contains invalid data
             evaluation_report = evaluate_container(course_info_container)

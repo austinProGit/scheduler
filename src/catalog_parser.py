@@ -1,34 +1,39 @@
-# Author: Vincent Miller
-# Date: 19 September 2022
+# Author: Vincent Miller 19 September 2022
+# Contributor: Max Lewis 01 January 2023
+
 from urllib.request import urlopen
 from bs4 import BeautifulSoup
 import re
 import pandas as pd
+from driver_fs_functions import *
 from alias_module import get_latest_id
-
 
 def update_course_info():
     """One click update Course Info.xlsx
        This function will go to the Course Descriptions for CPSC, CYBR, and MATH to pull information
        in order to recreate our current Course Info.xlsx"""
     # create new file and write cpsc courses
-    excel_writer = pd.ExcelWriter('output_files/NEW Course Info.xlsx')
+
+    file = get_source_path()
+    file = get_source_relative_path(file, 'output_files/NEW Course Info.xlsx')
+    excel_writer = pd.ExcelWriter(file)
+
     parse_catalog(excel_writer, 'cpsc')
     excel_writer.close()
     # open file to append cybr courses to it
-    excel_writer = pd.ExcelWriter('output_files/NEW Course Info.xlsx', mode='a')
+    excel_writer = pd.ExcelWriter(file, mode='a')
     parse_catalog(excel_writer, 'cybr')
     excel_writer.close()
     # open file to append math courses to it
-    excel_writer = pd.ExcelWriter('output_files/NEW Course Info.xlsx', mode='a')
+    excel_writer = pd.ExcelWriter(file, mode='a')
     parse_catalog(excel_writer, 'math')
     excel_writer.close()
 
     # because our program just reads the first sheet, some data needs to be merged to the first sheet
     # read each sheet as a dataframe
-    main_df = pd.read_excel('output_files/NEW Course Info.xlsx', sheet_name='CPSC')
-    cyber_df = pd.read_excel('output_files/NEW Course Info.xlsx', sheet_name='CYBR')
-    math_df = pd.read_excel('output_files/NEW Course Info.xlsx', sheet_name='MATH')
+    main_df = pd.read_excel(file, sheet_name='CPSC')
+    cyber_df = pd.read_excel(file, sheet_name='CYBR')
+    math_df = pd.read_excel(file, sheet_name='MATH')
 
     # append cybr
     main_df = pd.concat([main_df, cyber_df])
@@ -42,15 +47,15 @@ def update_course_info():
     main_df = main_df.replace("-- -- --", "Fa Sp Su")
     # add cpsc generic elective
     main_df.loc[len(main_df.index)] = ["CPSC 3XXX", "Generic Elective", "(3-0-3)", "Fa Sp Su",
-                                       '', '', '', 0, '', '', '']
+                                       '', '', '', 0, '', '', 60]
 
     # write final New Course Info.xlsx
-    excel_writer = pd.ExcelWriter('output_files/NEW Course Info.xlsx')
+    excel_writer = pd.ExcelWriter(file)
     main_df.to_excel(excel_writer, sheet_name="CPSC", index=False)
     excel_writer.close()
 
     # add Excused Prerequisites, MISM 3145, MISM 3115, MISM 3109, MATH 1111
-    excel_writer = pd.ExcelWriter('output_files/NEW Course Info.xlsx', mode='a')
+    excel_writer = pd.ExcelWriter(file, mode='a')
     excused_prereq = {'courseID': ["MISM 3145", "MISM 3115", "MISM 3109", "MATH 1111", 'MATH 1131', 'MATH 1132']}
     excused_df = pd.DataFrame(excused_prereq)
     excused_df.to_excel(excel_writer, sheet_name="ExcusedPrereqs", index=False)
@@ -60,6 +65,8 @@ def update_course_info():
 def parse_catalog(excel_writer, department):
     """inputs 4 letter department acronym, parses website catalog for accurate information
        creates and saves Course Info.xlsx """
+    file = get_source_path()
+    file = get_source_relative_path(file, 'input_files/course_availabilities.xlsx')
     def extract_requisites():
         """helper function to parse and return prerequisites and co-requisites"""
         _prerequisites = ''
@@ -115,7 +122,7 @@ def parse_catalog(excel_writer, department):
     def get_availability(_course_id):
         """helper function to get course availabilities"""
         try:
-            _df = pd.read_excel("input_files/course_availabilities.xlsx", sheet_name='Sheet1')
+            _df = pd.read_excel(file, sheet_name='Sheet1')
             _availability = _df.loc[_df.index[_df['course_ID'] == _course_id]]['availability'].to_list()
             return _availability[0]
         except IndexError:
@@ -124,7 +131,7 @@ def parse_catalog(excel_writer, department):
     def get_importance(_course_id):
         """helper function to get course importance"""
         try:
-            _df = pd.read_excel("input_files/course_availabilities.xlsx", sheet_name='Sheet1')
+            _df = pd.read_excel(file, sheet_name='Sheet1')
             _importance = _df.loc[_df.index[_df['course_ID'] == _course_id]]['importance'].to_list()
             return _importance[0]
         except IndexError:
