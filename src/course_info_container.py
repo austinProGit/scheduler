@@ -94,6 +94,10 @@ class CourseInfoContainer:
 
     def get_prereqs(self, courseid):
         prereqs_list = self.get_comma_split_list(self.get_data('prerequisites', courseid))
+        for prereq in prereqs_list:
+            if 'or' in prereq:
+                or_list = self.get_or_split_list(prereq) # May need to save outside to expand 'or' type prereqs.
+                prereqs_list = list(map(lambda x: x.replace(prereq, or_list[0]), prereqs_list)) # Default to first 'or' type prereq for now.
         return prereqs_list
 
     def get_coreqs(self, courseid):
@@ -164,7 +168,6 @@ class CourseInfoContainer:
 
     def get_data(self, columnHeader, courseid): # helper method to access contents of df
         data = None
-        index = None
         name = courseid[:4]
         df = self.get_df(name)
         if(self.df_exists(name) and self.validate_course(courseid)):
@@ -175,14 +178,14 @@ class CourseInfoContainer:
         return data
 
     def get_comma_split_list(self, data): # helper method to separate data by commas
-        if data == None or data == 'none' or data == '??':
+        if data == None: # or data == 'none' or data == '??'or data == '' or data == ' ' or data == '  ':
             return []
         else:
             data_list = [contents.strip() for contents in data.split(',')]
             return data_list
 
     def get_space_split_list(self, data): # helper method to separate data by space
-        if data == None or data == 'none' or data == '??':
+        if data == None: # or data == 'none' or data == '??'or data == '' or data == ' ' or data == '  ':
             return []
         else:
             data_list = data.split()
@@ -190,7 +193,7 @@ class CourseInfoContainer:
 
     # Covers cases where hours are imbedded in CSU's website format or stand alone
     def get_imbedded_hours(self, data):
-        if data == None or data == 'none' or data == '??':
+        if data == None: # or data == 'none' or data == '??'or data == '' or data == ' ' or data == '  ':
             return 0
         if (len(str(data)) == 1):
             return int(data)
@@ -201,6 +204,10 @@ class CourseInfoContainer:
     def validate_course(self, course):
         lst = self.get_courseIDs()
         return course in lst
+
+    def get_or_split_list(self, string):
+        lst = re.split(' or ', string)
+        return lst
 
 # ..........end of helper methods.......................end of helper methods......................helper methods
 # ------END OF CLASS---------END OF CLASS-----------END OF CLASS----------END OF CLASS---------------------------
@@ -243,10 +250,10 @@ def load_course_info(file_name):
 
 # ******ending of course_info_parser**********ending of course_info_parser***************************************
 
-#from program_generated_evaluator import evaluate_container # imported for self testing purposes
+from program_generated_evaluator import evaluate_container # imported for self testing purposes
 # quick test below
 #file0 = get_source_path()
-#file0 = get_source_relative_path(file0, 'input_files/Course Info X.xlsx')
+#file0 = get_source_relative_path(file0, 'input_files/Course Info.xlsx')
 #file1 = get_source_path()
 #file1 = get_source_relative_path(file1, 'input_files/Course Info Y.xlsx')
 #file2 = get_source_path()
@@ -254,6 +261,7 @@ def load_course_info(file_name):
 #df = load_course_info(file0)
 #df1 = load_course_info(file1)
 #container = CourseInfoContainer(df)
+#print(container.get_prereqs('ACCT 3111'))
 #container1 = CourseInfoContainer(df1)
 #write_df_dict_xlsx(container, file2)
 #print(container.update_container_keeping_external_duplicates(container1))
