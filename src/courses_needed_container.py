@@ -16,6 +16,17 @@ from cli_interface import HelpMenu
 # TODO: add generating functions that sepcialize in groups
 # TODO: perform memory test for leaks
 
+# Intermediate node keys: 
+# shallow course    s
+# deep course       c
+# deep credit       r
+# exhaustive        e
+# list              l
+# deliverable       d
+# protocol:         p
+# inserter:         i
+
+
 # The following are for bit masking and selection update results
 MODIFICATION = 0x00F
 SELECTION = 0x001
@@ -2312,7 +2323,7 @@ class ExhaustiveNode(_GroupNode):
         return self.is_delete_protected
 
     def get_shallow_description(self):
-        return self._printable_description or 'Requirment section'
+        return self._printable_description or 'Requirement section'
     
     def get_active_children_ids(self):
         '''Get a copy of the ordered list of children IDs that are selected.'''
@@ -2612,6 +2623,117 @@ class DeepCreditBasedNode(_GroupNode):
     
 
 class CoursesNeededContainer:
+
+
+    @staticmethod
+    def _make_node_from_string(node_type_string, parameter_sequence_string):
+        
+        # Create the new node
+
+        new_node = None
+
+        # Intermediate node keys: 
+        # shallow course    s
+        # deep course       c
+        # deep credit       r
+        # exhaustive        e
+        # list              l
+        # deliverable       d
+        # protocol:         p
+        # inserter:         i
+
+        if node_type_string == 's':
+            new_node = ShallowCountBasedNode(requisite_count=1)
+        elif node_type_string == 'c':
+            new_node = DeepCountBasedNode(requisite_count=1)
+        elif node_type_string == 'r':
+            new_node = DeepCreditBasedNode(requisite_credits=3)
+        elif node_type_string == 'e':
+            new_node = ExhaustiveNode()
+        elif node_type_string == 'd':
+            new_node = DeliverableCourse(printable_description='New Course', credits=3)
+        elif node_type_string == 'p':
+            new_node = CourseProtocol(match_description=r'[A-Z]{4, 5}\s?[0-9]{4}[A-Z]?', printable_description='New Course Protocol', credits=3)
+        elif node_type_string == 'i':
+            new_node = CourseInserter(generator_parameter=r'[A-Z]{4, 5}\s?[0-9]{4}[A-Z]?', printable_description='Insert New')
+        else:
+            raise ValueError(f'Illegal node type key: {node_type_string}.')
+        
+        # Set the key values for the new node
+
+        arguments_listing = split_assignments(parameter_sequence_string)
+        
+        if len(arguments_listing) == 1 and arguments_listing[0] == '':
+            arguments_listing = []
+        
+        for argument in arguments_listing:
+
+            delimiter_index = argument.find(SETTING_DELIMITTER)
+
+            if delimiter_index != -1:
+
+                key = argument[:delimiter_index].strip()
+                
+                value = argument[delimiter_index+len(SETTING_DELIMITTER):].strip()
+                new_node.set_value_for_key(key, value)
+        
+        return new_node
+        
+
+    @staticmethod
+    def _make_node_from_course_selection_logic_string(string):
+        
+        working_string = string.strip()
+
+        working_string = working_string[working_string.index('[')+1:]
+
+        node_type = working_string[:working_string.index('<')].strip()
+        working_string = working_string[working_string.index('<')+1:]
+
+        parameter_sequence = working_string[:working_string.index('>')]
+
+        working_string = working_string[working_string.index('>')+1:]
+
+        new_node = CoursesNeededContainer._make_node_from_string(node_type, parameter_sequence)
+
+        next_bracket_index = working_string.find('[')
+
+        if next_bracket_index == -1:
+            working_string = working_string[working_string.find(']')+1:]
+
+        while next_bracket_index != -1:
+
+            end_bracket_index = working_string.index(']')
+            construction_string = working_string[next_bracket_index:end_bracket_index+1]
+            working_string = working_string[end_bracket_index+1:]
+
+            new_node.add_child(CoursesNeededContainer._make_node_from_course_selection_logic_string(construction_string))
+            
+            next_bracket_index = working_string.find('[')
+        
+        return new_node
+            
+        
+    
+    @staticmethod
+    def make_from_course_selection_logic_string(name, string):
+
+        certain_courses = []
+        string = string.strip()
+
+        if string[0] == '(':
+            end_index = string.index(')')
+            courses = string[1:end_index].split(',')
+            string = string[end_index+1:]
+            certain_courses = [course.strip() for course in courses]
+        
+        encapsulated_string = f'[e<name=Requirements>{string}]'
+        decision_tree = CoursesNeededContainer._make_node_from_course_selection_logic_string(encapsulated_string)
+        
+        courses_needed_container = CoursesNeededContainer(name, certain_courses_list=certain_courses, decision_tree=decision_tree)
+        
+        return courses_needed_container
+
     
     def __init__(self, degree_plan, certain_courses_list=None, decision_tree=None):
         self._degree_plan = degree_plan
@@ -2723,7 +2845,13 @@ if __name__ == '__main__':
     # listing_node = ListingNode(printable_description='Core Curriculum')
     # tree.add_child(listing_node)
 
-    courses_needed_container = CoursesNeededContainer("Test Plan")
+    # courses_needed_container = CoursesNeededContainer("Test Plan")
+
+    courses_needed_container = CoursesNeededContainer.make_from_course_selection_logic_string('Course', '''
+    (123, 456)
+    [d <n=Big>]
+    [d <n=Small>]
+    ''')
     tree = courses_needed_container.get_decision_tree()
     
     controller = DummyController()
@@ -2792,8 +2920,9 @@ if __name__ == '__main__':
     root
     '''
 
-    for t in std_in.split('\n'):
-        controller.get_current_interface().parse_input(controller, t)
+    # for t in std_in.split('\n'):
+    #     controller.get_current_interface().parse_input(controller, t)
+
 
     courses_needed_container.stub_all_unresolved_nodes()
 
