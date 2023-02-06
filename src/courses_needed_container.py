@@ -15,6 +15,8 @@ from cli_interface import HelpMenu
 # TODO: pull credit count into protocol node when filling out
 # TODO: add generating functions that sepcialize in groups
 # TODO: perform memory test for leaks
+# TODO: make it the case that syncing does not sync multiple times within a group (that is, a course appearing 
+#           multiple times in a group means taking it that many times).
 
 # Intermediate node keys: 
 # shallow course    s
@@ -2725,7 +2727,7 @@ class CoursesNeededContainer:
             end_index = string.index(')')
             courses = string[1:end_index].split(',')
             string = string[end_index+1:]
-            certain_courses = [course.strip() for course in courses]
+            certain_courses = [course.strip() for course in set(courses)]
         
         encapsulated_string = f'[e<name=Requirements>{string}]'
         decision_tree = CoursesNeededContainer._make_node_from_course_selection_logic_string(encapsulated_string)
@@ -2922,7 +2924,6 @@ if __name__ == '__main__':
 
     # for t in std_in.split('\n'):
     #     controller.get_current_interface().parse_input(controller, t)
-
 
     courses_needed_container.stub_all_unresolved_nodes()
 
