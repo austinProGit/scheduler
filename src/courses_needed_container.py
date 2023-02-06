@@ -630,7 +630,7 @@ class NeededCoursesInterface(GeneralInterface):
 
     def unstub_layer(self, controller, argument):
         self._add_refresh_opportunity()
-        stub_result = RESULT & self._node.disable_stub(argument)
+        stub_result = RESULT & self._node.disable_stub()
         self._report_stub_enable(stub_result, 'self')
         self._add_print_warning_if_arguments(argument)
         self._push_print(controller)
@@ -2388,7 +2388,7 @@ class ShallowCountBasedNode(_GroupNode):
     def get_shallow_description(self):
         result = self._printable_description or "Section"
         if self._requisite_count != 0:
-            count = sum(course.get_shallow_count() for course in self.get_active_children_list())
+            count = len(self._selection) #sum(course.get_shallow_count() for course in self.get_active_children_list())
             count_string = print_format_number(count)
             result += f' - {count_string} / {self._requisite_count} selections'
         return result
