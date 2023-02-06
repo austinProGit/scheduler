@@ -1,5 +1,5 @@
 # Thomas Merino and Austin Lee
-# 2/2/2023
+# 2/5/2023
 # CPSC 4176 Project
 
 import re
@@ -8,6 +8,10 @@ from typing import final
 from math import inf
 import pickle
 import os
+
+from cli_interface import HelpMenu
+
+# TODO: add documentation
 
 # The following are for bit masking and selection update results
 MODIFICATION = 0x00F
@@ -41,6 +45,18 @@ ILLEGAL_INTEGER = 0x03
 KEY_NOT_FOUND = 0x04
 
 
+NO_CLEARING = 0x00
+NAVIGATION_CLEARING = 0x01
+CONSTANT_REFRESHING = 0x02
+
+PRINT = 0x00
+ERROR = 0x01
+WARNING = 0x02
+POSSIBLE_LS = 0x03
+HARD_LS = 0x04
+POSSIBLE_SOFT_CLEAR = 0x05
+HARD_CLEAR = 0x06
+
 # NOTE:
 # This will NOT place courses intellgently if one group has a higher priority than another. This might require
 # another method that trickles unneeded courses to lower priority groups to meet other requirements.
@@ -48,9 +64,14 @@ KEY_NOT_FOUND = 0x04
 # In the event a list of courses are fed into the tree and there are multiple protocol nodes that satisfy the same ^
 
 
-# TODO:
-# Implement the certain course list with listing node
-# Add automatic movement (to resolve all)
+
+# TODO: Indented means possibly completed, but not thoroughly checked/tested.
+    # have argument parsing ignore commas between parenthesis/bracket/brace pairs
+    # Add copy and paste commands
+    # Add automatic movement (to resolve all)
+    # Fix traversal state starting funny
+    # make traversal move print ls
+    # Implement the certain course list with listing node
     # Add checks to see if the entered input is empty (string)
     # Fix the global selection (have it work for deselecting and fill outs)
     # add parameters to groups for stub generators
@@ -59,11 +80,8 @@ KEY_NOT_FOUND = 0x04
     # Enforce there being no course of the same name being filled out in a given group node (one instance per layer)
     # Check selection across whole tree (registering course A in one place selects it in other places in the tree)
     # place in the container
-# -> Add method to return easily printable objects
-# -> Already-taken filter (remove certain specified courses from aggregate)
 
-
-# add help menu invocation
+    # add help menu invocation
     #implement CourseInserters
 
 # Add mode to hide "(NOT resolved labels that are not important/active)"
@@ -73,19 +91,28 @@ KEY_NOT_FOUND = 0x04
     # add node description support
     # add description nodes (more freedom)
     # deal with course protocol's credit
-# add copy and paste (this is trickier than it sounds)
+    # add copy and paste (this is trickier than it sounds)
 
 # add option to show ls numbers (for easier selection)
-# Add better UI (maybe with clearing screen)
+    # Add better UI (maybe with clearing screen)
 
 # When traversing automatically, check to see if the current node or some other above is stubbed (go back if so)
 
-
 # LATER:
 # After-everything screening (function to check final aggregate)
-# Script (even more freedom)
+# Script nodes (even more freedom)
 # Add undo (undo command and move back to working node if moved automatically)
 # give container method to return all possible permutations of selections
+# cannot delete multiple items (need to account for changing indices as list mutates)
+# cannot copy/cut/paste multiple items
+# -> Add method to return easily printable objects
+# -> Already-taken filter (remove certain specified courses from aggregate)
+
+USER_COMMAND_LIST = '''Available commands: move, back, home, show, show_all, show_down, depth, info, select, \
+fill, deselect, deselect_layer, deselect_all, deselect_down, stub, stub_layer, stub_top, unstub, unstub_layer, \
+unstub_all, unstub_down, aggregate, admin, user, clear, clear_mode, traversal'''
+ADMIN_COMMAND_LIST = '''add_exhaustive, add_deliverable, add_protocol, add_shallow_count, add_deep_count, \
+add_deep_credit, add_inserter, delete, modify, validate, copy, cut, paste'''
 
 
 DEFAULT_STUB_COURSE_DESCRIPTION = "COURSE XXXX"
@@ -111,9 +138,11 @@ def default_stub_generator(credits_string=None, name=None):
     return new_item
     
 def regex_course_protocol_generator(matching_description=r'.*', name=None):
+    '''Course generator function that creates protocol nodes with the passed regex (defaults to ".*") and name (defaults to "New Course").'''
     return CourseProtocol(matching_description, name or 'New Course')
 
 def as_signed_integer(string):
+    '''Returns a signed integer if the passed string can be converted or None if it cannot.'''
     result = None
     if string:
         if string[0] == '-':
@@ -123,6 +152,15 @@ def as_signed_integer(string):
         else:
             if string.isnumeric():
                 result = int(string)
+    return result
+
+def print_format_number(number):
+    '''Format the passes number for displaying in the UI. This returns a string.'''
+    result = None
+    if number != inf:
+        result = str(number)
+    else:
+        result = 'Limitless'
     return result
 
 # We want to make a tree where at various points a decision is needed (must be resolved).
@@ -149,6 +187,33 @@ def as_signed_integer(string):
 # Checking if there are any stubs in the tree
 
 
+
+def split_assignments(line):
+    result = []
+    line_length = len(line)
+    if line:
+        parenthesis_depth = 0
+        last_index = 0
+        working_index = 0
+
+        while working_index < line_length:
+            current_character = line[working_index]
+            if current_character == ',':
+                if parenthesis_depth == 0:
+                    result.append(line[last_index:working_index])
+                    last_index = working_index + 1
+            elif current_character in {'(', '[', '{'}:
+                parenthesis_depth += 1
+            elif current_character in {')', ']', '}'}:
+                parenthesis_depth -= 1
+            working_index += 1
+        
+        if last_index != working_index:
+            result.append(line[last_index:])
+
+    #return line.split(',')
+    return result
+
 ## ------------------------------------------------- Interface Start ------------------------------------------------- ##
 
 class ArgumentInputInterface(GeneralInterface):
@@ -170,7 +235,11 @@ class ArgumentInputInterface(GeneralInterface):
     
     def deconstruct(self, controller):
         '''Destruction method that is called upon the interface being dismissed.'''
-        controller.output('Leaving modification menu.')
+        top_interface = controller.get_current_interface()
+        if isinstance(top_interface, NeededCoursesInterface):
+            top_interface.enter_from_submenu(controller, 'Leaving modification menu.')
+        else:
+            controller.output('Leaving modification menu.')
     
     def parse_input(self, controller, user_input):
         '''Handle input on behalf of the program.'''
@@ -211,11 +280,16 @@ class FillOutInterface(GeneralInterface):
         
     def was_pushed(self, controller):
         '''Method that is called upon the interface being pushed onto the interface stack.'''
-        controller.output('Enter you course number or enter cancel:')
+        # TODO: bad access of private
+        controller.output(f'Enter you course number for "{self._node._printable_description}" or enter cancel:')
     
     def deconstruct(self, controller):
         '''Destruction method that is called upon the interface being dismissed.'''
-        controller.output('Leaving fill out menu.')
+        top_interface = controller.get_current_interface()
+        if isinstance(top_interface, NeededCoursesInterface):
+            top_interface.enter_from_submenu(controller, 'Leaving fill out menu.')
+        else:
+            controller.output('Leaving fill out menu.')
     
     def parse_input(self, controller, user_input):
         '''Handle input on behalf of the program.'''
@@ -239,38 +313,37 @@ class FillOutInterface(GeneralInterface):
             
             # TODO: fix getting the id and priority in a stupid way (bad practice)
             course_id = self._node.get_course_id()
-            root = self._root
-            highest_priority_for_course_id = root.sync_find_deep_highest_priority(course_id, base_priority=inf)
-            sync_result = root.sync_deep_selection_with_priority(self._node._node_id, course_id, base_priority=inf, requisite_priority=highest_priority_for_course_id)
+            if course_id is not None:
+                root = self._root
+                highest_priority_for_course_id = root.sync_find_deep_highest_priority(course_id, base_priority=inf)
+                sync_result = root.sync_deep_selection_with_priority(self._node._node_id, course_id, base_priority=inf, requisite_priority=highest_priority_for_course_id)
 
-            if sync_result == ADDITIONAL_EFFECTS:
-                controller.output('Some other items\' selection states were changed due to this.')
-            elif sync_result == SUPERSEDED:
-                controller.output('Another selected item matching the same description has a higher priority (selection modified).')
+                if sync_result == ADDITIONAL_EFFECTS:
+                    controller.output('Some other items\' selection states were changed due to this.')
+                elif sync_result == SUPERSEDED:
+                    controller.output('Another selected item matching the same description has a higher priority (selection modified).')
 
             controller.pop_interface(self)
         elif result == NOT_SATISIFACTORY:
             controller.output_error('That does not meet the form requirements.')
         elif result == UNCHANGED:
             controller.output_error(f'The value is already set to "{value}".')
-            controller.pop_interface(self)
         elif result == DUPLICATE:
             controller.output_error(f'A item already set to "{value}" already exists on this layer.')
-            controller.pop_interface(self)
         else:
             raise ValueError('Illegal state change result')
             
-            
-
+        
 
 class NeededCoursesInterface(GeneralInterface):
     
-    def __init__(self, node, root_interface=None, depth=0, is_traverse_mode=False):
+    def __init__(self, node, root_interface=None, depth=0, is_traverse_mode=False, clears_screen=NO_CLEARING):
         self.name = 'COURSE SELECTION' # TODO: this needs to change by edit mode status (maybe via property: setters and getters)
         self._node = node
         self._root_interface = root_interface or self
         self._depth = depth
         self._is_traverse_mode = is_traverse_mode
+        self._clears_screen = clears_screen
 
         self._admin_commands = {}
         self._user_commands = {}
@@ -278,6 +351,8 @@ class NeededCoursesInterface(GeneralInterface):
         self._clipboard_node = None
         self._in_edit_mode = False
         
+        self._print_queue = []
+
         # exit
         
         # move (can accept names or listing numbers), back, root
@@ -302,7 +377,7 @@ class NeededCoursesInterface(GeneralInterface):
         self.add_command(self.print_commands, '', 'commands')
         
         self.add_command(self.navigate_to_nodes, 'move', 'cd', 'go')
-        self.add_command(self.navigate_back, 'back', '..')
+        self.add_command(self.navigate_back, 'back', 'prev', 'previous')
         self.add_command(self.navigate_to_root, 'root', 'home', 'base')
                 
         self.add_command(self.show_all, 'show_all', 'display_all', 'map')
@@ -329,6 +404,11 @@ class NeededCoursesInterface(GeneralInterface):
         self.add_command(self.aggregate, 'aggregate', 'pull')
         self.add_command(self.admin_mode, 'admin', 'sudo')
         self.add_command(self.user_mode, 'user', 'student')
+        self.add_command(self.clear, 'clear', 'c')
+        self.add_command(self.set_clear_mode, 'toggle_clear', 'clear_mode', 'clearing')
+        self.add_command(self.toggle_traversal_mode, 'traversal', 'travel', 'auto', 't')
+
+        self.add_command(self.push_help, 'help', 'h')
         
         # Admin-level:
         self._admin_commands = self._commands.copy()
@@ -343,269 +423,385 @@ class NeededCoursesInterface(GeneralInterface):
         self.add_command(self.add_inserter, 'add_inserter', 'ains', 'ai')
         
         self.add_command(self.delete_node, 'delete', 'del')
-        self.add_command(self.modify_node, 'rename', 'modify', 'change', 'edit', 'm')
+        self.add_command(self.modify_node, 'rename', 'modify', 'change', 'edit', 'm', 'mod')
         self.add_command(self.validate_tree, 'validate', 'valid')
         
-        # TODO: this is just a test!:
-        self.add_command(self.test, 'test')
-    
-    def test(self, controller, arg):
-        controller.output(self._node.sync_find_deep_highest_priority(arg, inf))
+        self.add_command(self.copy_node, 'copy', 'c')
+        self.add_command(self.cut_node, 'cut', 'x')
+        self.add_command(self.paste_node, 'paste', 'v')
 
     def was_pushed(self, controller):
         '''Method that is called upon the interface being pushed onto the interface stack.'''
         if (self._is_in_traverse_mode()):
-            # TODO: determine if resolved
-            pass
+            self._check_for_traversal(controller)
         pass
     
     def deconstruct(self, controller):
         '''Destruction method that is called upon the interface being dismissed.'''
         pass
 
-        
+    
     def print_commands(self, controller, argument):
         # TODO: handle arguments and refine printing
-        # TODO: make this determined by whether in admin mode or user mode
-        controller.output('Available commands: ')
+        command_list_string = USER_COMMAND_LIST
+        if self._commands is self._admin_commands:
+            command_list_string += ', ' + ADMIN_COMMAND_LIST
+        self._add_print(command_list_string)
+        self._push_print(controller)
         
-    def print_warning_if_arguments(self, controller, argument):
-        if argument:
-            controller.output_warning('Arguments are not processed for this command.')
-
-
     def navigate_to_nodes(self, controller, argument):
-        # TODO: make this work recursively (fix)
+        self._set_traversal_mode(False)
 
         if argument:
+            self._add_clear_opportunity()
+            self._add_ls()
+
             destinations = [destination.strip() for destination in argument.split(',')]
             current_interface = self
 
             while destinations:
                 next_destination = destinations.pop(0)
-                sucess, current_interface = current_interface._navigate_to_node(controller, next_destination)
+                sucess, current_interface = current_interface._navigate_to_node(self, controller, next_destination)
                 if not sucess:
                     destinations = []
                     break
-            self._print_top_interface(controller)
         else:
-            controller.output_error('Please enter a group to navigate to.')
+            self._add_error('Please enter a group to navigate to.')
+        
+        self._push_print(controller)
                 
     def navigate_back(self, controller, argument):
-        self.print_warning_if_arguments(controller, argument)
+        self._set_traversal_mode(False)
+        self._add_clear_opportunity()
+        self._add_ls()
         self._navigate_back(controller)
-        self._print_top_interface(controller)
+        self._add_print_warning_if_arguments(argument)
+        self._push_print(controller)
         
     def navigate_to_root(self, controller, argument):
-        self.print_warning_if_arguments(controller, argument)
+        self._set_traversal_mode(False)
+        self._add_clear_opportunity()
+        self._add_ls()
         self._navigate_to_root(controller)
-        self._print_top_interface(controller)
+        self._add_print_warning_if_arguments(argument)
+        self._push_print(controller)
     
     def show_all(self, controller, argument):
-        self.print_warning_if_arguments(controller, argument)
-        controller.output(self._get_root_interface()._node.get_deep_description())
+        self._add_clear_opportunity()
+        self._add_print(self._get_root_interface()._node.get_deep_description(indicate_node=self._node))
+        self._add_print_warning_if_arguments(argument)
+        self._push_print(controller)
     
     def show_here(self, controller, argument):
         if not argument:
-            self._print_listing(controller)
+            self._add_clear_opportunity()
+            self._add_ls()
         else:
             self.show_info(controller, argument)
+        self._push_print(controller)
     
     def show_down(self, controller, argument):
-        self.print_warning_if_arguments(controller, argument)
-        controller.output(self._node.get_deep_description())
+        self._add_clear_opportunity()
+        self._add_print(self._node.get_deep_description())
+        self._add_print_warning_if_arguments(argument)
+        self._push_print(controller)
         
     def show_depth(self, controller, argument):
-        self.print_warning_if_arguments(controller, argument)
+        self._add_print_warning_if_arguments(argument)
         controller.output(f'Layer depth: {self._depth + 1}')
+        self._push_print(controller)
     
     def show_info(self, controller, argument):
         if not argument:
-            controller.output(self._node.get_layer_description())
+            self._add_clear_opportunity()
+            self._add_ls()
         else:
             child = self._get_child(argument)
             if child is not None:
-                controller.output(child.get_layer_description())
+                self._add_print(child.get_layer_description())
             else:
-                controller.output_error(f'No item immediately below matches that description "{argument}".')
-    
+                self._add_error(f'No item immediately below matches that description "{argument}".')
+        self._push_print(controller)
     
     
     def select_course(self, controller, argument):
+
         if argument:
+            self._add_refresh_opportunity()
             for course_description in [course.strip() for course in argument.split(',')]:
-                self._select_course(controller, course_description)
+                self._select_course(course_description)
+            self._push_print(controller)
+            self._check_for_traversal(controller)
         else:
-            controller.output_error('Please enter a course or courses to select.')
+            self._add_error('Please enter a course or courses to select.')
+            self._push_print(controller)
         
     def fill_out_course(self, controller, argument):
+
         if argument:
             child = self._get_child(argument)
             if child is not None:
                 if child.can_accept_fill_out():
+                    self._add_clear_opportunity()
+                    self._push_print(controller)
                     controller.push_interface(FillOutInterface(root=self._get_root_node(), parent_node=self._node, node=child))
                 else:
-                    controller.output_error('This item cannot be filled out.')
+                    self._add_error('This item cannot be filled out.')
+                    self._push_print(controller)
             else:
-                controller.output_error(f'No item immediately below matches the description "{argument})".')
+                self._add_error(f'No item immediately below matches the description "{argument})".')
+                self._push_print(controller)
         else:
-            controller.output_error('Please enter a course to fill.')
+            self._add_error('Please enter a course to fill.')
+            self._push_print(controller)
             
     
     def deselect_course(self, controller, argument):
+        self._add_refresh_opportunity()
         if argument:
             for course_description in [course.strip() for course in argument.split(',')]:
-                self._deselect_course(controller, course_description)
+                self._deselect_course(course_description)
         else:
-            controller.output_error('Please enter a course or courses to deselect.')
+            self._add_error('Please enter a course or courses to deselect.')
+        self._push_print(controller)
 
         
     def deselect_layer(self, controller, argument):
-        self.print_warning_if_arguments(controller, argument)
-        controller.output('Entire layer deselected (those possible).')
+        self._add_refresh_opportunity()
+        self._add_print('Entire layer deselected (those possible).')
         self._node.reset_shallow_selection()
+        self._add_print_warning_if_arguments(argument)
+        self._push_print(controller)
         
     def deselect_all(self, controller, argument):
-        self.print_warning_if_arguments(controller, argument)
+        self._add_refresh_opportunity()
         self._get_root_interface()._node.reset_deep_selection()
-        controller.output('All items deselected (those possible).')
+        self._add_print('All items deselected (those possible).')
+        self._add_print_warning_if_arguments(argument)
+        self._push_print(controller)
                 
     def deselect_down(self, controller, argument):
-        self.print_warning_if_arguments(controller, argument)
+        self._add_refresh_opportunity()
         self._node.reset_deep_selection()
-        controller.output('All items deselected downward (those possible).')
+        self._add_print('All items deselected downward (those possible).')
+        self._add_print_warning_if_arguments(argument)
+        self._push_print(controller)
         
         
         
     def stub_course(self, controller, argument):
         if argument:
+            self._add_refresh_opportunity()
             stub_result = RESULT & self._node.enable_child_stub_by_description(argument)
-            self._report_stub_enable(stub_result, controller, argument)
+            self._report_stub_enable(stub_result, argument)
+            self._push_print(controller)
+            self._check_for_traversal(controller)
         else:
-            controller.output_error('Please enter a course or group to stub.')
+            self._add_error('Please enter a course or group to stub.')
+            self._push_print(controller)
 
                 
     def stub_layer(self, controller, argument):
-        self.print_warning_if_arguments(controller, argument)
+        self._add_refresh_opportunity()
         stub_result = RESULT & self._node.enable_stub()
-        self._report_stub_enable(stub_result, controller, 'self')
+        self._report_stub_enable(stub_result, 'self')
+        self._add_print_warning_if_arguments(argument)
+        self._push_print(controller)
+        self._check_for_traversal(controller)
             
     def stub_all_top(self, controller, argument):
-        self.print_warning_if_arguments(controller, argument)
+        self._add_refresh_opportunity()
         for node in self._get_root_node().get_all_children_list():
             node.enable_stub()
-        controller.output('All applicable top-layer nodes stub-enabled.')
+        self._add_print('All applicable top-layer nodes stub-enabled.')
+        self._add_print_warning_if_arguments(argument)
+        self._push_print(controller)
+        self._check_for_traversal(controller)
         
         
     def unstub_course(self, controller, argument):
+        self._add_refresh_opportunity()
         if argument:
             stub_result = RESULT & self._node.disable_child_stub_by_description(argument)
-            self._report_stub_disable(stub_result, controller, argument)
+            self._report_stub_disable(stub_result, argument)
         else:
-            controller.output_error('Please enter a course or group to unstub.')
+            self._add_error('Please enter a course or group to unstub.')
+        self._push_print(controller)
 
     def unstub_layer(self, controller, argument):
-        self.print_warning_if_arguments(controller, argument)
+        self._add_refresh_opportunity()
         stub_result = RESULT & self._node.disable_stub(argument)
-        self._report_stub_enable(stub_result, controller, 'self')
+        self._report_stub_enable(stub_result, 'self')
+        self._add_print_warning_if_arguments(argument)
+        self._push_print(controller)
         
     def unstub_all(self, controller, argument):
-        self.print_warning_if_arguments(controller, argument)
+        self._add_refresh_opportunity()
         self._get_root_interface()._node.reset_deep_stub()
-        controller.output('All applicable stubs reset.')
+        self._add_print('All applicable stubs reset.')
+        self._add_print_warning_if_arguments(argument)
+        self._push_print(controller)
                 
     def unstub_down(self, controller, argument):
-        self.print_warning_if_arguments(controller, argument)
+        self._add_refresh_opportunity()
         self._node.reset_deep_stub()
-        controller.output('All applicable stubs removed downward.')
+        self._add_print('All applicable stubs removed downward.')
+        self._add_print_warning_if_arguments(argument)
+        self._push_print(controller)
         
         
     def add_exhaustive(self, controller, argument):
+        self._add_refresh_opportunity()
         new_node = ExhaustiveNode()
         if self._node.add_child(new_node):
-            self._apply_constructor_arguments(controller, argument, new_node)
-            controller.output('Group added.')
+            self._apply_constructor_arguments(argument, new_node)
+            self._add_print('Group added.')
         else:
-            controller.output_error('The group could not be added.')
+            self._add_error('The group could not be added.')
+        self._push_print(controller)
     
         
     def add_deliverable(self, controller, argument):
+        self._add_refresh_opportunity()
         new_node = DeliverableCourse(printable_description='New Course', credits=3)
         if self._node.add_child(new_node):
-            self._apply_constructor_arguments(controller, argument, new_node)
-            controller.output('Course added.')
+            self._apply_constructor_arguments(argument, new_node)
+            self._add_print('Course added.')
         else:
-            controller.output_error('The course could not be added.')
+            self._add_error('The course could not be added.')
+        self._push_print(controller)
     
     
     def add_protocol(self, controller, argument):
+        self._add_refresh_opportunity()
         # TODO: fix this default (does not work)
         new_node = CourseProtocol(match_description=r'[A-Z]{4, 5}\s?[0-9]{4}[A-Z]?', printable_description='New Course Protocol', credits=3)
         if self._node.add_child(new_node):
-            self._apply_constructor_arguments(controller, argument, new_node)
-            controller.output('Course added.')
+            self._apply_constructor_arguments(argument, new_node)
+            self._add_print('Course added.')
         else:
-            controller.output_error('The course could not be added.')
+            self._add_error('The course could not be added.')
+        self._push_print(controller)
         
     
     def add_shallow_count(self, controller, argument):
+        self._add_refresh_opportunity()
         new_node = ShallowCountBasedNode(requisite_count=1)
         if self._node.add_child(new_node):
-            self._apply_constructor_arguments(controller, argument, new_node)
-            controller.output('Group added.')
+            self._apply_constructor_arguments(argument, new_node)
+            self._add_print('Group added.')
         else:
-            controller.output_error('The group could not be added.')
+            self._add_error('The group could not be added.')
+        self._push_print(controller)
     
                 
     def add_deep_count(self, controller, argument):
+        self._add_refresh_opportunity()
         new_node = DeepCountBasedNode(requisite_count=1)
         if self._node.add_child(new_node):
-            self._apply_constructor_arguments(controller, argument, new_node)
-            controller.output('Group added.')
+            self._apply_constructor_arguments(argument, new_node)
+            self._add_print('Group added.')
         else:
-            controller.output_error('The group could not be added.')
+            self._add_error('The group could not be added.')
+        self._push_print(controller)
     
     def add_deep_credit(self, controller, argument):
+        self._add_refresh_opportunity()
         new_node = DeepCreditBasedNode(requisite_credits=3)
         if self._node.add_child(new_node):
-            self._apply_constructor_arguments(controller, argument, new_node)
-            controller.output('Group added.')
+            self._apply_constructor_arguments(argument, new_node)
+            self._add_print('Group added.')
         else:
-            controller.output_error('The group could not be added.')
+            self._add_error('The group could not be added.')
+        self._push_print(controller)
     
     def add_inserter(self, controller, argument):
+        self._add_refresh_opportunity()
         new_node = CourseInserter(generator_parameter=r'[A-Z]{4, 5}\s?[0-9]{4}[A-Z]?', printable_description='Insert New')
         if self._node.add_child(new_node):
-            self._apply_constructor_arguments(controller, argument, new_node)
-            controller.output('Inserter added.')
+            self._apply_constructor_arguments(argument, new_node)
+            self._add_print('Inserter added.')
         else:
-            controller.output_error('The inserter could not be added.')
+            self._add_error('The inserter could not be added.')
+        self._push_print(controller)
         
-           
     def delete_node(self, controller, argument):
+        self._add_refresh_opportunity()
         if argument:
-            self._delete_node(controller, argument)
+            self._delete_node(argument)
         else:
-            controller.output_error('Please enter a course or group to delete.')
-        
+            self._add_error('Please enter a course or group to delete.')
+        self._push_print(controller)
+
+    def copy_node(self, controller, argument):
+        self._add_refresh_opportunity()
+        if argument:
+            child = self._get_child(argument)
+            if child is not None:
+                self._copy_to_clipboard(child)
+            else:
+                self._add_error(f'No item immediately below matches the description "{argument})".')
+        else:
+            self._copy_to_clipboard(self._node)
+        self._push_print(controller)
+
+
+    def cut_node(self, controller, argument):
+        self._add_refresh_opportunity()
+        if argument:
+            child = self._get_child(argument)
+            if child is not None:
+                self._cut_to_clipboard(child)
+            else:
+                self._add_error(f'No item immediately below matches the description "{argument})".')
+        else:
+            self._add_error('Please enter a course or group to cut.')
+        self._push_print(controller)
+
+    def paste_node(self, controller, argument):
+        self._add_refresh_opportunity()
+        if argument:
+            child = self._get_child(argument)
+            if child is not None:
+                self._paste_from_clipboard(child)
+            else:
+                self._add_error(f'No item immediately below matches the description "{argument})".')
+        else:
+            self._paste_from_clipboard(self._node)
+        self._add_print_warning_if_arguments(argument)
+        self._push_print(controller)
+
+
     def modify_node(self, controller, argument):
         if not argument:
+            self._add_clear_opportunity()
+            self._push_print(controller)
             controller.push_interface(ArgumentInputInterface(self._node))
         else:
             child = self._get_child(argument)
             if child:
+                self._add_clear_opportunity()
+                self._push_print(controller)
                 controller.push_interface(ArgumentInputInterface(child))
             else:
-                controller.output_error(f'No item immediately below matches the description "{argument}".')
+                self._add_error(f'No item immediately below matches the description "{argument}".')
+            self._push_print(controller)
         
+
     def aggregate(self, controller, argument):
-        self.print_warning_if_arguments(controller, argument)
-        controller.output(f'Is resolved: {self._get_root_node().is_deep_resolved()}')
-        controller.output([e.course_description for e in self._get_root_node().get_aggregate()])
+        self._add_refresh_opportunity()
+        # TODO: this is temp
+        self._add_print(f'Is resolved: {self._get_root_node().is_deep_resolved()}')
+        self._add_print([e.course_description for e in self._get_root_node().get_aggregate()])
+        self._add_print_warning_if_arguments(argument)
+        self._push_print(controller)
         
 
     
     def validate_tree(self, controller, argument):
+
+        self._add_refresh_opportunity()
+
         node = None
         if not argument:
             node = self._get_root_node()
@@ -613,42 +809,167 @@ class NeededCoursesInterface(GeneralInterface):
             node = self._node.get_child_by_description(argument)
 
         if node is not None:
-            if self.can_be_deep_resolved():
-                controller.output('The requirement structure appears to be satisfiable.')
+            if node.can_be_deep_resolved():
+                self._add_print('The requirement structure appears to be satisfiable.')
             else:
                 trace = self._get_root_node().get_first_non_resolvable_stacktrace()
                 trace = " -> ".join([f'|{index}: {node.get_shallow_description()}|' for (index, node) in trace])
-                controller.output(f'Problem at: {trace}')
+                self._add_print(f'Problem at: {trace}')
         else:
-            controller.output('Entry point for validation not found.')
+            self._add_error('Entry point for validation not found.')
+        self._push_print(controller)
         
     
     def admin_mode(self, controller, argument):
-        self.print_warning_if_arguments(controller, argument)
+        self._add_refresh_opportunity()
+        self._add_print_warning_if_arguments(argument)
         if self._commands is self._user_commands:
             self._commands = self._admin_commands
-            controller.output('Mode changed to admin mode.')
+            self._add_print('Mode changed to admin mode.')
         else:
-            controller.output_error('Mode is already in admin mode.')
+            self._add_error('Mode is already in admin mode.')
+        self._push_print(controller)
 
     def user_mode(self, controller, argument):
-        self.print_warning_if_arguments(controller, argument)
+        self._add_refresh_opportunity()
+        self._add_print_warning_if_arguments(argument)
         if self._commands is self._admin_commands:
             self._commands = self._user_commands
-            controller.output('Mode changed to user mode.')
+            self._add_print('Mode changed to user mode.')
         else:
-            controller.output_error('Mode is already in user mode.')
+            self._add_error('Mode is already in user mode.')
+        self._push_print(controller)
 
-    # --------------------------------------- Control Methods --------------------------------------- #
+    def toggle_traversal_mode(self, controller, argument):
+        if argument:
+
+            self._add_refresh_opportunity()
+            if argument in {'no', 'off', 'none', 'disable', 'disabled'}:
+                self._set_traversal_mode(not self._is_traverse_mode)
+                self._add_print('Traversal mode turned off.')
+            elif argument in {'yes', 'on', 'enable', 'enabled'}:
+                self._set_traversal_mode(not self._is_traverse_mode)
+                self._add_print('Traversal mode turned on.')
+            else:
+                self._add_error('No mode matches passed description (use "on", "off").')
+            self._push_print(controller)
+            self._check_for_traversal(controller)
         
-    def _get_root_interface(self):
-        result = None
-        if self is self._root_interface:
-            result = self
         else:
-            result = self._root_interface._get_root_interface()
-        return result
-        
+            if self._is_traverse_mode:
+                self._add_print('Traversal mode set to on at the moment.')
+            else:
+                self._add_print('Traversal mode set to off at the moment.')
+            self._push_print(controller)
+
+
+
+    def clear(self, controller, argument):
+        self._add_clear()
+        self._add_print_warning_if_arguments(argument)
+        self._push_print(controller)
+    
+    def set_clear_mode(self, controller, argument):
+        if argument:
+            self._add_refresh_opportunity()
+            if argument in {'no', 'none'}:
+                self._clears_screen = NO_CLEARING
+                self._add_print('Clearing mode changed to no clearning.')
+            elif argument in {'navigation', 'nav', 'move'}:
+                self._clears_screen = NAVIGATION_CLEARING
+                self._add_print('Clearing mode changed to navigation clearing.')
+            elif argument in {'refresh', 'refreshing', 'responsive', 'constant'}:
+                self._clears_screen = CONSTANT_REFRESHING
+                self._add_print('Clearing mode changed to constant refreshing.')
+            else:
+                self._add_error('No mode matches passed description (use "none", "navigation", or "refresh").')
+            self._push_print(controller)
+
+        else:
+            if self._clears_screen == NO_CLEARING:
+                self._add_print('Clearing mode is set to none at the moment.')
+            elif self._clears_screen == NAVIGATION_CLEARING:
+                self._add_print('Clearing mode is set to navigation at the moment.')
+            elif self._clears_screen == CONSTANT_REFRESHING:
+                self._add_print('Clearing mode is set to refresh at the moment.')
+            else:
+                raise ValueError('Illegal clearing state detected.')
+            self._push_print(controller)
+
+    def push_help(self, controller, arguments):
+        new_help_interface = HelpMenu()
+        controller.push_interface(new_help_interface)
+        if arguments:
+            new_help_interface.parse_input(controller, arguments)
+
+    # --------------------------------------- Print Management Methods --------------------------------------- #
+
+    def _add_print(self, message, message_type=PRINT):
+        self._print_queue.append((message, message_type))
+
+    def _add_error(self, message):
+        self._print_queue.append((message, ERROR))
+
+    def _add_warning(self, message):
+        self._print_queue.append((message, WARNING))
+
+    def _add_clear_opportunity(self):
+        self._add_print('', POSSIBLE_SOFT_CLEAR)
+
+    def _add_clear(self):
+        self._add_print('', HARD_CLEAR)
+
+    def _add_refresh_opportunity(self):
+        self._add_print('', POSSIBLE_LS)
+    
+    def _add_ls(self):
+        self._add_print('', HARD_LS)
+
+    def _add_print_warning_if_arguments(self, argument):
+        if argument:
+            self._add_warning('Arguments are not processed for this command.')
+
+    def _push_print(self, controller):
+
+        while self._print_queue:
+            message, message_type = self._print_queue.pop(0)
+            if message_type == PRINT:
+                controller.output(message)
+            elif message_type == ERROR:
+                controller.output_error(message)
+            elif message_type == WARNING:
+                controller.output_warning(message)
+            elif message_type == POSSIBLE_LS:
+                if self._clears_screen == CONSTANT_REFRESHING:
+                    controller.output_clear()
+                    self._print_top_interface(controller)
+            elif message_type == HARD_LS:
+                self._print_top_interface(controller)
+            elif message_type == POSSIBLE_SOFT_CLEAR:
+                if self._clears_screen != NO_CLEARING:
+                    controller.output_clear()
+            elif message_type == HARD_CLEAR:
+                controller.output_clear()
+            else:
+                ValueError('Illegal message type push.')
+    
+    def _print_top_interface(self, controller):
+        top_interface = controller.get_current_interface()
+        if isinstance(top_interface, NeededCoursesInterface):
+            top_interface._print_ls(controller)
+            
+    def _print_ls(self, controller):
+        controller.output(self._node.get_layer_description())
+
+    def enter_from_submenu(self, controller, closing_message):
+        self._add_clear_opportunity()
+        self._add_refresh_opportunity()
+        self._add_print(closing_message)
+        self._push_print(controller)
+        self._check_for_traversal(controller)
+
+    # --------------------------------------- Control Getter Methods --------------------------------------- #
+
     def _get_root_node(self):
         return self._get_root_interface()._node
     
@@ -657,17 +978,37 @@ class NeededCoursesInterface(GeneralInterface):
 
     def _get_clipboard(self):
         return self._get_root_interface()._clipboard_node
-    
-        
-    def _is_in_traverse_mode(self):
-        return self._get_root_interface()._is_traverse_mode
-    
-    def _print_listing(self, controller):
-        controller.output(self._node.get_layer_description())
-    
-    def _apply_constructor_arguments(self, controller, arguments, node):
 
-        arguments_listing = arguments.split(',')
+    def _copy_to_clipboard(self, node):
+        self._get_root_interface()._clipboard_node = node.make_deep_live_copy()
+        self._add_print('Item copied.')
+    
+    def _cut_to_clipboard(self, node):
+        copy = node.make_deep_live_copy()
+
+        # TODO: bad method for getting node id
+        if self._node.remove_child(node._node_id):
+            self._get_root_interface()._clipboard_node = copy
+            self._add_print('Item cut.')
+        else:
+            self._add_print('The item could not be cut (if you wish, you can still copy it).')
+    
+    def _paste_from_clipboard(self, to_node):
+        clipboard_node = self._get_clipboard()
+        if to_node.add_child(clipboard_node):
+            self._add_print('Item pasted.')
+
+            # Make another copy in case the user wants to paste again
+            self._get_root_interface()._clipboard_node = clipboard_node.make_deep_live_copy()
+        else:
+            self._add_error('The item could not be pasted.')
+
+
+    # --------------------------------------- Selection and Configuring Helpers --------------------------------------- #
+
+    def _apply_constructor_arguments(self, arguments, node):
+
+        arguments_listing = split_assignments(arguments)
         
         if len(arguments_listing) == 1 and arguments_listing[0] == '':
             return
@@ -689,23 +1030,107 @@ class NeededCoursesInterface(GeneralInterface):
                     setting_result = node.set_value_for_key(key, value)
 
                     if setting_result != SUCCESS:
-                        controller.output_error(f'Could not locate contructor key "{key}"')
+                        self._add_error(f'Could not locate contructor key "{key}"')
                 
                 elif key in node.get_keys():
                     duplicate_keys.add(key)
             else:
-                controller.output_error(f'Invalid format. Use "<key> = <value>" instead of "{argument}"')
+                self._add_error(f'Invalid format. Use "<key> = <value>" instead of "{argument}"')
         
         if duplicate_keys:
-            controller.output_warning(f'The following keys had duplicate assignement: {", ".join(duplicate_keys)}')
+            self._add_warning (f'The following keys had duplicate assignement: {", ".join(duplicate_keys)}')
                 
 
-    def _print_top_interface(self, controller):
-        top_interface = controller.get_current_interface()
-        if isinstance(top_interface, NeededCoursesInterface):
-            top_interface._print_listing(controller)
+    def _select_course(self, course_description):
+        selection_result, child = self._node.select_child_by_description(course_description)
+        selection_result &= RESULT
+        if selection_result == CHANGED:
+            self._add_print('Item selected.')
 
-    def _navigate_to_node(self, controller, node_description):
+            # TODO: fix getting the id and priority in a stupid way (bad practice)
+            course_id = child.get_course_id()
+            if course_id is not None:
+                root = self._get_root_node()
+                highest_priority_for_course_id = root.sync_find_deep_highest_priority(course_id, base_priority=inf)
+                sync_result = root.sync_deep_selection_with_priority(child._node_id, course_id, base_priority=inf, requisite_priority=highest_priority_for_course_id)
+
+                if sync_result == ADDITIONAL_EFFECTS:
+                    self._add_print('Some other items\' selection states were changed due to this.')
+                elif sync_result == SUPERSEDED:
+                    self._add_print('Another selected item matching the same description has a higher priority (selection modified).')
+
+        elif selection_result == UNCHANGED:
+            self._add_error('This item is already selected.')
+        elif selection_result == ILLEGAL:
+            self._add_error('This item cannot be selected.')
+        elif selection_result == CHILD_NOT_FOUND:
+            self._add_error(f'No item immediately below matches that description "{course_description}".')
+        elif selection_result == GENERATION:
+            self._add_print('Item added.')
+        else:
+            raise ValueError('Illegal state change result')
+            
+    def _deselect_course(self, course_description):
+
+        selection_result, child = self._node.deselect_child_by_description(course_description)
+        selection_result &= RESULT
+
+        if selection_result == CHANGED:
+            self._add_print('Item deselected.')
+
+            # TODO: fix getting the id in a stupid way (bad practice)
+            course_id = child.get_course_id()
+            if course_id is not None:
+                root = self._get_root_node()
+                sync_result = root.sync_deep_deselection(child._node_id, course_id)
+                if sync_result == ADDITIONAL_EFFECTS:
+                    self._add_print('Some other items\' selection states were changed due to this.')
+                elif sync_result == UNSTRUCTURED:
+                    self._add_warning('There appears to be conflicting priority.')
+
+        elif selection_result == UNCHANGED:
+            self._add_print('This item is not selected.')
+        elif selection_result == ILLEGAL:
+            self._add_error('This item cannot be deselected.')
+        elif selection_result == CHILD_NOT_FOUND:
+            self._add_error(f'No item immediately below matches the description "{course_description}".')
+        else:
+            raise ValueError('Illegal state change result')
+
+    def _delete_node(self, node_description):
+        child = self._get_child(node_description)
+        
+        if child is not None:
+            if self._node.remove_child(child._node_id):
+                self._add_print('Item deleted.')
+            else:
+                self._add_error('This item cannot be deleted.')
+        else:
+            self._add_error(f'No item immediately below matches that description "{node_description}".')
+        
+    
+    # --------------------------------------- Navigation/interface Methods --------------------------------------- #
+
+    def _is_in_traverse_mode(self):
+        return self._get_root_interface()._is_traverse_mode
+    
+    def _set_traversal_mode(self, state):
+        self._get_root_interface()._is_traverse_mode = state
+
+    def _get_root_interface(self):
+        result = None
+        if self is self._root_interface:
+            result = self
+        else:
+            result = self._root_interface._get_root_interface()
+        return result
+        
+    def _push_node_interface(self, controller, node):
+        new_menu = NeededCoursesInterface(node, root_interface=self._get_root_interface(), depth=self._depth + 1, clears_screen=self._clears_screen)
+        controller.push_interface(new_menu)
+        return new_menu
+
+    def _navigate_to_node(self, initial_interface, controller, node_description):
         
         success = False
         new_menu = None
@@ -714,19 +1139,21 @@ class NeededCoursesInterface(GeneralInterface):
         if child is not None:
             # Check if children can be added (and hence navigated into)
             if child.can_navigate_into():
-                new_menu = NeededCoursesInterface(child, root_interface=self._get_root_interface(), depth=self._depth + 1)
                 success = True
-                controller.push_interface(new_menu)
+                new_menu = self._push_node_interface(controller, child)
             else:
-                controller.output_error('That type of item cannot be navigated to.')
+                initial_interface._add_error(f'That type of item cannot be navigated to (for "{node_description}").')
         else:
-            controller.output_error(f'No item immediately below matches the description "{node_description}".')
+            initial_interface._add_error(f'No item immediately below matches the description "{node_description}".')
             
         return success, new_menu
-        
     
     def _navigate_back(self, controller):
-        controller.pop_interface(self), 'pop interface'
+        controller.pop_interface(self)
+        
+        top_interface = controller.get_current_interface()
+        if isinstance(top_interface, NeededCoursesInterface):
+            top_interface._check_for_traversal(controller)
         
         
     def _navigate_to_root(self, controller):
@@ -739,133 +1166,49 @@ class NeededCoursesInterface(GeneralInterface):
         else:
             self._get_root_interface()._navigate_to_root(controller)
     
-        
-        
-    def _select_course(self, controller, course_description):
-        selection_result, child = self._node.select_child_by_description(course_description)
-        selection_result &= RESULT
-        if selection_result == CHANGED:
-            controller.output('Item selected.')
-
-            # TODO: fix getting the id and priority in a stupid way (bad practice)
-            course_id = child.get_course_id()
-            root = self._get_root_node()
-            highest_priority_for_course_id = root.sync_find_deep_highest_priority(course_id, base_priority=inf)
-            sync_result = root.sync_deep_selection_with_priority(child._node_id, course_id, base_priority=inf, requisite_priority=highest_priority_for_course_id)
-
-            if sync_result == ADDITIONAL_EFFECTS:
-                controller.output('Some other items\' selection states were changed due to this.')
-            elif sync_result == SUPERSEDED:
-                controller.output('Another selected item matching the same description has a higher priority (selection modified).')
-
-        elif selection_result == UNCHANGED:
-            controller.output_error('This item is already selected.')
-        elif selection_result == ILLEGAL:
-            controller.output_error('This item cannot be selected.')
-        elif selection_result == CHILD_NOT_FOUND:
-            controller.output_error(f'No item immediately below matches that description "{course_description}".')
-        elif selection_result == GENERATION:
-            controller.output('Item added.')
-        else:
-            raise ValueError('Illegal state change result')
-            
-    def _deselect_course(self, controller, course_description):
-
-        selection_result, child = self._node.deselect_child_by_description(course_description)
-        selection_result &= RESULT
-
-        if selection_result == CHANGED:
-            controller.output('Item deselected.')
-
-            # TODO: fix getting the id in a stupid way (bad practice)
-            root = self._get_root_node()
-            sync_result = root.sync_deep_deselection(child._node_id, child.get_course_id())
-            if sync_result == ADDITIONAL_EFFECTS:
-                controller.output('Some other items\' selection states were changed due to this.')
-            elif sync_result == UNSTRUCTURED:
-                controller.output_warning('There appears to be conflicting priority')
-
-
-        elif selection_result == UNCHANGED:
-            controller.output_error('This item is not selected.')
-        elif selection_result == ILLEGAL:
-            controller.output_error('This item cannot be deselected.')
-        elif selection_result == CHILD_NOT_FOUND:
-            controller.output_error(f'No item immediately below matches the description "{course_description}".')
-        else:
-            raise ValueError('Illegal state change result')
+    def _check_for_traversal(self, controller):
+        if self._is_in_traverse_mode() and self._node.is_discovery_resolved() and not self._get_root_node().is_deep_resolved():
+            found_unfinished_child = False
+            for child in self._node.get_active_children_list():
+                if not child.is_deep_resolved():
+                    if child.can_navigate_into():
+                        self._push_node_interface(controller, child)
+                    found_unfinished_child = True
+                    break
+            if not found_unfinished_child:
+                self._navigate_back(controller)
+            self._add_clear_opportunity()
+            self._add_ls()
+            self._push_print(controller)
     
-    def _report_stub_enable(self, stub_result, controller, argument):
+
+    # --------------------------------------- Report Methods --------------------------------------- #
+
+    def _report_stub_enable(self, stub_result, argument):
         if stub_result == CHANGED:
-            controller.output('Item set to stub.')
+            self._add_print('Item set to stub.')
         elif stub_result == UNCHANGED:
-            controller.output_error('This item is already stub enabled.')
+            self._add_error('This item is already stub enabled.')
         elif stub_result == ILLEGAL:
-            controller.output_error('This item does not support stub states.')
+            self._add_error('This item does not support stub states.')
         elif stub_result == CHILD_NOT_FOUND:
-            controller.output_error(f'No item immediately below matches that description "{argument}".')
+            self._add_error(f'No item immediately below matches that description "{argument}".')
         else:
             raise ValueError('Illegal state change result')
 
-
-    def _report_stub_disable(self, stub_result, controller, argument):
+    def _report_stub_disable(self, stub_result, argument):
         if stub_result == CHANGED:
-            controller.output('Removed item stub.')
+            self._add_print('Removed item stub.')
         elif stub_result == UNCHANGED:
-            controller.output_error('This item is not in a stub state.')
+            self._add_error('This item is not in a stub state.')
         elif stub_result == ILLEGAL:
-            controller.output_error('This item does not support stub removal at the moment.')
+            self._add_error('This item does not support stub removal at the moment.')
         elif stub_result == CHILD_NOT_FOUND:
-            controller.output_error(f'No item immediately below matches that description "{argument}".')
+            self._add_error(f'No item immediately below matches that description "{argument}".')
         else:
             raise ValueError('Illegal state change result')
-    # def _set_stub_state_for_course(self, controller, node_description, state):
-    #     child = self._get_child(node_description)
-        
-    #     if child is not None:
-    #         if child.set_stub_state(state):
-    #             controller.output('Item stub-state updated.')
-    #         else:
-    #             controller.output_error('This item cannot be stub-ed.')
-    #     else:
-    #         controller.output_error(f'No item immediately below matches that description ({node_description}).')
-    
-        
-    def _delete_node(self, controller, node_description):
-        child = self._get_child(node_description)
-        
-        if child is not None:
-            if self._node.remove_child(child._node_id):
-                controller.output('Item deleted.')
-            else:
-                controller.output_error('This item cannot be deleted.')
-        else:
-            controller.output_error(f'No item immediately below matches that description "{node_description}".')
         
     
-
-    # TODO: methods below need implementation
-    
-    def _change_node_type(self, node_id, node_type):
-        # TODO: needs to understand the node type (some node cannot be switched to others)
-        pass
-        
-    def _change_node_parameter(self, node_id, parameter):
-        # TODO: needs to understand the node type
-        pass
-        
-    
-    def _cut_node(self, node_id):
-        success = False
-        if self._copy_node(node_id):
-            success = True
-        return success
-    
-    def _copy_node(self, node_id):
-        pass
-        
-    def _paste_node(self):
-        pass
     
 ## ------------------------------------------------- Interface End ------------------------------------------------- ##
 
@@ -896,6 +1239,37 @@ class _NodeSuper:
         self._max_credits_propogation = None
         self._duplicate_priority = None
         
+    
+    ## ------------------------------ Clipboard ------------------------------ ##
+
+    def transfer_base_properties(self, to_node):
+        to_node._is_stub = self._is_stub
+        for key in self.KEYS_LIST:
+            self_value = self.get_value_for_key(key)
+            self_value_string = ''
+            if self_value is not None:
+                self_value_string = str(self_value)
+            to_node.set_value_for_key(key, self_value_string)
+    
+    def make_shallow_live_copy(self):
+        raise NotImplemented()
+    
+    def make_deep_live_copy(self):
+        copy = self.make_shallow_live_copy()
+        for child_id, child in self._children.items():
+            child_copy = child.make_deep_live_copy()
+            child_copy_id = child_copy._node_id
+            copy._children[child_copy_id] = child_copy
+            copy._children_ids.append(child_copy_id)
+
+            if child_id in self._selection:
+                copy._selection.add(child_copy_id)
+
+            if child_id in self._destructive_selection:
+                copy._destructive_selection.add(child_copy_id)
+            
+        return copy
+
     ## ------------------------------ Key-value Management ------------------------------ ##
     
     # KEY_VALUE_DICT = {
@@ -919,7 +1293,6 @@ class _NodeSuper:
     def set_value_for_key(self, key, value):
 
         result = KEY_NOT_FOUND
-            
         if key in self.KEYS_LIST:
             if value == '':
                 if key in self.NON_NIL_KEYS:
@@ -937,6 +1310,9 @@ class _NodeSuper:
                 else:
                     self.__dict__[self.KEY_VALUE_DICT[key]] = value
                     result = SUCCESS
+        else:
+            if key in self.KEY_ALIASES:
+                result = self.set_value_for_key(self.KEY_ALIASES[key], value)
                 
         return result
     
@@ -955,6 +1331,9 @@ class _NodeSuper:
     def can_be_stub(self):
         return True
     
+    def is_delete_protected(self):
+        return False
+
     ## ------------------------------ Descriptions getting ------------------------------ ##
 
     def get_verbose_instructions(self):
@@ -963,7 +1342,7 @@ class _NodeSuper:
     def get_shallow_description(self):
         raise NotImplementedError
     
-    def get_deep_description(self, depth=0, is_selected=False, maximum_depth=-1):
+    def get_deep_description(self, depth=0, is_selected=False, maximum_depth=-1, indicate_node=None):
         
         prefix_icon = ' '
         if self.has_shallow_stub():
@@ -971,7 +1350,11 @@ class _NodeSuper:
         elif is_selected:
             prefix_icon = '+'
 
-        result = f'{depth*"   "}{prefix_icon} {self.get_shallow_description()}'
+        indent = depth*'   '
+        if indicate_node is not None and self._node_id == indicate_node._node_id:
+            indent = depth*'-->'
+
+        result = f'{indent}{prefix_icon} {self.get_shallow_description()}'
         
         if not self.is_shallow_resolved() or self.has_shallow_stub():
 
@@ -996,7 +1379,7 @@ class _NodeSuper:
             for node_id in self._children_ids:
                 child = self._children[node_id]
                 child_is_selected = self.is_selecting_node_id(node_id)
-                rows.append(child.get_deep_description(depth+1, is_selected=child_is_selected, maximum_depth=maximum_depth-1))
+                rows.append(child.get_deep_description(depth+1, is_selected=child_is_selected, maximum_depth=maximum_depth-1, indicate_node=indicate_node))
             result += '\n'.join(rows)
         
         return result
@@ -1033,7 +1416,11 @@ class _NodeSuper:
                 if not result:
                     wildcard_index = description.find('*')
                     if wildcard_index != -1:
-                        result = self._printable_description[:wildcard_index] == description[:wildcard_index]
+                        search_lhs = description[:wildcard_index]
+                        search_rhs = description[wildcard_index+1:]
+                        result = self._printable_description.startswith(search_lhs) and \
+                            self._printable_description.endswith(search_rhs) and \
+                            len(self._printable_description) >= len(search_lhs) + len(search_rhs)
         return result
     
     def get_child_by_description(self, description):
@@ -1111,11 +1498,14 @@ class _NodeSuper:
 
     ## ------------------------------ Child Set Mutation ------------------------------ ##
 
+    def can_take_child(self, node):
+        return True
+
     @final
     def add_child(self, node):
         '''Attempt to add a child node and return the success of the addition.'''
         success = False
-        if self.can_accept_children():
+        if self.can_accept_children() and self.can_take_child(node):
             self._children[node._node_id] = node
             self._children_ids.append(node._node_id)
             success = True
@@ -1132,7 +1522,7 @@ class _NodeSuper:
     def remove_child(self, node_id):
         '''Attempt to remove a child and return the success of the removal.'''
         success = False
-        if node_id in self._children and self.can_accept_children():
+        if node_id in self._children and self.can_accept_children() and not self._children[node_id].is_delete_protected():
             del self._children[node_id]
             self._children_ids.remove(node_id)
             self._selection.discard(node_id)
@@ -1411,7 +1801,7 @@ class _NodeSuper:
     def is_discovery_resolved(self):
         '''This method returns whether enough information has been entered for the user to progress through entering values
         (less demanding than shallow resolved). This should NOT use recursion and it does not indicate whether the tree is resolved.'''
-        return self.is_shallow_resolved()
+        return self.has_shallow_stub() or self.is_shallow_resolved()
 
     @final
     def is_deep_resolved(self):
@@ -1511,7 +1901,14 @@ class DeliverableCourse(_NodeSuper):
         'deliver name': '_course_description',
         'duplicate priority': '_duplicate_priority'
     }
-
+    KEY_ALIASES = {
+        'n': 'name',
+        'id': 'course id',
+        'i': 'instructions',
+        'c': 'credits',
+        'dn': 'deliver name',
+        'p': 'duplicate priority'
+    }
     KEYS_LIST = ['name', 'instructions', 'credits', 'deliver name', 'duplicate priority']
     NON_NIL_KEYS = {'name', 'credits'}
     INTEGER_KEYS = {'credits', 'duplicate priority'}
@@ -1521,6 +1918,12 @@ class DeliverableCourse(_NodeSuper):
         self._course_description = course_description
         self._credits = credits
     
+    def make_shallow_live_copy(self):
+        copy = DeliverableCourse()
+        self.transfer_base_properties(copy)
+        return copy
+        
+
     def can_accept_children(self):
         return False
     
@@ -1563,7 +1966,15 @@ class CourseProtocol(_NodeSuper):
         'stub_name': '_stub_description',
         'duplicate priority': '_duplicate_priority'
     }
-
+    KEY_ALIASES = {
+        'n': 'name',
+        'i': 'instructions',
+        'c': 'credits',
+        'm': 'matching',
+        'r': 'rejection',
+        's': 'stub_name',
+        'p': 'duplicate priority'
+    }
     KEYS_LIST = ['name', 'instructions', 'credits', 'matching', 'rejection', 'stub_name', 'duplicate priority']
     NON_NIL_KEYS = {'name', 'credits', 'matching'}
     INTEGER_KEYS = {'credits', 'duplicate priority'}
@@ -1578,6 +1989,12 @@ class CourseProtocol(_NodeSuper):
         self._stub_description = stub_description
         
         self._selected_course = None
+
+    def make_shallow_live_copy(self):
+        copy = CourseProtocol()
+        copy._selected_course = self._selected_course
+        self.transfer_base_properties(copy)
+        return copy
 
     def does_match(self, course):
         regex_match = re.fullmatch(self._match_description, course) is not None
@@ -1672,7 +2089,13 @@ class CourseInserter(_NodeSuper):
         'aux parameter': '_aux_generator_parameter',
         'generator': '_generator_name'
     }
-
+    KEY_ALIASES = {
+        'n': 'name',
+        'i': 'instructions',
+        'gp': 'generator parameter',
+        'ga': 'aux parameter',
+        'gn': 'generator'
+    }
     KEYS_LIST = ['name', 'instructions', 'generator parameter', 'aux parameter', 'generator']
     NON_NIL_KEYS = {'name', 'generator'}
     INTEGER_KEYS = {'duplicate priority'}
@@ -1689,6 +2112,11 @@ class CourseInserter(_NodeSuper):
         self._aux_generator_parameter = None
         self._generator_name = node_generator_name
         
+    
+    def make_shallow_live_copy(self):
+        copy = CourseInserter()
+        self.transfer_base_properties(copy)
+        return copy
     
     def set_value_for_key(self, key, value):
         result = super().set_value_for_key(key, value)
@@ -1726,41 +2154,71 @@ class ListingNode(_NodeSuper):
         'name': '_printable_description',
         'instructions': '_verbose_instructions'
     }
-
+    KEY_ALIASES = {
+        'n': 'name',
+        'i': 'instructions'
+    }
     KEYS_LIST = ['name', 'instructions']
     NON_NIL_KEYS = {'name'}
     INTEGER_KEYS = set()
     
-    def __init__(self, printable_description=None):
+    def __init__(self, printable_description=None, is_delete_protected=True):
         super().__init__(printable_description)
         self._duplicate_priority = 0
+        self._is_delete_protected = is_delete_protected
 
+    def make_shallow_live_copy(self):
+        copy = ExhaustiveNode()
+        copy._printable_description = self._printable_description
+        copy._verbose_instructions = self._verbose_instructions
+        copy._duplicate_priority = self._duplicate_priority
+        copy._is_delete_protected = self._is_delete_protected
+        copy._stub_generator = None
+        return copy
+
+    def make_deep_live_copy(self):
+        copy = self.make_shallow_live_copy()
+        for child_id, child in self._children.items():
+            child_copy = child.make_deep_live_copy()
+            child_copy_id = child_copy._node_id
+            copy._children[child_copy_id] = child_copy
+            copy._children_ids.append(child_copy_id)
+        return copy
+
+    
     def can_be_stub(self):
         return False
+
+    def is_delete_protected(self):
+        return self.is_delete_protected
 
     def get_shallow_description(self):
         return self._printable_description or 'Listing section'
 
-    def get_deep_description(self, depth=0, is_selected=False, maximum_depth=-1):
-        result = f'{depth*"   "}+ {self.get_shallow_description()} [{self.get_all_layer_count()} item(s)]'
-        return result
-    
-    # def get_layer_description(self):
-    #     # TODO: Redo
-    #     description = None
+    def get_deep_description(self, depth=0, is_selected=False, maximum_depth=-1, indicate_node=None):
+        count_string = print_format_number(self.get_all_layer_count())
 
-    #     if self.get_all_children_count() != 0:
-    #         description = self.get_deep_description(maximum_depth=1)
-    #     else:
-    #         description = self.get_shallow_description()
-    #         if self.can_accept_children():
-    #             description += ' (empty)'
+        # TODO: this is redundant
+        indent = depth*'   '
+        if indicate_node is not None and self._node_id == indicate_node._node_id:
+            indent = depth*'-->'
         
-    #     instructions = self.get_verbose_instructions()
-    #     if instructions is not None:
-    #         description += '\nABOUT: ' + instructions
+        result = f'{indent}+ {self.get_shallow_description()} - {count_string} item{"s" if count_string != "1" else ""}'
+        return result
 
-    #     return description
+    def get_layer_description(self):
+        description = None
+
+        if self.get_all_children_count() != 0:
+            description = super().get_deep_description(maximum_depth=1)
+        else:
+            description = f'{self.get_shallow_description()} (empty)'
+        
+        instructions = self.get_verbose_instructions()
+        if instructions is not None:
+            description += '\nABOUT: ' + instructions
+
+        return description
     
     def get_active_children_ids(self):
         '''Get a copy of the ordered list of children IDs that are selected.'''
@@ -1772,6 +2230,9 @@ class ListingNode(_NodeSuper):
         for child in self.get_all_children_list():
             result += child.get_aggregate()
         return result
+
+    def can_take_child(self, node):
+        return not node.can_accept_children()
 
     def select_child(self, node):
         return SELECTION | UNCHANGED
@@ -1807,16 +2268,33 @@ class ExhaustiveNode(_GroupNode):
         'credits bottleneck': '_max_credits_propogation',
         'duplicate priority': '_duplicate_priority'
     }
-
+    KEY_ALIASES = {
+        'n': 'name',
+        'i': 'instructions',
+        'cb': 'count bottleneck',
+        'rb': 'credits bottleneck',
+        'dp': 'duplicate priority'
+    }
     KEYS_LIST = ['name', 'instructions', 'count bottleneck', 'credits bottleneck', 'duplicate priority']
     NON_NIL_KEYS = {'name'}
     INTEGER_KEYS = {'count bottleneck', 'credits bottleneck', 'duplicate priority'}
     
-    def __init__(self, printable_description=None):
+    def __init__(self, printable_description=None, is_delete_protected=False):
         super().__init__(printable_description)
+        self._is_delete_protected = is_delete_protected
+        self._stub_generator_name = None
+
+    def make_shallow_live_copy(self):
+        copy = ExhaustiveNode()
+        self.transfer_base_properties(copy)
+        copy._is_delete_protected = False
+        return copy
 
     def can_be_stub(self):
         return False
+
+    def is_delete_protected(self):
+        return self.is_delete_protected
 
     def get_shallow_description(self):
         return self._printable_description or 'Requirment section'
@@ -1876,7 +2354,17 @@ class ShallowCountBasedNode(_GroupNode):
         'aux parameter': '_aux_generator_parameter',
         'duplicate priority': '_duplicate_priority'
     }
-
+    KEY_ALIASES = {
+        'n': 'name',
+        'i': 'instructions',
+        'c': 'count',
+        'cb': 'count bottleneck',
+        'rb': 'credits bottleneck',
+        'gn': 'generator name',
+        'gp': 'generator parameter',
+        'ga': 'aux parameter',
+        'dp': 'duplicate priority'
+    }
     KEYS_LIST = ['name', 'instructions', 'count', 'count bottleneck', 'credits bottleneck',
     'generator name', 'generator parameter', 'aux parameter', 'duplicate priority']
     NON_NIL_KEYS = {'name', 'count', 'generator name'}
@@ -1892,17 +2380,17 @@ class ShallowCountBasedNode(_GroupNode):
         self._generator_parameter = None
         self._aux_generator_parameter = None
         
+    def make_shallow_live_copy(self):
+        copy = ShallowCountBasedNode()
+        self.transfer_base_properties(copy)
+        return copy
 
     def get_shallow_description(self):
         result = self._printable_description or "Section"
         if self._requisite_count != 0:
             count = sum(course.get_shallow_count() for course in self.get_active_children_list())
-            count_string = None
-            if count != inf:
-                count_string = str(count)
-            else:
-                count_string = f'{self._requisite_count}+'
-            result += f' [{count_string} / {self._requisite_count} selections]'
+            count_string = print_format_number(count)
+            result += f' - {count_string} / {self._requisite_count} selections'
         return result
     
     def get_aggregate(self):
@@ -1941,7 +2429,17 @@ class DeepCountBasedNode(_GroupNode):
         'aux parameter': '_aux_generator_parameter',
         'duplicate priority': '_duplicate_priority'
     }
-
+    KEY_ALIASES = {
+        'n': 'name',
+        'i': 'instructions',
+        'c': 'count',
+        'cb': 'count bottleneck',
+        'rb': 'credits bottleneck',
+        'gn': 'generator name',
+        'gp': 'generator parameter',
+        'ga': 'aux parameter',
+        'dp': 'duplicate priority'
+    }
     KEYS_LIST = ['name', 'instructions', 'count', 'count bottleneck', 'credits bottleneck',
     'generator name', 'generator parameter', 'aux parameter', 'duplicate priority']
     NON_NIL_KEYS = {'name', 'count', 'generator name'}
@@ -1956,16 +2454,17 @@ class DeepCountBasedNode(_GroupNode):
         self._generator_parameter = None
         self._aux_generator_parameter = None
     
+    def make_shallow_live_copy(self):
+        copy = DeepCountBasedNode()
+        self.transfer_base_properties(copy)
+        return copy
+
     def get_shallow_description(self):
         result = self._printable_description or "Section"
         if self._requisite_count != 0:
             count = self.get_active_layer_count()
-            count_string = None
-            if count != inf:
-                count_string = str(count)
-            else:
-                count_string = f'{self._requisite_count}+'
-            result += f' [{count_string} / {self._requisite_count} courses]'
+            count_string = print_format_number(count)
+            result += f' - {count_string} / {self._requisite_count} courses'
         return result
 
     def get_aggregate(self):
@@ -2019,7 +2518,17 @@ class DeepCreditBasedNode(_GroupNode):
         'aux parameter': '_aux_generator_parameter',
         'duplicate priority': '_duplicate_priority'
     }
-
+    KEY_ALIASES = {
+        'n': 'name',
+        'i': 'instructions',
+        'c': 'credits',
+        'cb': 'count bottleneck',
+        'rb': 'credits bottleneck',
+        'gn': 'generator name',
+        'gp': 'generator parameter',
+        'ga': 'aux parameter',
+        'dp': 'duplicate priority'
+    }
     KEYS_LIST = ['name', 'instructions', 'credits', 'count_bottleneck', 'credits_bottleneck',
     'generator name', 'generator parameter', 'aux parameter', 'duplicate priority']
     NON_NIL_KEYS = {'name', 'credits', 'generator name'}
@@ -2033,8 +2542,12 @@ class DeepCreditBasedNode(_GroupNode):
         self._refresh_generator()
         self._generator_parameter = None
         self._aux_generator_parameter = None
-    
 
+    def make_shallow_live_copy(self):
+        copy = DeepCreditBasedNode()
+        self.transfer_base_properties(copy)
+        return copy
+    
     def get_aggregate(self):
         '''This gets a list of SchedulableItem objects from the node and all of its children.'''
         result = []
@@ -2045,6 +2558,7 @@ class DeepCreditBasedNode(_GroupNode):
         else:
             running_credits = 0
             fail_safe = 100 # TODO: find a logical way of implementing this
+            
             while running_credits < self._requisite_credits and fail_safe > 0:
                 new_schedulable = self._stub_generator(self._generator_parameter, self._aux_generator_parameter)
                 result.append(new_schedulable)
@@ -2054,6 +2568,7 @@ class DeepCreditBasedNode(_GroupNode):
         
     def get_shallow_description(self):
         result = self._printable_description or "Section"
+
         if self._requisite_credits != 0:
             credits = self.get_active_layer_credits()
             credits_string = None
@@ -2061,7 +2576,7 @@ class DeepCreditBasedNode(_GroupNode):
                 credits_string = str(credits)
             else:
                 credits_string = f'{self._requisite_credits}+'
-            result += f' [{credits_string} / {self._requisite_credits} credit]'
+            result += f' - {credits_string} / {self._requisite_credits} credits'
         return result
 
     def can_be_shallow_resolved(self):
@@ -2085,8 +2600,9 @@ class CoursesNeededContainer:
     
     def __init__(self, degree_plan, certain_courses_list=None, decision_tree=None):
         self._degree_plan = degree_plan
-        self._certain_courses_list = certain_courses_list if certain_courses_list is not None else []
         self._decision_tree = decision_tree or ExhaustiveNode()
+        self._certain_courses_list = ListingNode(printable_description='Core Curriculum')
+        self._decision_tree.add_child(self._certain_courses_list)
 
         # TODO: perform this using a good practice
         self._decision_tree._duplicate_priority = DEFAULT_PRIORITY
@@ -2106,21 +2622,23 @@ class CoursesNeededContainer:
 
     def get_courses_set(self):
         '''Get a set containing all courses and a bool indicating if the listing is stub-free.'''
+
         if not self.is_resolved(self):
             raise ValueError('Attempted to aggregate course list with unresolved tree. Check tree status using "is_resolved()"')
-        result = set(self._certain_courses_list)
-        result = result.union(self._decision_tree.get_aggregate())
+
+        #result = set(self._certain_courses_list)
+        #result = result.union(self._decision_tree.get_aggregate())
+        result = self._decision_tree.get_aggregate()
         is_stubbed_free = not self._decision_tree.has_deep_stub()
         return result, is_stubbed_free
         
     def get_certain_courses(self):
-        return self.certain_courses_list
+        return self._certain_courses_list.get_aggregate()
     
-    def add_certain_course(self, course):
+    def add_certain_course(self, course_string):
         added = False
-        if course not in self.certain_courses_list:
-            self.certain_courses_list.append(course)
-            added = True
+        if not self._certain_courses_list.get_child_by_description(course_string):
+            added = self._certain_courses_list.add_child(DeliverableCourse(course_string))
         return added
         
     def get_decision_tree(self):
@@ -2133,13 +2651,14 @@ class CoursesNeededContainer:
         return self._decision_tree.is_deep_resolved()
 
     def select_courses_as_taking(self, courses):
+        # TODO: this is not implemented yet
+        raise NotImplemented
         for course in courses:
             self._decision_tree.deep_select_child_by_description(course)
 
-    
-
 
 class DummyController:
+
     def __init__(self):
         self.stack = []
         self.is_printing = True
@@ -2152,14 +2671,17 @@ class DummyController:
         if self.is_printing:
             print(f'ERROR: {message}')
     
+    def output_clear(self):
+        if os.name == 'nt':
+            os.system('cls')
+        else:
+            os.system('clear')
+
     def output_warning(self, message):
         if self.is_printing:
             print(f'WARNING: {message}')
     
     def get_current_interface(self):
-#        print("stack", [e for e in self.stack])
-#        print("stack_id", [e._node._node_id for e in self.stack])
-#        print("top", self.stack[-1]._node._node_id)
         return self.stack[-1]
     
     def push_interface(self, interface):
@@ -2177,88 +2699,88 @@ class DummyController:
 
 if __name__ == '__main__':
     tree = ExhaustiveNode()
+    listing_node = ListingNode(printable_description='Core Curriculum')
+    tree.add_child(listing_node)
     
     controller = DummyController()
     controller.is_printing = False
-    controller.push_interface(NeededCoursesInterface(tree))
+    controller.push_interface(NeededCoursesInterface(tree, clears_screen=CONSTANT_REFRESHING))
     
-    controller.get_current_interface().parse_input(controller, 'asc count = 1, name = Area A, duplicate priority = 10')
-    controller.get_current_interface().parse_input(controller, 'asc count = 2, name = Area B, duplicate priority = 20')
-    controller.get_current_interface().parse_input(controller, 'acr credits = 3, name = Area C, duplicate priority = 30')
-    controller.get_current_interface().parse_input(controller, 'cd 1')
-    controller.get_current_interface().parse_input(controller, 'ad name = 1000, credits = 3')
-    controller.get_current_interface().parse_input(controller, 'ad name = 1001, credits = 3')
-    controller.get_current_interface().parse_input(controller, 'ad name = 1002, credits = 3')
-    controller.get_current_interface().parse_input(controller, 'ap name = 11@, matching=11[0-9]{2}')
-    controller.get_current_interface().parse_input(controller, '..')
-    controller.get_current_interface().parse_input(controller, 'cd 2')
-    controller.get_current_interface().parse_input(controller, 'ad name = 2000, credits = 3')
-    controller.get_current_interface().parse_input(controller, 'ad name = 2001, credits = 3')
-    controller.get_current_interface().parse_input(controller, 'ad name = 2002, credits = 4')
-    controller.get_current_interface().parse_input(controller, 'ad name = 1000, credits = 3')
-    controller.get_current_interface().parse_input(controller, '..')
-    controller.get_current_interface().parse_input(controller, 'cd 3')
-    controller.get_current_interface().parse_input(controller, 'ad name = 3000, credits = 0')
-    controller.get_current_interface().parse_input(controller, 'ad name = 3001, credits = 1')
-    controller.get_current_interface().parse_input(controller, 'ad name = 3002, credits = 2')
-    controller.get_current_interface().parse_input(controller, 'ad name = 3003, credits = 3')
-    controller.get_current_interface().parse_input(controller, 'ad name = 3004, credits = 4')
-    controller.get_current_interface().parse_input(controller, 'ad name = 4001, credits = 1')
-    controller.get_current_interface().parse_input(controller, 'ad name = 4002, credits = 2')
-    controller.get_current_interface().parse_input(controller, '..')
+    std_in = '''
+    asc count = 1, name = Area A, duplicate priority = 10
+    asc count = 2, name = Area B, duplicate priority = 20
+    acr credits = 3, name = Area C, duplicate priority = 30
+    cd 2
+    ad name = 1000, credits = 3
+    ad name = 1001, credits = 3
+    ad name = 1002, credits = 3
+    ap name = 11@, matching=11[0-9]{2}
+    back
+    cd 3
+    ad name = 2000, credits = 3
+    ad name = 2001, credits = 3
+    ad name = 2002, credits = 4
+    ad name = 1000, credits = 3
+    back
+    cd 4
+    ad name = 3000, credits = 0
+    ad name = 3001, credits = 1
+    ad name = 3002, credits = 2
+    ad name = 3003, credits = 3
+    ad name = 3004, credits = 4
+    ad name = 4001, credits = 1
+    ad name = 4002, credits = 2
+    back
 
+    cd 2
+    adc name=Education, count=4
+    cd Education
+    adc name=Core, count=2, count_bottleneck=3
+    ad name=ED 1000
+    ad name=ED 1001
+    ad name=ED 1002
+    ad name=ED 1003
+    cd Core
+    ad name=CR 1000
+    ad name=CR 1001
+    ad name=CR 1002
+    ad name=CR 1003
+    ad name=3000
+    ad name=3002
+    back
+    back
+    back
     
-    controller.get_current_interface().parse_input(controller, 'cd 1')
-    controller.get_current_interface().parse_input(controller, 'adc name=Education, count=4')
-    controller.get_current_interface().parse_input(controller, 'cd Education')
-    controller.get_current_interface().parse_input(controller, 'adc name=Core, count=2, count_bottleneck=3')
-    controller.get_current_interface().parse_input(controller, 'ad name=ED 1000')
-    controller.get_current_interface().parse_input(controller, 'ad name=ED 1001')
-    controller.get_current_interface().parse_input(controller, 'ad name=ED 1002')
-    controller.get_current_interface().parse_input(controller, 'ad name=ED 1003')
-    controller.get_current_interface().parse_input(controller, 'cd Core')
-    controller.get_current_interface().parse_input(controller, 'ad name=CR 1000')
-    controller.get_current_interface().parse_input(controller, 'ad name=CR 1001')
-    controller.get_current_interface().parse_input(controller, 'ad name=CR 1002')
-    controller.get_current_interface().parse_input(controller, 'ad name=CR 1003')
-    controller.get_current_interface().parse_input(controller, 'ad name=3000')
-    controller.get_current_interface().parse_input(controller, 'ad name=3002')
-    controller.get_current_interface().parse_input(controller, '..')
-    controller.get_current_interface().parse_input(controller, '..')
-    controller.get_current_interface().parse_input(controller, '..')
-    
+    asc name=General, count=5, duplicate priority = 100
+    cd -1
+    ai n=Insert 3-number, generator parameter =[0-9]{3}, aux parameter = 3-credit Course
+    ai n=Insert 4-number, generator parameter =[0-9]{4}, aux parameter = 4-credit Course
+    back
 
-    controller.get_current_interface().parse_input(controller, 'asc name=General, count=5, duplicate priority = 100')
-    controller.get_current_interface().parse_input(controller, 'cd -1')
-    controller.get_current_interface().parse_input(controller, r'ai generator parameter =[0-9]{3}, aux parameter = 3-credit Course')
-    controller.get_current_interface().parse_input(controller, r'ai generator parameter =[0-9]{4}, aux parameter = 4-credit Course')
-    controller.get_current_interface().parse_input(controller, '..')
+    cd Core*
+    ad n=NEED 1001
+    ad n=NEED 2001
+    ad n=NEED 2002
+    ad n=NEED 3001
+    back
+    '''
 
-    # controller.get_current_interface().parse_input(controller, 'ap name=B, matching=12.*')
-    # controller.get_current_interface().parse_input(controller, 'ad name=1234')
-
-    controller.get_current_interface().parse_input(controller, 'ap name = @99@, matching=[0-9]*99[0-9]*')
-
-    # controller.get_current_interface().parse_input(controller, 'acr name=Credit Group, count=9')
-    # controller.get_current_interface().parse_input(controller, 'cd Credit Group')
-    # controller.get_current_interface().parse_input(controller, 'acr name=Credit Group, count=9')
-    # controller.get_current_interface().parse_input(controller, 'acr name=Credit Group, count=9')
+    for t in std_in.split('\n'):
+        controller.get_current_interface().parse_input(controller, t)
 
     controller.is_printing = True
+
+    controller.get_current_interface().parse_input(controller, 'ls')
+
     running = True
     while running:
         
-#        print("current:", controller.get_current_interface()._node._node_id)
+        #print("current:", controller.get_current_interface()._node._node_id)
         #i = input(f'\033[93m> ')
-        i = input('> ')
+        top = controller.get_current_interface()
+        i = input(f'{top.name}: ')
 
-        # TODO: add this in somewhere for better printing
-        # if os.name == 'nt':
-        #     os.system('cls')
-        # else:
-        #     os.system('clear')
-        
         running = i != 'quit'
         if running:
-            top = controller.get_current_interface()
+            
             top.parse_input(controller, i)

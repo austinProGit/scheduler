@@ -382,8 +382,8 @@ class SmartPlannerController:
         try:
             filepath = get_real_filepath(filename) # Get the file's path and check if it exists
             if filepath:
-                courses_needed_list = get_courses_needed(filepath) # Get the needed courses from the file
-                self._scheduler.configure_courses_needed(courses_needed_list) # Load the course list into the scheduler
+                courses_needed_container = get_courses_needed(filepath) # Get the needed courses from the file
+                self._scheduler.configure_courses_needed(courses_needed_container) # Load the course container into the scheduler
                 self.output('Course requirements loaded from {0}.'.format(filepath)) # Report success to the user
                 success = True # Set success to true
             else:
@@ -596,6 +596,8 @@ class SmartPlannerController:
             self.output_warning('No schedule exported.')
             self.output_error('No export type selected.')
             return
+        
+        
         
         self.output('Generating schedule...')
         
