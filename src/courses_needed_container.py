@@ -1,5 +1,5 @@
 # Thomas Merino and Austin Lee
-# 2/5/2023
+# 2/6/2023
 # CPSC 4176 Project
 
 import re
@@ -12,6 +12,9 @@ import os
 from cli_interface import HelpMenu
 
 # TODO: add documentation
+# TODO: pull credit count into protocol node when filling out
+# TODO: add generating functions that sepcialize in groups
+# TODO: perform memory test for leaks
 
 # The following are for bit masking and selection update results
 MODIFICATION = 0x00F
@@ -438,7 +441,10 @@ class NeededCoursesInterface(GeneralInterface):
     
     def deconstruct(self, controller):
         '''Destruction method that is called upon the interface being dismissed.'''
-        pass
+        top_interface = controller.get_current_interface()
+        if isinstance(top_interface, NeededCoursesInterface):
+            top_interface._clears_screen = self._clears_screen
+        
 
     
     def print_commands(self, controller, argument):
@@ -1707,8 +1713,8 @@ class _NodeSuper:
         return self._is_stub
     
     @final
-    def has_deep_stub(self):
-        return self.has_shallow_stub() or any(node.has_deep_stub() for node in self.get_active_children_list())
+    def has_active_deep_stub(self):
+        return self.has_shallow_stub() or any(node.has_active_deep_stub() for node in self.get_active_children_list())
     
     def enable_stub(self):
         result = SELECTION
@@ -1757,6 +1763,15 @@ class _NodeSuper:
         for node in self._children.values():
             node.reset_deep_stub()
         
+    @final
+    def stub_all_unresolved_nodes(self):
+        
+        if self.is_discovery_resolved():
+            for child in self.get_active_children_list():
+                child.stub_all_unresolved_nodes()
+        else:
+            self.enable_stub()
+    
     ## ------------------------------ Resolve Status ------------------------------ ##
 
     def can_be_shallow_resolved(self):
@@ -2402,7 +2417,7 @@ class ShallowCountBasedNode(_GroupNode):
             for child in self.get_active_children_list():
                 result += child.get_aggregate()
         else:
-            for _ in  range(self._requisite_count):
+            for _ in range(self._requisite_count):
                 new_schedulable = self._stub_generator(self._generator_parameter, self._aux_generator_parameter)
                 result.append(new_schedulable)
         
@@ -2476,7 +2491,7 @@ class DeepCountBasedNode(_GroupNode):
             for child in self.get_active_children_list():
                 result += child.get_aggregate()
         else:
-            for _ in  range(self._requisite_count):
+            for _ in range(self._requisite_count):
                 new_schedulable = self._stub_generator(self._generator_parameter, self._aux_generator_parameter)
                 result.append(new_schedulable)
         
@@ -2606,22 +2621,22 @@ class CoursesNeededContainer:
 
         # TODO: perform this using a good practice
         self._decision_tree._duplicate_priority = DEFAULT_PRIORITY
+
+        if certain_courses_list:
+            for course_string in certain_courses_list:
+                self.add_certain_course(course_string)
     
     def __iter__(self):
-        return self.get_courses_set().__iter__()
-    
-    # def __getitem__(self, index):
-    #     # TODO: this might be bad practice because access is not complete and, therefore, may lead to erroneous loops
-    #     return self.course_list[index]
+        return self.get_courses_list().__iter__()
     
     def pickle(self):
         return pickle.dumps(self)
     
-    def get_degree_plan(self):
-        return self.degree_plan
+    def get_degree_plan_name(self):
+        return self._degree_plan
 
-    def get_courses_set(self):
-        '''Get a set containing all courses and a bool indicating if the listing is stub-free.'''
+    def get_courses_list(self):
+        '''Get a set containing all courses.'''
 
         if not self.is_resolved(self):
             raise ValueError('Attempted to aggregate course list with unresolved tree. Check tree status using "is_resolved()"')
@@ -2629,12 +2644,14 @@ class CoursesNeededContainer:
         #result = set(self._certain_courses_list)
         #result = result.union(self._decision_tree.get_aggregate())
         result = self._decision_tree.get_aggregate()
-        is_stubbed_free = not self._decision_tree.has_deep_stub()
-        return result, is_stubbed_free
+        return result
         
     def get_certain_courses(self):
         return self._certain_courses_list.get_aggregate()
     
+    def stub_all_unresolved_nodes(self):
+        self._decision_tree.stub_all_unresolved_nodes()
+
     def add_certain_course(self, course_string):
         added = False
         if not self._certain_courses_list.get_child_by_description(course_string):
@@ -2649,6 +2666,9 @@ class CoursesNeededContainer:
     
     def is_resolved(self):
         return self._decision_tree.is_deep_resolved()
+
+    def contains_active_stub(self):
+        return self._decision_tree.has_active_deep_stub()
 
     def select_courses_as_taking(self, courses):
         # TODO: this is not implemented yet
@@ -2698,9 +2718,13 @@ class DummyController:
 
 
 if __name__ == '__main__':
-    tree = ExhaustiveNode()
-    listing_node = ListingNode(printable_description='Core Curriculum')
-    tree.add_child(listing_node)
+
+    # tree = ExhaustiveNode()
+    # listing_node = ListingNode(printable_description='Core Curriculum')
+    # tree.add_child(listing_node)
+
+    courses_needed_container = CoursesNeededContainer("Test Plan")
+    tree = courses_needed_container.get_decision_tree()
     
     controller = DummyController()
     controller.is_printing = False
@@ -2762,11 +2786,16 @@ if __name__ == '__main__':
     ad n=NEED 2001
     ad n=NEED 2002
     ad n=NEED 3001
-    back
+    root
+    cd 2
+    s -1
+    root
     '''
 
     for t in std_in.split('\n'):
         controller.get_current_interface().parse_input(controller, t)
+
+    courses_needed_container.stub_all_unresolved_nodes()
 
     controller.is_printing = True
 
