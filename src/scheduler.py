@@ -4,6 +4,7 @@
 
 from scheduling_assistant import CoreqRule, FitnessConfiguration, get_fittest_courses
 from expert_system_module import ExpertSystem, DynamicKnowledge
+from schedule_info_container import *
 
 SEMESTER_TYPE_SUCCESSOR = {'Fa': 'Sp', 'Sp': 'Su', 'Su': 'Fa'}    # Translation map from semester K to the next
 DEFAULT_HOURS_PER_SEMESTER = 15
@@ -151,8 +152,11 @@ class Scheduler:
         dynamic_knowledge = DynamicKnowledge()
         dynamic_knowledge.set_schedule(full_schedule)
         confidence_factor = self.schedule_evaluator.calculate_confidence(dynamic_knowledge, course_info)
+
+        container = ScheduleInfoContainer(full_schedule, confidence_factor)
         
-        return full_schedule, confidence_factor
+        #return full_schedule, confidence_factor
+        return container
     
 #
 #    def first_available(self, semester_type):
