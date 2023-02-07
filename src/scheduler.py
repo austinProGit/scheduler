@@ -62,7 +62,7 @@ class Scheduler:
     def __init__(self):
         self.hours_per_semester = DEFAULT_HOURS_PER_SEMESTER
         self.courses_needed = []
-        self.course_info_container = None
+        self.courses_needed_container = None
         self.semester_type = 'Sp'
         
         self.fitness_configuration = Scheduler._create_default_fitness_configuration()
