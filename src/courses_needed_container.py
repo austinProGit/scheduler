@@ -1923,21 +1923,21 @@ class DeliverableCourse(_NodeSuper):
     
     KEY_VALUE_DICT = {
         'name': '_printable_description',
-        'course id': '_course_description',
+        'instance id': '_explicit_id',
         'instructions': '_verbose_instructions',
         'credits': '_credits',
         'deliver name': '_course_description',
-        'duplicate priority': '_duplicate_priority'
+        'duplicate priority': '_duplicate_priority',
     }
     KEY_ALIASES = {
         'n': 'name',
-        'id': 'course id',
+        'id': 'instance id',
         'i': 'instructions',
         'c': 'credits',
         'dn': 'deliver name',
         'p': 'duplicate priority'
     }
-    KEYS_LIST = ['name', 'instructions', 'credits', 'deliver name', 'duplicate priority']
+    KEYS_LIST = ['name', 'instance id', 'instructions', 'credits', 'deliver name', 'duplicate priority']
     NON_NIL_KEYS = {'name', 'credits'}
     INTEGER_KEYS = {'credits', 'duplicate priority'}
 
@@ -1945,6 +1945,7 @@ class DeliverableCourse(_NodeSuper):
         super().__init__(printable_description or course_description)
         self._course_description = course_description
         self._credits = credits
+        self._explicit_id = None
     
     def make_shallow_live_copy(self):
         copy = DeliverableCourse()
@@ -1970,7 +1971,7 @@ class DeliverableCourse(_NodeSuper):
     
     def get_course_id(self):
         '''Return the unique ID this course represents or None if it is not concrete.'''
-        return self._course_description or self._printable_description  
+        return self._explicit_id or self._course_description or self._printable_description
     
     def get_shallow_count(self):
         return 1
@@ -2847,13 +2848,13 @@ if __name__ == '__main__':
     # listing_node = ListingNode(printable_description='Core Curriculum')
     # tree.add_child(listing_node)
 
-    # courses_needed_container = CoursesNeededContainer("Test Plan")
+    courses_needed_container = CoursesNeededContainer("Test Plan")
 
-    courses_needed_container = CoursesNeededContainer.make_from_course_selection_logic_string('Course', '''
-    (123, 456)
-    [d <n=Big>]
-    [d <n=Small>]
-    ''')
+#    courses_needed_container = CoursesNeededContainer.make_from_course_selection_logic_string('Course', '''
+#    (123, 456)
+#    [d <n=Big>]
+#    [d <n=Small>]
+#    ''')
     tree = courses_needed_container.get_decision_tree()
     
     controller = DummyController()
@@ -2922,8 +2923,8 @@ if __name__ == '__main__':
     root
     '''
 
-    # for t in std_in.split('\n'):
-    #     controller.get_current_interface().parse_input(controller, t)
+    for t in std_in.split('\n'):
+        controller.get_current_interface().parse_input(controller, t)
 
     courses_needed_container.stub_all_unresolved_nodes()
 
