@@ -9,14 +9,19 @@ from math import inf
 import pickle
 import os
 
-from cli_interface import HelpMenu
+# from cli_interface import HelpMenu
 
+# TODO: add help menu back!
 # TODO: add documentation
 # TODO: pull credit count into protocol node when filling out
-# TODO: add generating functions that sepcialize in groups
+# TODO: add generating functions that sepcialize in groups (if you have select one group, that does not always mean 3 credits)
 # TODO: perform memory test for leaks
-# TODO: make it the case that syncing does not sync multiple times within a group (that is, a course appearing 
-#           multiple times in a group means taking it that many times).
+# TODO: Add a method for checking if there are groups that have no real choices (for example, asc c=3 with 3 subnodes)
+#           and make them selected automatically (don't change the node type)
+# TODO: Add method to generate a logical intermediate string from a tree
+# TODO: Add a method that ingests courses (already taken by the user, but those need to be selected and/or removed)
+# TODO: put the list object as the first node in the root tree (when constructed)
+# TODO: add more command clarity (in CLI and here) - such as adding exit, quit, and done
 
 # Intermediate node keys: 
 # shallow course    s
@@ -141,6 +146,9 @@ class SchedulableItem:
         self.stub_availability = 'Fa Sp Su'
         self.stub_credits = 3
         
+    def __str__(self):
+        return self.course_description
+    
     def get_course_id(self):
         return self.course_description if not self.is_stub else None
 
@@ -2820,7 +2828,7 @@ class CoursesNeededContainer:
     def get_courses_list(self):
         '''Get a set containing all courses.'''
 
-        if not self.is_resolved(self):
+        if not self.is_resolved():
             raise ValueError('Attempted to aggregate course list with unresolved tree. Check tree status using "is_resolved()"')
 
         #result = set(self._certain_courses_list)
@@ -2828,6 +2836,9 @@ class CoursesNeededContainer:
         result = self._decision_tree.get_aggregate()
         return result
         
+    def get_courses_string_list(self):
+        return [str(deliverable) for deliverable in self.get_courses_list()]
+    
     def get_certain_courses(self):
         return self._certain_courses_list.get_aggregate()
     

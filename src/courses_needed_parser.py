@@ -3,6 +3,7 @@
 # Updated: 28 September 2022, Added exceptions for MATH 1113, 2125, 5125, and electives
 
 from alias_module import get_latest_id
+from courses_needed_container import CoursesNeededContainer
 
 import pandas as pd
 import tabula
@@ -95,4 +96,12 @@ def get_courses_needed(file_name):
             courses_needed_list.append('CPSC 4115')
 
     courses_needed_list.sort()
-    return courses_needed_list
+
+    # return courses_needed_list
+
+    # TODO: this is just a stub
+    result = CoursesNeededContainer("Degree Plan", courses_needed_list)
+    result.stub_all_unresolved_nodes()
+    return result
+
+    
