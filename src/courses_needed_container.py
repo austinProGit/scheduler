@@ -1,5 +1,5 @@
 # Thomas Merino and Austin Lee
-# 2/6/2023
+# 2/7/2023
 # CPSC 4176 Project
 
 import re
@@ -229,6 +229,11 @@ def split_assignments(line):
 
     #return line.split(',')
     return result
+
+
+class CNLogicParsingError(SyntaxError):
+    '''An error during courses needed logic string parsing.'''
+    pass
 
 ## ------------------------------------------------- Interface Start ------------------------------------------------- ##
 
@@ -2660,7 +2665,7 @@ class CoursesNeededContainer:
         elif node_type_string == 'i':
             new_node = CourseInserter(generator_parameter=r'[A-Z]{4, 5}\s?[0-9]{4}[A-Z]?', printable_description='Insert New')
         else:
-            raise ValueError(f'Illegal node type key: {node_type_string}.')
+            raise CNLogicParsingError(f'Illegal node type key: {node_type_string}.')
         
         # Set the key values for the new node
 
@@ -2678,56 +2683,108 @@ class CoursesNeededContainer:
                 key = argument[:delimiter_index].strip()
                 
                 value = argument[delimiter_index+len(SETTING_DELIMITTER):].strip()
+                # NOTE: value == '' is completely valid and will result in being set to None
+
                 new_node.set_value_for_key(key, value)
+
+            else:
+                raise CNLogicParsingError(f'Expected to find assignment operator "{SETTING_DELIMITTER}" in construction argument list: {parameter_sequence_string}.')
         
         return new_node
         
+    @staticmethod
+    def _pull_index(working_string, character):
+        index = working_string.find(character)
+        if index == -1:
+            raise CNLogicParsingError(f'Did not find expected "{character}" in "{working_string}".')
+        return index
+
+    
+    @staticmethod
+    def _parse_subnodes(working_string):
+        '''This returns a list of node strings "[ ... ]" and the end index of that list. Parsing will stop when a hanging "]" is encountered.
+        The end index will be the position before the last hanging "]" or the final index of the string.'''
+
+        depth = 0
+        working_start_index = 0
+        last_index = 0
+        results = []
+
+        for index, character in enumerate(working_string):
+            
+            if character == '[':
+                if depth == 0:
+                    working_start_index = index
+                depth += 1
+
+            elif character == ']':
+                depth -= 1
+                if depth == 0:
+                    last_index = index
+                    results.append(working_string[working_start_index : index + 1])
+                elif depth == -1:
+                    break
+
+            elif depth <= 0 and not character.isspace():
+                 raise CNLogicParsingError(f'Found unexpected character "{character}" while parsing "{working_string}".')
+
+            else:
+                last_index = index
+
+        if depth > 0:
+            raise CNLogicParsingError(f'Reached the end of the line while looking for "]" in "{working_string}".')
+
+        # print(results)
+        return results, last_index
 
     @staticmethod
     def _make_node_from_course_selection_logic_string(string):
         
         working_string = string.strip()
+        
+        working_string = working_string[CoursesNeededContainer._pull_index(working_string, '[') + 1:]
 
-        working_string = working_string[working_string.index('[')+1:]
-
-        node_type = working_string[:working_string.index('<')].strip()
-        working_string = working_string[working_string.index('<')+1:]
-
-        parameter_sequence = working_string[:working_string.index('>')]
-
-        working_string = working_string[working_string.index('>')+1:]
+        trianlge_bracket_start = CoursesNeededContainer._pull_index(working_string, '<')
+        node_type = working_string[:trianlge_bracket_start].strip()
+        working_string = working_string[trianlge_bracket_start + 1:]
+        
+        trianlge_bracket_end = CoursesNeededContainer._pull_index(working_string, '>')
+        parameter_sequence = working_string[:trianlge_bracket_end]
+        working_string = working_string[trianlge_bracket_end + 1:]
 
         new_node = CoursesNeededContainer._make_node_from_string(node_type, parameter_sequence)
 
-        next_bracket_index = working_string.find('[')
+        if '[' in working_string:
+            subnodes, _ = CoursesNeededContainer._parse_subnodes(working_string)
 
-        if next_bracket_index == -1:
-            working_string = working_string[working_string.find(']')+1:]
-
-        while next_bracket_index != -1:
-
-            end_bracket_index = working_string.index(']')
-            construction_string = working_string[next_bracket_index:end_bracket_index+1]
-            working_string = working_string[end_bracket_index+1:]
-
-            new_node.add_child(CoursesNeededContainer._make_node_from_course_selection_logic_string(construction_string))
+            for construction_string in subnodes:
+                new_node.add_child(CoursesNeededContainer._make_node_from_course_selection_logic_string(construction_string))
             
-            next_bracket_index = working_string.find('[')
+        # next_bracket_index = working_string.find('[')
+
+        # while next_bracket_index != -1:
+        #     end_bracket_index = CoursesNeededContainer._pull_index(working_string, ']')
+        #     construction_string = working_string[next_bracket_index : end_bracket_index + 1]
+        #     working_string = working_string[end_bracket_index + 1:]
+
+        #     new_node.add_child(CoursesNeededContainer._make_node_from_course_selection_logic_string(construction_string))
+            
+        #     next_bracket_index = working_string.find('[')
         
         return new_node
             
         
     
     @staticmethod
-    def make_from_course_selection_logic_string(name, string):
+    def make_from_course_selection_logic_string(name, logic_string):
 
         certain_courses = []
-        string = string.strip()
+        string = logic_string.strip()
 
-        if string[0] == '(':
-            end_index = string.index(')')
-            courses = string[1:end_index].split(',')
-            string = string[end_index+1:]
+        if string and string[0] == '(':
+            end_index = CoursesNeededContainer._pull_index(string, ')')
+            courses = string[1 : end_index].split(',')
+            string = string[end_index + 1:]
             certain_courses = [course.strip() for course in set(courses)]
         
         encapsulated_string = f'[e<name=Requirements>{string}]'
@@ -2848,7 +2905,71 @@ if __name__ == '__main__':
     # listing_node = ListingNode(printable_description='Core Curriculum')
     # tree.add_child(listing_node)
 
-    courses_needed_container = CoursesNeededContainer("Test Plan")
+    #courses_needed_container = CoursesNeededContainer("Test Plan")
+    courses_needed_container = CoursesNeededContainer.make_from_course_selection_logic_string('Degree Plan', '''
+    (POLS 1101,POLS 1101,STAT 1401,POLS 1101,CPSC 1302,CPSC 2105,CYBR 2159,CYBR 2160,CPSC 2108,CPSC 3125,CPSC 3131,CPSC 3165,CPSC 3175,CPSC 4000,MATH 5125,CPSC 2125,CPSC 3105,CPSC 4125,CPSC 4126,CPSC 4135,CPSC 4175,CPSC 4176,ITDS 1774,STAT 3127,DSCI 3111,ITDS 4779)
+ [s <c=2, n=Choose from 2 of the following> 
+	[s <c=2, n=Descriptive Astronomy>
+		[d <n=ASTR 1105>]
+		[d <n=ASTR 1305>]
+	]
+	[r <c=4, n=Principles of Biology>
+		[d <n=BIOL 1225>]
+	]
+	[s <c=2, n=Contemporary Issues in Biology>
+		[d <n=CHEM 1151>]
+		[d <n=CHEM 1151L, id=CHEM 1151>]
+	]
+
+	[r <c=4, n=Introductory Physics II>
+		[d <n=PHYS 1112>]
+		[d <n=PHYS 2211>]
+		[d <n=PHYS 1312>]
+	]
+
+	[s <c=1, n=Susatinability and the Environment>
+		[d <n=ENVS 1205K>]
+	]
+	
+]
+
+[r <c=9, n=9 Credits in CPSC 3@ or 4@ or 5@ or CYBR 3@ or 4@>
+	[i <n=Insert CPSC 3@, ga=CPSC 3@ Course, gp=CPSC 3\d{3}[A-Z]?>]
+	[i <n=Insert CPSC 4@, ga=CPSC 4@ Course, gp=CPSC 4\d{3}[A-Z]?>]
+	[i <n=Insert CPSC 5@, ga=CPSC 5@ Course, gp=CPSC 5\d{3}[A-Z]?>]
+	[i <n=Insert CYBR 3@, ga=CYBR 3@ Course, gp=CPSC 3\d{3}[A-Z]?>]
+	[i <n=Insert CYBR 4@, ga=CYBR 4@ Course, gp=CPSC 4\d{3}[A-Z]?>]
+]
+
+[r <c=4, n=9 Credits in 1@ or 2@ or 3@ or 4@ or 5@U, i=Except ENGL 1101 or 1102* or CPSC 1301* or 1302* or 2015 or 2016>
+	[i <n=Insert 1@, ga=1@ Course, gp=^(?!ENGL 1101|ENGL 1102|CPSC 1301|CPSC 1302|CPSC 2015|CPSC 2016)[A-Z]{4} 1\d{3}[A-Z]?>]
+	[i <n=Insert 2@, ga=2@ Course, gp=^(?!ENGL 1101|ENGL 1102|CPSC 1301|CPSC 1302|CPSC 2015|CPSC 2016)[A-Z]{4} 2\d{3}[A-Z]?>]
+	[i <n=Insert 3@, ga=3@ Course, gp=^(?!ENGL 1101|ENGL 1102|CPSC 1301|CPSC 1302|CPSC 2015|CPSC 2016)[A-Z]{4} 3\d{3}[A-Z]?>]
+	[i <n=Insert 4@, ga=4@ Course, gp=^(?!ENGL 1101|ENGL 1102|CPSC 1301|CPSC 1302|CPSC 2015|CPSC 2016)[A-Z]{4} 4\d{3}[A-Z]?>]
+	[i <n=Insert 5@U, ga=5@U Course, gp=^(?!ENGL 1101|ENGL 1102|CPSC 1301|CPSC 1302|CPSC 2015|CPSC 2016)[A-Z]{4} [5]\d{4}U>]
+]
+
+
+[e <n=2 Classes in ITDS 1070>
+	[d <n=ITDS 1070, id=ITDS 1070 0>]
+	[d <n=ITDS 1070, id=ITDS 1070 1>]
+]
+
+[s <c=1, n=1 Class in STAT 1401@ or 1127@ or BUSA 3115* or CRJU 3107>
+	[p <n=STAT 1401@, m=STAT 1401.*>]
+	[p <n=STAT 1127@, m=STAT 1127.*>]
+	[d <n=BUSA 3115>]
+	[d <n=CRJU 3107>]
+]
+
+[r <c=3, n=3 to 6 Credits in PSEUDO>
+	[i <n=Insert PSEUDO, gp=PSEUDO \d{4}[A-Z]?>]
+]
+
+    ''')
+
+    # (POL 111, POLSE 2323) [s <n=A>[d<n=1>][d<n=2>]] [r <c=9>[p<n=p,m=p.*>][i<>][d<n=IO>]]
+    # (POL 111, POLSE 2323) [s <n=A>[e<n=1> [r<>[d<>][d<>]] [d<>]][d<n=2>]] [r <c=9>[p<n=p,m=p.*>][i<>][d<n=IO>]]
 
 #    courses_needed_container = CoursesNeededContainer.make_from_course_selection_logic_string('Course', '''
 #    (123, 456)
@@ -2923,10 +3044,10 @@ if __name__ == '__main__':
     root
     '''
 
-    for t in std_in.split('\n'):
-        controller.get_current_interface().parse_input(controller, t)
+    # for t in std_in.split('\n'):
+    #     controller.get_current_interface().parse_input(controller, t)
 
-    courses_needed_container.stub_all_unresolved_nodes()
+    # courses_needed_container.stub_all_unresolved_nodes()
 
     controller.is_printing = True
 
