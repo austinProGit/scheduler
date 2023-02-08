@@ -1,98 +1,264 @@
-# Author: Vincent Miller
-# Date: 31 August 2022
-# Updated: 28 September 2022, Added exceptions for MATH 1113, 2125, 5125, and electives
+# Austin Lee and Thomas Merino 1/23/2023
+# CPSC 4175 Project
 
 from alias_module import get_latest_id
-
-import pandas as pd
-import tabula
+# from courses_needed_container import CoursesNeededContainer, \
+#     DeliverableCourse, CourseProtocol, CourseInserter, ExhaustiveNode, \
+#     ShallowCountBasedNode, DeepCountBasedNode, DeepCreditBasedNode
 import re
+from pypdf import PdfReader
 
-def get_courses_needed(file_name):
-    """Inputs file_name name as string, reads pdf tables into list of dataframes per table,
-       merges list of dataframes into single dataframe, parses dataframe for CPSC and CYBR course id's,
-       adds course id's to list, and returns list"""
+# TODO:
+    # 1. Create a tokenized_list that has all chunks normalized into predictable logical structures
+    # 2. Process each chunk fully with all trimming functions in a loop until the chunk no longer changes.
+        # Once all chunks are static, remove all empty chunks.
+    # 3. Interface with tree generator.
 
-    # read and import tables from pdf, returns as list of dataframes
-    courses_needed_df_list = tabula.read_pdf(file_name, guess=False, pages='all', silent=False)
+def remove_substring_after_last_relevant(input_string):
+    match_reversed = re.search(r'[0-9]{4}|@|\)', input_string[::-1])
+    end_index = len(input_string) - match_reversed.start() if match_reversed else 0
+    return input_string[:end_index]
+
+def remove_minor_in(chunk, index, list):
+    chunk = chunk[:chunk.find('Minor in ')] if 'Minor in ' in chunk else chunk
+    return chunk
+
+def remove_select_one(chunk, index, list):
+    chunk = chunk[:chunk.find('Select one as a pre-requesite for ')] if 'Select one as a pre-requesite for ' in chunk else chunk
+    return chunk
+
+def remove_empty(chunk, index, list):
+    if len(chunk) == 0:
+        list.pop(index)
+
+def remove_empty_items(list):
+    return [item for item in list if item]
+
+def remove_major_in(chunk, index, list):
+    chunk = chunk[:chunk.find('Major in ')] if 'Major in ' in chunk else chunk
+    return chunk
+
+def remove_AREA_X(chunk, index, list):
+    chunk = chunk[:chunk.find('AREA ')] if 'AREA ' in chunk else chunk
+    return chunk
+
+def remove_chunk_without_course_block(chunk, index, list):
+    if not re.search(r'([A-Z]{4}\s{1})', chunk):
+        print(f'executing on chunk: {chunk}')
+        chunk = ''
+    return chunk
+
+# find the number of season year groups
+# find all instances of course block patterns and record their end indices
+# get end index of the (number of season year groups + 1 from the end of the list)
+def remove_curr_taken_courses(chunk, index, list):
+    new_chunk = ''
+    num_season_year_blocks = len(re.findall(r'(Spring|Fall)\s\d{4}', chunk))
+    courses_block_iterator = re.finditer(r'([A-Z]{4}\s{1}\d{4}( \))?)|(or \d{4}( \))?)|(, \d{4}( \))?)|(\d@( \))?)', chunk)
+    course_block_indices_list = []
+    # print(f'chunk: {chunk}')
+    # print(f'courses_block_iterator: {courses_block_iterator}')
+    for course in courses_block_iterator:
+        # print(f'course_block_iterator_item: {course.groups()}')
+        # print(course.end())
+        course_block_indices_list.append(course.end())
+    # print(course_block_indices_list)
+        # print(f'course_block_iterator_item: {course.groups()}')
+    # print(f'chunk before slicing: {chunk}')
+    # print()
+    # print(course_block_indices_list)
     
-    # merge list of dataframes into one dataframe
-    courses_needed_df = pd.DataFrame()
-    for i in range(len(courses_needed_df_list)):
-        courses_needed_df = pd.concat([courses_needed_df, courses_needed_df_list[i]], axis=0, ignore_index=True)
+    if num_season_year_blocks:
+        # print('block ACTIVATEDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD')
+        # print(chunk)
+        # print(f'course_block_indices_list: {course_block_indices_list}')
+        # print(f'len(course_block_indices_list: {len(course_block_indices_list)}')
+        # print(f'num_season_year_blocks: {num_season_year_blocks}')
+        # print(f'course_block_indices_list[len(course_block_indices_list) - num_season_year_blocks] - 1: {course_block_indices_list[len(course_block_indices_list) - (num_season_year_blocks + 1)] + 1}')
+        new_chunk = chunk[:course_block_indices_list[len(course_block_indices_list) - num_season_year_blocks - 1]]
+        # print(f'new chunk: {new_chunk}')
+    else:
+        new_chunk = chunk
+    # print(f'newchunk: {new_chunk}')
+    return new_chunk
 
-    # regex pattern is used to find course id, Ex: CPSC 1301, MATH 2125, etc.
-    # course_pattern = r'[A-Z]{4}\s{1}\d{4}'  # pattern for all courses
-    cpsc_pattern = r'CPSC\s{1}\d{4}'
-    cybr_pattern = r'CYBR\s{1}\d{4}'
-    pre_cal_pattern = r'MATH 1113'
-    intro_discrete_pattern = r'MATH 2125'
-    discrete_pattern = r'MATH 5125'
-    elective_pattern1 = r'6 Credits in CPSC 3@'
-    elective_pattern2 = r'3 Credits in CPSC 3@'
+def filter_deliverables(chunk):
+    deliverable = None
+    if (re.match(r'(\d{1} Class in [A-Z]{4} [0-9]{4})$|([A-Z]{4} [0-9]{4})$', chunk)):
+        deliverable = (re.search(r'([A-Z]{4} [0-9]{4})$', chunk)).group(1)
+    return deliverable
+
+def input_deliverables_to_export_str(input_list):
+    result_str = '('
+    for i, item in enumerate(input_list):
+        if i < len(input_list) - 1:
+            result_str += f'{item},'
+        else:
+            result_str += f'{item})'
+    return result_str
+
+def classify_and_handle_chunk(chunk):
+    intermediate_substring = ''
+
+    # indicates that a ... has been found
+    if (re.search(r'(Choose [0-9]{1} of the following:)', chunk)):
+        pass
     
+    if (re.search(r'()', chunk)):
+        pass
     
-    # search dataframe for course id pattern, adds to list
-    courses_needed_list = list()
-    for col_name, _ in courses_needed_df.iteritems():
-        # check column names for pattern
-        cspc_col_match = re.search(cpsc_pattern, str(col_name))
-        cybr_col_match = re.search(cybr_pattern, str(col_name))
-        pre_cal_col_match = re.search(pre_cal_pattern, str(col_name))
-        intro_discrete_col_match = re.search(intro_discrete_pattern, str(col_name))
-        discrete_col_match = re.search(discrete_pattern, str(col_name))
-        elective_col_match1 = re.search(elective_pattern1, str(col_name))
-        elective_col_match2 = re.search(elective_pattern2, str(col_name))
 
-        # add to list if found
-        if cspc_col_match:
-            courses_needed_list.append(get_latest_id(cspc_col_match.group()))
-        elif cybr_col_match:
-            courses_needed_list.append(get_latest_id(cybr_col_match.group()))
-        elif pre_cal_col_match:
-            courses_needed_list.append(get_latest_id(pre_cal_col_match.group()))
-        elif intro_discrete_col_match:
-            courses_needed_list.append(get_latest_id(intro_discrete_col_match.group()))
-        elif discrete_col_match:
-            courses_needed_list.append(get_latest_id(discrete_col_match.group()))
-        elif elective_col_match1:
-            courses_needed_list.append('CPSC 3XXX')
-            courses_needed_list.append('CPSC 3XXX')
-        elif elective_col_match2:
-            courses_needed_list.append('CPSC 3XXX')
+
+def get_courses_needed(file_name): 
+    """
+    Gets the needed courses from the Degree Works.
+
+    Parameters
+    ----------
+    arg1 : file_name
+        File name of the DegreeWorks being parsed
+
+    Returns
+    -------
+    courses_needed_container
+        This container contains a recursively-defined tree data structure 
+        that holds the relationships between all needed courses found in
+        a DegreeWorks pdf.
+
+    """
+    with open(file_name, 'rb') as pdf_file:
+        pdf_reader = PdfReader(pdf_file)
+        intermediate_str = ''
+        still_needed_chunks_list = [] # Holds all unprocessed/filtered chunks
+        document_string = '' # Holds the entire parsed pdf text
+        for page in range(len(pdf_reader.pages)):
+            page_text = pdf_reader.pages[page].extract_text()
+            document_string += page_text
+        # print(document_string)
+        start = document_string.find("Still Needed:") # Used to initiate every chunk
+        while start != -1:
+            end = document_string.find("Still Needed:", start + 1) # Searches for next instance of phrase
+            if end != -1:
+                still_needed_chunks_list.append(document_string[start:end]) 
+                start = end
+            else: # This case accounts for the final instance of the phrase
+                still_needed_chunks_list.append(document_string[start:document_string.find('Fallthrough', start + 1)])
+                break
+        # for chunk in still_needed_chunks_list:
+        #     print(chunk)
+        #     print()
+        currently_in_logical_block = False # Used to track if currently parsing a multi-line logical block
+        logically_grouped_list = [] # Holds the chunks that contain all logical groupings of needed courses
+        logical_chunk_string = '' # Holds the current chunk being parsed
+
+        for chunk in still_needed_chunks_list:
+            if 'of the following:' in chunk or ') or' in chunk: # Indicates the start or continuance of a logical chunk
+                currently_in_logical_block = True
+                logical_chunk_string += chunk # Appends last portion of a logical chunk
+            else:
+                if currently_in_logical_block:
+                    logical_chunk_string += chunk
+                    logically_grouped_list.append(logical_chunk_string)
+                    currently_in_logical_block = False
+                    logical_chunk_string = ''
+                else:
+                    logically_grouped_list.append(chunk) # Appends simple chunks
+
+        filtered_list = [] # Holds the filtered chunks
+        for chunk in logically_grouped_list:
+            if not 'See ' in chunk and not 'YOU MUST APPLY FOR GRADUATION' in chunk and not 'Still Needed: Outcomes Assessment Exam' in chunk:
+                delimiter = 'Still Needed:'
+                chunk = chunk[chunk.index(delimiter)+(len(delimiter)+1):]
+                if chunk[0] == ' ':
+                    chunk = chunk[1:]
+                chunk = remove_substring_after_last_relevant(chunk)
+                filtered_list.append(chunk)
+        
+        filtered_list = remove_empty_items(filtered_list)
+        for index in range(len(filtered_list)):
+            filtered_list[index] = remove_curr_taken_courses(filtered_list[index], index, filtered_list)
+        filtered_list = remove_empty_items(filtered_list)
+        for index in range(len(filtered_list)):
+            filtered_list[index] = remove_minor_in(filtered_list[index], index, filtered_list)
+        filtered_list = remove_empty_items(filtered_list)
+        for index in range(len(filtered_list)):
+            filtered_list[index] = remove_select_one(filtered_list[index], index, filtered_list)
+        filtered_list = remove_empty_items(filtered_list)
+        for index in range(len(filtered_list)):
+            filtered_list[index] = remove_major_in(filtered_list[index], index, filtered_list)
+        filtered_list = remove_empty_items(filtered_list)
+        for index in range(len(filtered_list)):
+            filtered_list[index] = remove_AREA_X(filtered_list[index], index, filtered_list)
+        filtered_list = remove_empty_items(filtered_list)
+        for index in range(len(filtered_list)):
+            filtered_list[index] = remove_substring_after_last_relevant(filtered_list[index])
+        filtered_list = remove_empty_items(filtered_list)
+        for index in range(len(filtered_list)):
+            filtered_list[index] = remove_chunk_without_course_block(filtered_list[index], index, filtered_list)
+        filtered_list = remove_empty_items(filtered_list)
+        deliverables_list = []
+        complex_list = []
+        for chunk in filtered_list:
+            if (deliverable := filter_deliverables(chunk)):
+                deliverables_list.append(deliverable)
+            else:
+                complex_list.append(chunk)
+        intermediate_str += input_deliverables_to_export_str(deliverables_list)
+        print(intermediate_str)
+        print('-'*60)
+        for item in complex_list:
+            print(item)
+            print()
     
-        for element in courses_needed_df[col_name]:
-            # check data in column for pattern
-            cspc_match = re.search(cpsc_pattern, str(element))
-            cybr_match = re.search(cybr_pattern, str(element))
-            pre_cal_match = re.search(pre_cal_pattern, str(element))
-            intro_discrete_match = re.search(intro_discrete_pattern, str(element))
-            discrete_match = re.search(discrete_pattern, str(element))
-            elective_match1 = re.search(elective_pattern1, str(element))
-            elective_match2 = re.search(elective_pattern2, str(element))
+    return intermediate_str
 
-            # add to list if found
-            if cspc_match:
-                courses_needed_list.append(get_latest_id(cspc_match.group()))
-            elif cybr_match:
-                courses_needed_list.append(get_latest_id(cybr_match.group()))
-            elif pre_cal_match:
-                courses_needed_list.append(get_latest_id(pre_cal_match.group()))
-            elif intro_discrete_match:
-                courses_needed_list.append(get_latest_id(intro_discrete_match.group()))
-            elif discrete_match:
-                courses_needed_list.append(get_latest_id(discrete_match.group()))
-            elif elective_match1:
-                courses_needed_list.append('CPSC 3XXX')
-                courses_needed_list.append('CPSC 3XXX')
-            elif elective_match2:
-                courses_needed_list.append('CPSC 3XXX')
+if __name__ == "__main__":
+    print(get_courses_needed('./src/input_files/degreeworks1.pdf'))
 
-    # sample inputs have CPSC 4115 mislabeled as CPSC 5115
-    if 'CPSC 5115' in courses_needed_list:
-        courses_needed_list.remove('CPSC 5115')
-        if 'CPSC 4115' not in courses_needed_list:
-            courses_needed_list.append('CPSC 4115')
+    # Cases:
+        # Case 1: 'POLS 1101'
+        # Case 2: 'CPSC 4157 or 5157'
+        # Case 3: 'POLS 1201 or CPSC 1234'
+        # Case 4: 'POLS 1201 and 
+        # Case 5: 'HIST 2111, 2112 or GA History Exam'
+        # We need to load the course info dtb before handling case 6:
+        # Case 6: 'CPSC 3@ or 4@ or 5@'
+        # We need to handle electives
+        # Case 7: Except Case: 1 Credit in @ 1@ or 2@ or 3@ or 4@ or 5@U Except ENGL 1101 or 1102*
 
-    courses_needed_list.sort()
-    return courses_needed_list
+# Shallow count node: requires n-many courses to be selected directly below it
+# Select 2 of the following: ABCD 1234 or ASDF 1234 or AIDJ 1234
+# Deep count node: requires n-many courses to be selected anywhere below it
+# Possibly will not use
+# Deep credit node: requires n-many credits to be selected anywhere below it
+# Select 6 credits from the following; ABDC 1234 or ANFO 1256 or OAJF 1295
+# Exhaustive node: a node suited for requiring all nodes directly below it
+# APFN 1234 and ALJD 1235
+# List node: a node suited for requiring all courses directly below it (no groups)
+# Do not implement
+# Deliverable course: an explicit instance of a course with a name and credits
+# AJDH 1234
+# Course protocol node: a regex form that may be filled out to become any course matching that regex pattern (protocol)
+# Any course with an @
+# Inserter node: a node that, when selected, adds another node of a given form (for sections that have variable number of selections).
+def check_pdf_parser_consistency(filename):
+    with open(filename, 'rb') as pdf_file:
+        pdf_reader = PdfReader(pdf_file)
+        document_string = '' # Holds the entire parsed pdf text
+        for page in range(len(pdf_reader.pages)):
+            page_text = pdf_reader.pages[page].extract_text()
+            document_string += page_text
+
+        for i in range(1, 11):
+            with open(f'{filename}_{i}.txt', 'w') as txt_file:
+                txt_file.write(document_string)
+
+        contents = []
+        for i in range(1, 11):
+            with open(f'{filename}_{i}.txt', 'r') as txt_file:
+                contents.append(txt_file.read())
+
+        for content in contents[1:]:
+            if content != contents[0]:
+                return False
+        return True

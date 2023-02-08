@@ -48,7 +48,6 @@
 # TODO: (ORGANIZE) Consider useing f'{variable}' for formatting
 # TODO: (ORGANIZE) Clean up the mixing of string and Path objects (it is not clear what is what right now)
 # TODO: (ENSURE) File existence check does not consider the to-be file extensions (fix this) -- we could do this with Path.with_suffix('') and Path.suffix
-# TODO: (FIX) Add "silient=True" to tabula calls so there are no error print outs
 
 
 from PySide6 import QtWidgets, QtGui
@@ -59,7 +58,6 @@ from PySide6 import QtWidgets, QtGui
 from sys import exit
 from pathlib import Path
 from os import path
-from subprocess import CalledProcessError # This is used for handling errors raised by tabula parses
 
 from alias_module import *
 from catalog_parser import update_course_info
@@ -389,8 +387,6 @@ class SmartPlannerController:
                 self.output_error('Sorry, {0} file could not be found.'.format(filename)) # Report if the file could not be found
         except IOError:
             self.output_error('Sorry, {0} file could not be openned.'.format(filename)) # Report if the file could not be openned
-        except CalledProcessError: # MERINO: added exception handling
-            self.output_error('Sorry, invalid format while parsing {0}.'.format(filename)) # Report if the file could not be openned
         return success
     
     
