@@ -184,8 +184,7 @@ class SmartPlannerController:
             setup_aliases(alias_relative_path)
 
             course_info = load_course_info(course_info_relative_path)
-            excused_prereqs = load_course_info_excused_prereqs(excused_prereqs_relative_path)
-            course_info_container = CourseInfoContainer(course_info, excused_prereqs)
+            course_info_container = CourseInfoContainer(course_info)
             
             # This raises an exception if Course Info Container contains invalid data
             evaluation_report = evaluate_container(course_info_container)
@@ -380,8 +379,8 @@ class SmartPlannerController:
         try:
             filepath = get_real_filepath(filename) # Get the file's path and check if it exists
             if filepath:
-                courses_needed_list = get_courses_needed(filepath) # Get the needed courses from the file
-                self._scheduler.configure_courses_needed(courses_needed_list) # Load the course list into the scheduler
+                courses_needed_container = get_courses_needed(filepath) # Get the needed courses from the file
+                self._scheduler.configure_courses_needed(courses_needed_container) # Load the course container into the scheduler
                 self.output('Course requirements loaded from {0}.'.format(filepath)) # Report success to the user
                 success = True # Set success to true
             else:
@@ -593,6 +592,8 @@ class SmartPlannerController:
             self.output_error('No export type selected.')
             return
         
+        
+        
         self.output('Generating schedule...')
         
         # Create a confidence variable to return (-1 means failed)
@@ -606,7 +607,10 @@ class SmartPlannerController:
         
         try:
             if self._export_types:
-                semesters_listing, confidence_factor = self._scheduler.generate_schedule()
+                container = self._scheduler.generate_schedule()
+                confidence_factor = container.get_cf()
+                semesters_listing = container.get_schedule()
+                #semesters_listing, confidence_factor = self._scheduler.generate_schedule()
                 self.output('Path generated with confidence value of {0:.1f}%'.format(confidence_factor*100))
                 
                 template_path = Path(get_source_path(), 'input_files')
