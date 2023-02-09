@@ -2,6 +2,7 @@
 # CPSC 4175 Project
 
 from alias_module import get_latest_id
+from courses_needed_container import CoursesNeededContainer
 
 # from courses_needed_container import CoursesNeededContainer, \
 #     DeliverableCourse, CourseProtocol, CourseInserter, ExhaustiveNode, \
@@ -46,7 +47,7 @@ def remove_AREA_X(chunk, index, list):
 
 def remove_chunk_without_course_block(chunk, index, list):
     if not re.search(r'([A-Z]{4}\s{1})', chunk):
-        print(f'executing on chunk: {chunk}')
+        #print(f'executing on chunk: {chunk}')
         chunk = ''
     return chunk
 
@@ -109,9 +110,7 @@ def classify_and_handle_chunk(chunk):
     if (re.search(r'()', chunk)):
         pass
     
-
-
-def get_courses_needed(file_name): 
+def get_courses_needed(file_name):
     """
     Gets the needed courses from the Degree Works.
 
@@ -128,6 +127,13 @@ def get_courses_needed(file_name):
         a DegreeWorks pdf.
 
     """
+    intermediate_str = get_courses_needed_intermediate_str(file_name)
+    container_name = 'Degree Plan'
+    return CoursesNeededContainer.make_from_course_selection_logic_string(container_name, intermediate_str)
+
+
+def get_courses_needed_intermediate_str(file_name): 
+    
     with open(file_name, 'rb') as pdf_file:
         pdf_reader = PdfReader(pdf_file)
         intermediate_str = ''
@@ -206,16 +212,18 @@ def get_courses_needed(file_name):
             else:
                 complex_list.append(chunk)
         intermediate_str += input_deliverables_to_export_str(deliverables_list)
-        print(intermediate_str)
-        print('-'*60)
-        for item in complex_list:
-            print(item)
-            print()
+        #print(intermediate_str)
+        #print('-'*60)
+        # TODO: remove this test
+        if __name__ == '__main__':
+            for item in complex_list:
+                print(item)
+                print()
     
     return intermediate_str
 
 if __name__ == "__main__":
-    print(get_courses_needed('./src/input_files/degreeworks1.pdf'))
+    print(get_courses_needed('./input_files/degreeworks1.pdf'))
 
     # Cases:
         # Case 1: 'POLS 1101'
