@@ -273,7 +273,7 @@ class ErrorMenu(GeneralInterface):
 def list_available_commands_command(controller, argument):
     '''Output the commands that may be entered.'''
     
-    controller.output('Here are the commands available:\ncommands, load, load-e, destination, destination-e, set-hours, set-exports, list-parameters, schedule, verify, verify-e, gui, cli, gui-i, help, quit')
+    controller.output('Here are the commands available:\ncommands, load, load-e, destination, destination-e, set-hours, set-exports, list-parameters, schedule, verify, verify-e, batch, batch-verify, gui, cli, gui-i, help, quit')
     # TODO: maybe use a listing from help resourses or the main menu interface class.
 
 

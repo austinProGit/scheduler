@@ -127,7 +127,7 @@ class MainMenuWidget(QtWidgets.QWidget):
 
         # TODO: this access of the courses list might be slow
         needed_courses = controller.get_courses_needed()
-        if needed_courses:
+        if needed_courses and needed_courses.is_resolved():
             self.needed_courses_load_label.setText('Courses loaded')
             self.listing_box.setText('\n'.join(needed_courses.get_courses_string_list()))
         
@@ -188,8 +188,10 @@ class MainMenuWidget(QtWidgets.QWidget):
         # Get the file's description and set the label to the description
         description = Path(filename).stem
         self.needed_courses_load_label.setText('Needed Courses: {0}'.format(description))
-        
-        self.listing_box.setText('\n'.join([str(s) for s in self.controller.get_courses_needed().get_courses_list()]))
+
+        # TODO: fix this (possibly bad get-update)
+        if self.needed_courses.is_resolved():
+            self.listing_box.setText('\n'.join([str(s) for s in self.controller.get_courses_needed().get_courses_list()]))
     
     
     def _needed_courses_load_callback(self):
