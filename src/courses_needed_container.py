@@ -1,5 +1,5 @@
 # Thomas Merino and Austin Lee
-# 2/7/2023
+# 2/8/2023
 # CPSC 4176 Project
 
 import re
@@ -11,6 +11,7 @@ import os
 
 # from cli_interface import HelpMenu
 
+# TODO: make the commands similar in spacers ("_" vs "-" to seperate words) 
 # TODO: add help menu back!
 # TODO: add documentation
 # TODO: pull credit count into protocol node when filling out
@@ -707,7 +708,7 @@ class NeededCoursesInterface(GeneralInterface):
     def add_protocol(self, controller, argument):
         self._add_refresh_opportunity()
         # TODO: fix this default (does not work)
-        new_node = CourseProtocol(match_description=r'[A-Z]{4, 5}\s?[0-9]{4}[A-Z]?', printable_description='New Course Protocol', credits=3)
+        new_node = CourseProtocol(match_description=r'[A-Z]{4,5}\s?[0-9]{4}[A-Z]?', printable_description='New Course Protocol', credits=3)
         if self._node.add_child(new_node):
             self._apply_constructor_arguments(argument, new_node)
             self._add_print('Course added.')
@@ -749,7 +750,7 @@ class NeededCoursesInterface(GeneralInterface):
     
     def add_inserter(self, controller, argument):
         self._add_refresh_opportunity()
-        new_node = CourseInserter(generator_parameter=r'[A-Z]{4, 5}\s?[0-9]{4}[A-Z]?', printable_description='Insert New')
+        new_node = CourseInserter(generator_parameter=r'[A-Z]{4,5}\s?[0-9]{4}[A-Z]?', printable_description='Insert New')
         if self._node.add_child(new_node):
             self._apply_constructor_arguments(argument, new_node)
             self._add_print('Inserter added.')
@@ -1561,6 +1562,19 @@ class _NodeSuper:
             success = True
         return success
     
+    @final
+    def reorder_child(self, from_index, to_index):
+
+        # NOTE: this will
+        mutated = False
+        try:
+                child_id = self._children_ids.pop(from_index)
+                self._children_ids.insert(to_index, child_id)
+                mutated = True
+        except IndexError:
+            raise IndexError(f'Invalid child index in child relocation. Index: {from_index}.')
+        return mutated
+
     ## ------------------------------ Selection ------------------------------ ##
 
     @final
@@ -2669,9 +2683,9 @@ class CoursesNeededContainer:
         elif node_type_string == 'd':
             new_node = DeliverableCourse(printable_description='New Course', credits=3)
         elif node_type_string == 'p':
-            new_node = CourseProtocol(match_description=r'[A-Z]{4, 5}\s?[0-9]{4}[A-Z]?', printable_description='New Course Protocol', credits=3)
+            new_node = CourseProtocol(match_description=r'[A-Z]{4,5}\s?[0-9]{4}[A-Z]?', printable_description='New Course Protocol', credits=3)
         elif node_type_string == 'i':
-            new_node = CourseInserter(generator_parameter=r'[A-Z]{4, 5}\s?[0-9]{4}[A-Z]?', printable_description='Insert New')
+            new_node = CourseInserter(generator_parameter=r'[A-Z]{4,5}\s?[0-9]{4}[A-Z]?', printable_description='Insert New')
         else:
             raise CNLogicParsingError(f'Illegal node type key: {node_type_string}.')
         
@@ -2808,6 +2822,7 @@ class CoursesNeededContainer:
         self._decision_tree = decision_tree or ExhaustiveNode()
         self._certain_courses_list = ListingNode(printable_description='Core Curriculum')
         self._decision_tree.add_child(self._certain_courses_list)
+        self._decision_tree.reorder_child(-1, 0)
 
         # TODO: perform this using a good practice
         self._decision_tree._duplicate_priority = DEFAULT_PRIORITY
@@ -2857,6 +2872,9 @@ class CoursesNeededContainer:
     def add_top_level_node(self, node):
         return self._decision_tree.add_child(node)
     
+    def rename_certain_list(self, name):
+        self._certain_courses_list.set_value_for_key('name', name)
+
     def is_resolved(self):
         return self._decision_tree.is_deep_resolved()
 
@@ -2917,7 +2935,7 @@ if __name__ == '__main__':
     # tree.add_child(listing_node)
 
     #courses_needed_container = CoursesNeededContainer("Test Plan")
-    courses_needed_container = CoursesNeededContainer.make_from_course_selection_logic_string('Degree Plan', '''
+    construct_string_1 = '''
     (POLS 1101,POLS 1101,STAT 1401,POLS 1101,CPSC 1302,CPSC 2105,CYBR 2159,CYBR 2160,CPSC 2108,CPSC 3125,CPSC 3131,CPSC 3165,CPSC 3175,CPSC 4000,MATH 5125,CPSC 2125,CPSC 3105,CPSC 4125,CPSC 4126,CPSC 4135,CPSC 4175,CPSC 4176,ITDS 1774,STAT 3127,DSCI 3111,ITDS 4779)
  [s <c=2, n=Choose from 2 of the following> 
 	[s <c=2, n=Descriptive Astronomy>
@@ -2977,7 +2995,46 @@ if __name__ == '__main__':
 	[i <n=Insert PSEUDO, gp=PSEUDO \d{4}[A-Z]?>]
 ]
 
-    ''')
+    '''
+
+
+
+    construct_string_2 = '''
+    (CPSC 1301, CPSC 1302, CPSC 2105, CPSC 2108, CPSC 3125,
+     CPSC 3131, CPSC 3165, CPSC 3175, CPSC 4115, CPSC 4135)
+
+    [c <n=3 Courses, c=3>
+        [d <n=CPSC 4121>]
+        [c <n=2 Courses, c=2>
+            [d <n=CPSC 4126>]
+            [d <n=CPSC 4127>]
+        ]
+        [d <n=CPSC 4130>]
+        [d <n=CPSC 4185>]
+    ]
+
+    [s <n=2 Selections, c=2>
+        [c <n=2 Courses, c=2>
+            [d <n=MATH 1100>]
+            [d <n=MATH 1101>]
+        ]
+        [c <n=2 Courses, c=2>
+            [d <n=MATH 1200>]
+            [d <n=MATH 1201>]
+        ]
+        [d <n=MATH 1300>]
+        [d <n=MATH 1400>]
+    ]
+
+    [r <n=6 Credits, c=6>
+        [i <n=Insert 4___, gp=[A-Z]{4,5}\s?\d{4}[A-Z]?, ga=Fill out 4___>]
+        [p <n=Fill out 4___, gp=[A-Z]{4,5}\s?\d{4}[A-Z]?>]
+    ]
+    '''
+
+
+    courses_needed_container = CoursesNeededContainer.make_from_course_selection_logic_string('Degree Plan', construct_string_2)
+    courses_needed_container.rename_certain_list('Certain List')
 
     # (POL 111, POLSE 2323) [s <n=A>[d<n=1>][d<n=2>]] [r <c=9>[p<n=p,m=p.*>][i<>][d<n=IO>]]
     # (POL 111, POLSE 2323) [s <n=A>[e<n=1> [r<>[d<>][d<>]] [d<>]][d<n=2>]] [r <c=9>[p<n=p,m=p.*>][i<>][d<n=IO>]]
