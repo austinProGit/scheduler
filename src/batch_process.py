@@ -45,7 +45,7 @@ def full_schedule(input_path, courses_needed_filename, output_path, template_pat
        outputs: places schedule in the output path folder"""
     try:
         # read courses needed
-        courses_needed = get_courses_needed(input_path.joinpath(courses_needed_filename)).get_courses_string_list()
+        courses_needed = get_courses_needed(input_path.joinpath(courses_needed_filename))
 
         # get hours per semester
         semester_hours = int(courses_needed_filename[10:12])

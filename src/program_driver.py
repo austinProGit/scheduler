@@ -136,8 +136,9 @@ class SmartPlannerController:
             
             # Load the user interface -- this should only block execution if graphics are presented
             self.load_interface(self.session_configuration.is_graphical and graphics_enabled) # Override conifg settings if graphics are suppressed
-        except (ConfigFileError, FileNotFoundError, IOError, NonDAGCourseInfoError, InvalidCourseError, ValueError):
+        except (ConfigFileError, FileNotFoundError, IOError, NonDAGCourseInfoError, InvalidCourseError, ValueError) as e:
             # Some error was encountered during loading (enter the error menu)
+            print(e)
             self.output_error('A problem was encountered during loading--entering error menu...')
             self.enter_error_menu()
     
