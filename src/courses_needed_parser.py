@@ -2,9 +2,11 @@
 # CPSC 4175 Project
 
 from alias_module import get_latest_id
+
 # from courses_needed_container import CoursesNeededContainer, \
 #     DeliverableCourse, CourseProtocol, CourseInserter, ExhaustiveNode, \
 #     ShallowCountBasedNode, DeepCountBasedNode, DeepCreditBasedNode
+
 import re
 from pypdf import PdfReader
 

@@ -124,10 +124,12 @@ class MainMenuWidget(QtWidgets.QWidget):
         self.layout.addLayout(self.bottom_bar)
         
         # Update if courses are loaded
+
+        # TODO: this access of the courses list might be slow
         needed_courses = controller.get_courses_needed()
         if needed_courses:
             self.needed_courses_load_label.setText('Courses loaded')
-            self.listing_box.setText('\n'.join(self.controller.get_courses_needed()))
+            self.listing_box.setText('\n'.join(needed_courses.get_courses_string_list()))
         
     def initialize_parameter_widgets(self):
         '''Setup the widgets for scheduling parameters. This does not add them; it just initializes them
@@ -187,7 +189,7 @@ class MainMenuWidget(QtWidgets.QWidget):
         description = Path(filename).stem
         self.needed_courses_load_label.setText('Needed Courses: {0}'.format(description))
         
-        self.listing_box.setText('\n'.join(self.controller.get_courses_needed()))
+        self.listing_box.setText('\n'.join([str(s) for s in self.controller.get_courses_needed().get_courses_list()]))
     
     
     def _needed_courses_load_callback(self):

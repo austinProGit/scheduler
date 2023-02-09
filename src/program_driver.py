@@ -59,6 +59,7 @@ from sys import exit
 from pathlib import Path
 from os import path
 
+
 from alias_module import *
 from catalog_parser import update_course_info
 from batch_process import batch_process
@@ -248,6 +249,13 @@ class SmartPlannerController:
         '''Output an error message to the user.'''
         self.output('ERROR: {0}'.format(message))
     
+    
+    def output_clear(self):
+        '''Clear the terminal of content (intended for CLI interface).'''
+        if os.name == 'nt':
+            os.system('cls')
+        else:
+            os.system('clear')
     
     def get_input(self):
         '''Get input text from the user with the current interface's/menu's name in the prompt.'''
@@ -610,6 +618,7 @@ class SmartPlannerController:
                 container = self._scheduler.generate_schedule()
                 confidence_factor = container.get_cf()
                 semesters_listing = container.get_schedule()
+                
                 #semesters_listing, confidence_factor = self._scheduler.generate_schedule()
                 self.output('Path generated with confidence value of {0:.1f}%'.format(confidence_factor*100))
                 

@@ -85,7 +85,7 @@ class Scheduler:
         self.fitness_configuration = Scheduler._create_default_fitness_configuration(container)
         
     def configure_courses_needed(self, courses_needed_container):
-        self.courses_needed_container = courses_needed_container[:]
+        self.courses_needed_container = courses_needed_container
     
     def configure_hours_per_semester(self, number_of_hours):
         self.hours_per_semester = number_of_hours
@@ -95,8 +95,9 @@ class Scheduler:
            Inputs: None, but requires course_info and courses_needed setup prior to running
            Returns: list of lists, inner list is one semester of courses, outer list is full schedule"""
         course_info = self.course_info_container # Get the course info container
-        courses_needed = self.courses_needed_container.get_course_list() # Create a copy of the needed courses (workable list)
+        courses_needed = self.courses_needed_container.get_courses_string_list() # Create a copy of the needed courses (workable list)
         
+
         # Ensure CPSC 4000 is scheduled in the last semester
         contains_4000 = False
         if 'CPSC 4000' in courses_needed:
