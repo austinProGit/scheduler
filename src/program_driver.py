@@ -73,6 +73,7 @@ from courses_needed_parser import get_courses_needed
 from program_generated_evaluator import evaluate_container, NonDAGCourseInfoError, InvalidCourseError
 from excel_formatter import excel_formatter
 from plain_text_formatter import plain_text_export
+from pdf_formatter import pdf_export
 from user_submitted_validator import validate_user_submitted_path
 from path_to_grad_parser import parse_path_to_grad
 
@@ -599,7 +600,7 @@ class SmartPlannerController:
         if not self._export_types:
             self.output_warning('No schedule exported.')
             self.output_error('No export type selected.')
-            return
+            return 
         
         
         
@@ -630,11 +631,19 @@ class SmartPlannerController:
                     # Lew erased 'Path To Graduation' from here to work with excel_formatter
                     excel_formatter(Path(template_path), unique_ptg_destination, semesters_listing, self._scheduler.get_course_info())
                     self.output('Schedule (Path to Graduation) exported as {0}'.format(unique_ptg_destination))
+                    os.startfile(unique_ptg_destination)
                 
                 if PLAIN_TEXT_EXPORT_TYPE in self._export_types:
                     unique_ptext_destination = get_next_free_filename(desired_destination.with_suffix('.txt'))
                     plain_text_export(unique_ptext_destination, semesters_listing, 'Spring', 2022)
                     self.output('Schedule (plain text) exported as {0}'.format(unique_ptext_destination))
+                    os.startfile(unique_ptext_destination)
+
+                if PDF_EXPORT_TYPE in self._export_types:
+                    unique_pdf_destination = get_next_free_filename(desired_destination.with_suffix('.pdf'))
+                    pdf_export(unique_pdf_destination, semesters_listing, 'Spring', 2022)
+                    self.output('Schedule (PDF) exported as {0}'.format(unique_pdf_destination))
+                    os.startfile(unique_pdf_destination)
                 
             else:
                 self.output_error('Validation over a file list is not supported yet.')

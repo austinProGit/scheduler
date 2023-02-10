@@ -106,6 +106,7 @@ class MainMenuWidget(QtWidgets.QWidget):
         self.interaction_area.addRow(self.hours_per_semester_label, self.hours_per_semester_field)
         self.interaction_area.addWidget(self.path_to_graduation_checkbox)
         self.interaction_area.addWidget(self.plain_text_checkbox)
+        self.interaction_area.addWidget(self.pdf_checkbox)
         self.interaction_area.addRow(self.schedule_name_label, self.schedule_name_field)
         
         # Create the area for presenting large amounts of data
@@ -161,6 +162,9 @@ class MainMenuWidget(QtWidgets.QWidget):
         self.plain_text_checkbox = QtWidgets.QCheckBox('Export Simple txt')
         self.plain_text_checkbox.setChecked(PLAIN_TEXT_EXPORT_TYPE in active_export_types)
         self.plain_text_checkbox.toggled.connect(self._toggle_export_type_callback)
+        self.pdf_checkbox = QtWidgets.QCheckBox('Export PDF')
+        self.pdf_checkbox.setChecked(PDF_EXPORT_TYPE in active_export_types)
+        self.pdf_checkbox.toggled.connect(self._toggle_export_type_callback)
         
         # Create a text field that set the schedule's name after pressing enter/return
         self.schedule_name_label = QtWidgets.QLabel('Schedule name:')
@@ -274,6 +278,9 @@ class MainMenuWidget(QtWidgets.QWidget):
                 
         if self.plain_text_checkbox.isChecked():
             export_types.append(PLAIN_TEXT_EXPORT_TYPE)
+
+        if self.pdf_checkbox.isChecked():
+            export_types.append(PDF_EXPORT_TYPE)
             
         if not len(export_types):
             self.controller.output_warning('Make sure you have at least one export mode selected.')
