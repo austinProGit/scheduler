@@ -98,8 +98,8 @@ class Scheduler:
         ]
 
         [r <n=6 Credits, c=6>
-            [i <n=Insert 4___, gp=[A-Z]{4,5}\s?\d{4}[A-Z]?, ga=Fill out 4___>]
-            [p <n=Fill out 4___, gp=[A-Z]{4,5}\s?\d{4}[A-Z]?>]
+            [i <n=Insert 4___, gp=[A-Z]{4,5}\s?4\d{3}[A-Z]?, ga=4___ Course>]
+            [p <n=4___ Course, gp=[A-Z]{4,5}\s?4\d{3}[A-Z]?>]
         ]
         '''
         self.courses_needed_container = CoursesNeededContainer.make_from_course_selection_logic_string('Degree Plan', construct_string_2)

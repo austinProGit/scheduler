@@ -1,5 +1,5 @@
 # Thomas Merino and Austin Lee
-# 2/8/2023
+# 2/10/2023
 # CPSC 4176 Project
 
 import re
@@ -21,8 +21,12 @@ import os
 #           and make them selected automatically (don't change the node type)
 # TODO: Add method to generate a logical intermediate string from a tree
 # TODO: Add a method that ingests courses (already taken by the user, but those need to be selected and/or removed)
-# TODO: put the list object as the first node in the root tree (when constructed)
-# TODO: add more command clarity (in CLI and here) - such as adding exit, quit, and done
+# TODO: add more command clarity (in CLI and here) - such as adding exit, quit, and done (make this leave the tree or fill/mod menu)
+# TODO: reports incorrect error when entering a negative value for some mod menu
+# TODO: Filling an already-selected protocol node with a name that invokes a protocol conflict will not display the priority override message
+# TODO: Have the protocol node track the course selection state throught the key-value binding dictionary
+# TODO: finsih search and undo (with snapshot)
+#           Undo might mess with admin vs user mode!!!
 
 # Intermediate node keys: 
 # shallow course    s
@@ -56,6 +60,15 @@ ADDITIONAL_EFFECTS = 0x100
 SUPERSEDED = 0x200
 UNSTRUCTURED = 0x300
 
+# TODO: move to logical position:
+def combine_collateral(previous, new):
+    previous_collateral = COLLATERAL & previous
+    new_collateral = COLLATERAL & new
+    result = ~COLLATERAL & previous
+    # This takes advantage of the fact the larger the bit mask value, the greater the importance
+    result |= max(previous_collateral, new_collateral)
+    return result
+    
 
 SETTING_DELIMITTER = '='
 DEFAULT_PRIORITY = 100
@@ -287,7 +300,7 @@ class ArgumentInputInterface(GeneralInterface):
             elif result == ILLEGAL_NIL:
                 controller.output_error('A value must be specified for this key.')
             elif result == ILLEGAL_INTEGER:
-                controller.output_error('The value must be an integer for this key.')
+                controller.output_error('The value must be a valid integer for this key.')
             elif result == KEY_NOT_FOUND:
                 controller.output_error(f'Key "{key}" not found.')
             
@@ -411,7 +424,7 @@ class NeededCoursesInterface(GeneralInterface):
         self.add_command(self.navigate_to_root, 'root', 'home', 'base')
                 
         self.add_command(self.show_all, 'show_all', 'display_all', 'map')
-        self.add_command(self.show_here, 'show_here', 'display_here', 'show', 'display', 'ls')
+        self.add_command(self.show_here, 'show_here', 'display_here', 'show', 'display', 'ls', 'list')
         self.add_command(self.show_down, 'show_down', 'display_down', 'down')
         self.add_command(self.show_depth, 'show_depth', 'display_depth', 'depth')
         self.add_command(self.show_info, 'show_info', 'info', 'instructions')
@@ -434,9 +447,13 @@ class NeededCoursesInterface(GeneralInterface):
         self.add_command(self.aggregate, 'aggregate', 'pull')
         self.add_command(self.admin_mode, 'admin', 'sudo')
         self.add_command(self.user_mode, 'user', 'student')
-        self.add_command(self.clear, 'clear', 'c')
+        self.add_command(self.clear, 'clear', 'clr')
         self.add_command(self.set_clear_mode, 'toggle_clear', 'clear_mode', 'clearing')
         self.add_command(self.toggle_traversal_mode, 'traversal', 'travel', 'auto', 't')
+
+        self.add_command(self.undo_command, 'undo', 'z')
+        self.add_command(self.redo_command, 'redo', 'r')
+        self.add_command(self.search_node, 'find', 'search')
 
         self.add_command(self.push_help, 'help', 'h')
         
@@ -473,7 +490,37 @@ class NeededCoursesInterface(GeneralInterface):
             top_interface._clears_screen = self._clears_screen
         
 
-    
+    def undo_command(self, controller, argument):
+        # TODO: IMP ->
+        pass
+
+    def redo_command(self, controller, argument):
+        # TODO: IMP ->
+        pass
+
+    def search_node(self, controller, argument):
+        # TODO: FINISH/IMP ->
+
+        self._set_traversal_mode(False)
+
+        if argument:
+            self._add_clear_opportunity()
+            self._add_ls()
+
+            # destinations = [destination.strip() for destination in argument.split(',')]
+            # current_interface = self
+
+            # while destinations:
+            #     next_destination = destinations.pop(0)
+            #     sucess, current_interface = current_interface._navigate_to_node(self, controller, next_destination)
+            #     if not sucess:
+            #         destinations = []
+            #         break
+        else:
+            self._add_error('Please enter a group to search for to.')
+        
+        self._push_print(controller)
+
     def print_commands(self, controller, argument):
         # TODO: handle arguments and refine printing
         command_list_string = USER_COMMAND_LIST
@@ -526,6 +573,7 @@ class NeededCoursesInterface(GeneralInterface):
         self._push_print(controller)
     
     def show_here(self, controller, argument):
+        
         if not argument:
             self._add_clear_opportunity()
             self._add_ls()
@@ -793,7 +841,9 @@ class NeededCoursesInterface(GeneralInterface):
 
     def paste_node(self, controller, argument):
         self._add_refresh_opportunity()
+
         if argument:
+            
             child = self._get_child(argument)
             if child is not None:
                 self._paste_from_clipboard(child)
@@ -801,7 +851,7 @@ class NeededCoursesInterface(GeneralInterface):
                 self._add_error(f'No item immediately below matches the description "{argument})".')
         else:
             self._paste_from_clipboard(self._node)
-        self._add_print_warning_if_arguments(argument)
+
         self._push_print(controller)
 
 
@@ -1028,13 +1078,16 @@ class NeededCoursesInterface(GeneralInterface):
     
     def _paste_from_clipboard(self, to_node):
         clipboard_node = self._get_clipboard()
-        if to_node.add_child(clipboard_node):
-            self._add_print('Item pasted.')
+        if clipboard_node:
+            if to_node.add_child(clipboard_node):
+                self._add_print('Item pasted.')
 
-            # Make another copy in case the user wants to paste again
-            self._get_root_interface()._clipboard_node = clipboard_node.make_deep_live_copy()
+                # Make another copy in case the user wants to paste again
+                self._get_root_interface()._clipboard_node = clipboard_node.make_deep_live_copy()
+            else:
+                self._add_error('The item could not be pasted.')
         else:
-            self._add_error('The item could not be pasted.')
+            self._add_error('The clipboard is empty.')
 
 
     # --------------------------------------- Selection and Configuring Helpers --------------------------------------- #
@@ -1091,6 +1144,8 @@ class NeededCoursesInterface(GeneralInterface):
                     self._add_print('Some other items\' selection states were changed due to this.')
                 elif sync_result == SUPERSEDED:
                     self._add_print('Another selected item matching the same description has a higher priority (selection modified).')
+                elif sync_result == UNSTRUCTURED:
+                    self._add_warning('There appears to be conflicting priority.')
 
         elif selection_result == UNCHANGED:
             self._add_error('This item is already selected.')
@@ -1118,6 +1173,8 @@ class NeededCoursesInterface(GeneralInterface):
                 sync_result = root.sync_deep_deselection(child._node_id, course_id)
                 if sync_result == ADDITIONAL_EFFECTS:
                     self._add_print('Some other items\' selection states were changed due to this.')
+                elif sync_result == SUPERSEDED:
+                    self._add_print('Another requirement is overriding the deselection.')
                 elif sync_result == UNSTRUCTURED:
                     self._add_warning('There appears to be conflicting priority.')
 
@@ -1474,6 +1531,28 @@ class _NodeSuper:
         
         return result
 
+
+    # TODO: IMP ->:
+    def get_deep_child_by_description(self, description):
+
+        result_super = None
+        result_node = None
+
+        children = self.get_all_children_list()
+        
+        for child in children:
+            if child.matches_description(description):
+                result = self, child
+                break
+        
+        # for child in children:
+        #     if child.matches_description(description):
+        #         result = self, child
+        #         break
+
+        return result
+
+
     ## ------------------------------ Collection Access ------------------------------ ##
 
     @final
@@ -1654,7 +1733,7 @@ class _NodeSuper:
     ## ------------------------------ Selection syncing ------------------------------ ##
 
     def sync_find_deep_highest_priority(self, course_id, base_priority=None):
-        priority = self._duplicate_priority or base_priority
+        priority = self._duplicate_priority if self._duplicate_priority is not None else base_priority
         highest_priority = priority if any(child.get_course_id() == course_id for child in self.get_active_children_list()) else inf
         
         for child in self.get_all_children_list():
@@ -1664,33 +1743,39 @@ class _NodeSuper:
 
     def sync_deep_selection_with_priority(self, original_node_id, course_id, base_priority, requisite_priority):
         result = SINGLE
-        current_priority = self._duplicate_priority or base_priority
-        #print(self.get_shallow_description(), self._duplicate_priority or base_priority, self._duplicate_priority, base_priority)
+        current_priority = self._duplicate_priority if self._duplicate_priority is not None else  base_priority
         
         for child in self.get_all_children_list():
             if child.get_course_id() == course_id:
                 if self.is_selecting_node_id(child._node_id):
                     
                     if current_priority != requisite_priority:
-                        self.deselect_child(child)
+                        deselection_result = RESULT & self.deselect_child(child)
                         
-                        if child._node_id == original_node_id:
-                            result = SUPERSEDED
-                        elif result == SINGLE:
-                            result = ADDITIONAL_EFFECTS
+                        if deselection_result & RESULT == CHANGED:
+                            if child._node_id == original_node_id:
+                                result = combine_collateral(result, SUPERSEDED)
+                            elif result == SINGLE:
+                                result = combine_collateral(result, ADDITIONAL_EFFECTS)
+                        else:
+                            result = combine_collateral(result, UNSTRUCTURED)
                 else:
 
                     if current_priority == requisite_priority and child._node_id != original_node_id:
-                        self.select_child(child)
-                        if result == SINGLE:
-                            result = ADDITIONAL_EFFECTS
+                        
+                        selection_result = self.select_child(child)
+
+                        if selection_result & RESULT == CHANGED:
+                            result = combine_collateral(result, ADDITIONAL_EFFECTS)
+                        else:
+                            result = combine_collateral(result, UNSTRUCTURED)
                 
             child_result = child.sync_deep_selection_with_priority(original_node_id, course_id, current_priority, requisite_priority)
-
-            if child_result == SUPERSEDED:
-                result = SUPERSEDED
-            elif result == SINGLE and child_result == ADDITIONAL_EFFECTS:
-                result = ADDITIONAL_EFFECTS
+            result = combine_collateral(result, child_result)
+            # if child_result == SUPERSEDED:
+            #     result = SUPERSEDED
+            # elif result == SINGLE and child_result == ADDITIONAL_EFFECTS:
+            #     result = ADDITIONAL_EFFECTS
         
         return result
 
@@ -1701,18 +1786,20 @@ class _NodeSuper:
         for child in self.get_all_children_list():
             if child.get_course_id() == course_id and self.is_selecting_node_id(child._node_id):
                 deselection_result = RESULT & self.deselect_child(child)
+
                 if deselection_result == CHANGED:
                     if child._node_id != original_node_id:
-                        result = ADDITIONAL_EFFECTS
+                        result = combine_collateral(result, ADDITIONAL_EFFECTS)
                 else:
-                    result = UNSTRUCTURED
+                    result = combine_collateral(result, UNSTRUCTURED)
                 
             child_result = child.sync_deep_deselection(original_node_id, course_id)
 
-            if child_result == UNSTRUCTURED:
-                result = UNSTRUCTURED
-            elif result == SINGLE and child_result == ADDITIONAL_EFFECTS:
-                result = ADDITIONAL_EFFECTS
+            result = combine_collateral(result, child_result)
+            # if child_result == UNSTRUCTURED:
+            #     result = UNSTRUCTURED
+            # elif result == SINGLE and child_result == ADDITIONAL_EFFECTS:
+            #     result = ADDITIONAL_EFFECTS
 
         return result
 
@@ -2585,7 +2672,7 @@ class DeepCreditBasedNode(_GroupNode):
         'ga': 'aux parameter',
         'dp': 'duplicate priority'
     }
-    KEYS_LIST = ['name', 'instructions', 'credits', 'count_bottleneck', 'credits_bottleneck',
+    KEYS_LIST = ['name', 'instructions', 'credits', 'count bottleneck', 'credits bottleneck',
     'generator name', 'generator parameter', 'aux parameter', 'duplicate priority']
     NON_NIL_KEYS = {'name', 'credits', 'generator name'}
     INTEGER_KEYS = {'credits', 'count bottleneck', 'credits bottleneck', 'duplicate priority'}
@@ -2600,7 +2687,7 @@ class DeepCreditBasedNode(_GroupNode):
         self._aux_generator_parameter = None
 
     def make_shallow_live_copy(self):
-        copy = DeepCreditBasedNode()
+        copy = DeepCreditBasedNode(requisite_credits=3)
         self.transfer_base_properties(copy)
         return copy
     
@@ -3027,8 +3114,8 @@ if __name__ == '__main__':
     ]
 
     [r <n=6 Credits, c=6>
-        [i <n=Insert 4___, gp=[A-Z]{4,5}\s?\d{4}[A-Z]?, ga=Fill out 4___>]
-        [p <n=Fill out 4___, gp=[A-Z]{4,5}\s?\d{4}[A-Z]?>]
+        [i <n=Insert 4___, gp=[A-Z]{4,5}\s?4\d{3}[A-Z]?, ga=Fill out 4___>]
+        [p <n=Fill out 4___, gp=[A-Z]{4,5}\s?4\d{3}[A-Z]?>]
     ]
     '''
 
