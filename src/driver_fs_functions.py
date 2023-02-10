@@ -13,11 +13,13 @@ import os
 # Constants for export types
 PATH_TO_GRADUATION_EXPORT_TYPE = 0x00
 PLAIN_TEXT_EXPORT_TYPE = 0x01
+PDF_EXPORT_TYPE = 0x02
 
 # Dictionary from export types to their description
 EXPORT_TYPE_DESCRIPTIONS = {
     PATH_TO_GRADUATION_EXPORT_TYPE: 'Path to Graduation Excel',
-    PLAIN_TEXT_EXPORT_TYPE: 'Plain txt'
+    PLAIN_TEXT_EXPORT_TYPE: 'Plain txt',
+    PDF_EXPORT_TYPE: 'PDF'
 }
 
 
