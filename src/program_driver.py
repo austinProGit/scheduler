@@ -48,7 +48,6 @@
 # TODO: (ORGANIZE) Consider useing f'{variable}' for formatting
 # TODO: (ORGANIZE) Clean up the mixing of string and Path objects (it is not clear what is what right now)
 # TODO: (ENSURE) File existence check does not consider the to-be file extensions (fix this) -- we could do this with Path.with_suffix('') and Path.suffix
-# TODO: (FIX) Add "silient=True" to tabula calls so there are no error print outs
 
 
 from PySide6 import QtWidgets, QtGui
@@ -59,7 +58,7 @@ from PySide6 import QtWidgets, QtGui
 from sys import exit
 from pathlib import Path
 from os import path
-from subprocess import CalledProcessError # This is used for handling errors raised by tabula parses
+
 
 from alias_module import *
 from catalog_parser import update_course_info
@@ -138,8 +137,9 @@ class SmartPlannerController:
             
             # Load the user interface -- this should only block execution if graphics are presented
             self.load_interface(self.session_configuration.is_graphical and graphics_enabled) # Override conifg settings if graphics are suppressed
-        except (ConfigFileError, FileNotFoundError, IOError, NonDAGCourseInfoError, InvalidCourseError, ValueError):
+        except (ConfigFileError, FileNotFoundError, IOError, NonDAGCourseInfoError, InvalidCourseError, ValueError) as e:
             # Some error was encountered during loading (enter the error menu)
+            print(e)
             self.output_error('A problem was encountered during loading--entering error menu...')
             self.enter_error_menu()
     
@@ -187,8 +187,7 @@ class SmartPlannerController:
             setup_aliases(alias_relative_path)
 
             course_info = load_course_info(course_info_relative_path)
-            excused_prereqs = load_course_info_excused_prereqs(excused_prereqs_relative_path)
-            course_info_container = CourseInfoContainer(course_info, excused_prereqs)
+            course_info_container = CourseInfoContainer(course_info)
             
             # This raises an exception if Course Info Container contains invalid data
             evaluation_report = evaluate_container(course_info_container)
@@ -252,6 +251,13 @@ class SmartPlannerController:
         '''Output an error message to the user.'''
         self.output('ERROR: {0}'.format(message))
     
+    
+    def output_clear(self):
+        '''Clear the terminal of content (intended for CLI interface).'''
+        if os.name == 'nt':
+            os.system('cls')
+        else:
+            os.system('clear')
     
     def get_input(self):
         '''Get input text from the user with the current interface's/menu's name in the prompt.'''
@@ -383,16 +389,14 @@ class SmartPlannerController:
         try:
             filepath = get_real_filepath(filename) # Get the file's path and check if it exists
             if filepath:
-                courses_needed_list = get_courses_needed(filepath) # Get the needed courses from the file
-                self._scheduler.configure_courses_needed(courses_needed_list) # Load the course list into the scheduler
+                courses_needed_container = get_courses_needed(filepath) # Get the needed courses from the file
+                self._scheduler.configure_courses_needed(courses_needed_container) # Load the course container into the scheduler
                 self.output('Course requirements loaded from {0}.'.format(filepath)) # Report success to the user
                 success = True # Set success to true
             else:
                 self.output_error('Sorry, {0} file could not be found.'.format(filename)) # Report if the file could not be found
         except IOError:
             self.output_error('Sorry, {0} file could not be openned.'.format(filename)) # Report if the file could not be openned
-        except CalledProcessError: # MERINO: added exception handling
-            self.output_error('Sorry, invalid format while parsing {0}.'.format(filename)) # Report if the file could not be openned
         return success
     
     
@@ -598,6 +602,8 @@ class SmartPlannerController:
             self.output_error('No export type selected.')
             return 
         
+        
+        
         self.output('Generating schedule...')
         
         # Create a confidence variable to return (-1 means failed)
@@ -611,7 +617,11 @@ class SmartPlannerController:
         
         try:
             if self._export_types:
-                semesters_listing, confidence_factor = self._scheduler.generate_schedule()
+                container = self._scheduler.generate_schedule()
+                confidence_factor = container.get_cf()
+                semesters_listing = container.get_schedule()
+                
+                #semesters_listing, confidence_factor = self._scheduler.generate_schedule()
                 self.output('Path generated with confidence value of {0:.1f}%'.format(confidence_factor*100))
                 
                 template_path = Path(get_source_path(), 'input_files')

@@ -6,6 +6,8 @@
 # TODO: (ORGANIZE) Remove redundant file explorer code
 # TODO: (WISH) make help loading the documentation happen only once and only when needed (static and lazy)
 
+from courses_needed_container import NeededCoursesInterface, CONSTANT_REFRESHING
+
 from PySide6 import QtCore, QtWidgets, QtGui
 from sys import exit
 from difflib import SequenceMatcher
@@ -66,6 +68,7 @@ class MainMenuInterface(GeneralInterface):
         self.add_command(gui_interface_immediate_command, 'gui-i', 'window', 'graphical', 'graphics')
         self.add_command(help_command, 'help', 'info')
         self.add_command(fetch_catalog_command, 'fetch', 'update', 'catalog')
+        self.add_command(edit_courses_needed_container_command, 'select', 'choose', 'tree')
         self.add_command(quit_command,'quit', 'exit')
     
     
@@ -270,7 +273,7 @@ class ErrorMenu(GeneralInterface):
 def list_available_commands_command(controller, argument):
     '''Output the commands that may be entered.'''
     
-    controller.output('Here are the commands available:\ncommands, load, load-e, destination, destination-e, set-hours, set-exports, list-parameters, schedule, verify, verify-e, gui, cli, gui-i, help, quit')
+    controller.output('Here are the commands available:\ncommands, load, load-e, destination, destination-e, set-hours, set-exports, list-parameters, schedule, verify, verify-e, batch, batch-verify, gui, cli, gui-i, help, quit')
     # TODO: maybe use a listing from help resourses or the main menu interface class.
 
 
@@ -397,7 +400,7 @@ def list_parameters_command(controller, arguements):
         controller.output('Destination: {0}'.format(controller.get_destination_directory()))
         controller.output('Hourse per semester: {0}'.format(controller.get_hours_per_semester()))
         
-        courses_needed = controller.get_courses_needed()
+        courses_needed = [str(s) for s in controller.get_courses_needed().get_courses_list()]
         
         if courses_needed:
             controller.output('Courses:')
@@ -529,6 +532,19 @@ def attempt_error_resolve(controller, argument):
     else:
         controller.output_error('Arguments are not supported for this command.')
     
+
+def edit_courses_needed_container_command(controller, argument):
+    if not argument:
+        controller.output('Editing courses needed and course selection...')
+        
+        new_interface = NeededCoursesInterface(controller.get_courses_needed().get_decision_tree())
+
+        # Deconstruct all active interfaces on the stack
+        controller.push_interface(new_interface)
+
+    else:
+        controller.output_error('Arguments are not supported for this command.')
+
 
 ## ----------- The following are more or less still in development (not in the current implementation) ----------- ##
 
