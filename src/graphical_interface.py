@@ -106,6 +106,7 @@ class MainMenuWidget(QtWidgets.QWidget):
         self.interaction_area.addRow(self.hours_per_semester_label, self.hours_per_semester_field)
         self.interaction_area.addWidget(self.path_to_graduation_checkbox)
         self.interaction_area.addWidget(self.plain_text_checkbox)
+        self.interaction_area.addWidget(self.pdf_checkbox)
         self.interaction_area.addRow(self.schedule_name_label, self.schedule_name_field)
         
         # Create the area for presenting large amounts of data
@@ -124,10 +125,12 @@ class MainMenuWidget(QtWidgets.QWidget):
         self.layout.addLayout(self.bottom_bar)
         
         # Update if courses are loaded
+
+        # TODO: this access of the courses list might be slow
         needed_courses = controller.get_courses_needed()
-        if needed_courses:
+        if needed_courses and needed_courses.is_resolved():
             self.needed_courses_load_label.setText('Courses loaded')
-            self.listing_box.setText('\n'.join(self.controller.get_courses_needed()))
+            self.listing_box.setText('\n'.join(needed_courses.get_courses_string_list()))
         
     def initialize_parameter_widgets(self):
         '''Setup the widgets for scheduling parameters. This does not add them; it just initializes them
@@ -159,6 +162,9 @@ class MainMenuWidget(QtWidgets.QWidget):
         self.plain_text_checkbox = QtWidgets.QCheckBox('Export Simple txt')
         self.plain_text_checkbox.setChecked(PLAIN_TEXT_EXPORT_TYPE in active_export_types)
         self.plain_text_checkbox.toggled.connect(self._toggle_export_type_callback)
+        self.pdf_checkbox = QtWidgets.QCheckBox('Export PDF')
+        self.pdf_checkbox.setChecked(PDF_EXPORT_TYPE in active_export_types)
+        self.pdf_checkbox.toggled.connect(self._toggle_export_type_callback)
         
         # Create a text field that set the schedule's name after pressing enter/return
         self.schedule_name_label = QtWidgets.QLabel('Schedule name:')
@@ -186,8 +192,10 @@ class MainMenuWidget(QtWidgets.QWidget):
         # Get the file's description and set the label to the description
         description = Path(filename).stem
         self.needed_courses_load_label.setText('Needed Courses: {0}'.format(description))
-        
-        self.listing_box.setText('\n'.join(self.controller.get_courses_needed()))
+
+        # TODO: fix this (possibly bad get-update)
+        if self.needed_courses.is_resolved():
+            self.listing_box.setText('\n'.join([str(s) for s in self.controller.get_courses_needed().get_courses_list()]))
     
     
     def _needed_courses_load_callback(self):
@@ -270,6 +278,9 @@ class MainMenuWidget(QtWidgets.QWidget):
                 
         if self.plain_text_checkbox.isChecked():
             export_types.append(PLAIN_TEXT_EXPORT_TYPE)
+
+        if self.pdf_checkbox.isChecked():
+            export_types.append(PDF_EXPORT_TYPE)
             
         if not len(export_types):
             self.controller.output_warning('Make sure you have at least one export mode selected.')

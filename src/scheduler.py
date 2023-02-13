@@ -2,6 +2,9 @@
 # 18 September 2022
 # Contributor(s): Thomas Merino
 
+# TODO: THIS IS A TEST IMPORT (REMOVE)!!
+from courses_needed_container import CoursesNeededContainer
+
 from scheduling_assistant import CoreqRule, FitnessConfiguration, get_fittest_courses
 from expert_system_module import ExpertSystem, DynamicKnowledge
 from schedule_info_container import *
@@ -64,6 +67,43 @@ class Scheduler:
         self.courses_needed = []
         self.courses_needed_container = None
         self.semester_type = 'Sp'
+
+
+        # TODO: REMOVE THIS TEST!!!
+        construct_string_2 = '''
+        (CPSC 1301, CPSC 1302, CPSC 2105, CPSC 2108, CPSC 3125,
+        CPSC 3131, CPSC 3165, CPSC 3175, CPSC 4115, CPSC 4135)
+
+        [c <n=3 Courses, c=3>
+            [d <n=CPSC 4121>]
+            [c <n=2 Courses, c=2>
+                [d <n=CPSC 4126>]
+                [d <n=CPSC 4127>]
+            ]
+            [d <n=CPSC 4130>]
+            [d <n=CPSC 4185>]
+        ]
+
+        [s <n=2 Selections, c=2>
+            [c <n=2 Courses, c=2>
+                [d <n=MATH 1100>]
+                [d <n=MATH 1101>]
+            ]
+            [c <n=2 Courses, c=2>
+                [d <n=MATH 1200>]
+                [d <n=MATH 1201>]
+            ]
+            [d <n=MATH 1300>]
+            [d <n=MATH 1400>]
+        ]
+
+        [r <n=6 Credits, c=6>
+            [i <n=Insert 4___, gp=[A-Z]{4,5}\s?\d{4}[A-Z]?, ga=Fill out 4___>]
+            [p <n=Fill out 4___, gp=[A-Z]{4,5}\s?\d{4}[A-Z]?>]
+        ]
+        '''
+        self.courses_needed_container = CoursesNeededContainer.make_from_course_selection_logic_string('Degree Plan', construct_string_2)
+
         
         self.fitness_configuration = Scheduler._create_default_fitness_configuration()
         self.schedule_evaluator = ExpertSystem()
@@ -85,7 +125,7 @@ class Scheduler:
         self.fitness_configuration = Scheduler._create_default_fitness_configuration(container)
         
     def configure_courses_needed(self, courses_needed_container):
-        self.courses_needed_container = courses_needed_container[:]
+        self.courses_needed_container = courses_needed_container
     
     def configure_hours_per_semester(self, number_of_hours):
         self.hours_per_semester = number_of_hours
@@ -95,8 +135,9 @@ class Scheduler:
            Inputs: None, but requires course_info and courses_needed setup prior to running
            Returns: list of lists, inner list is one semester of courses, outer list is full schedule"""
         course_info = self.course_info_container # Get the course info container
-        courses_needed = self.courses_needed_container.get_course_list() # Create a copy of the needed courses (workable list)
+        courses_needed = self.courses_needed_container.get_courses_string_list() # Create a copy of the needed courses (workable list)
         
+
         # Ensure CPSC 4000 is scheduled in the last semester
         contains_4000 = False
         if 'CPSC 4000' in courses_needed:

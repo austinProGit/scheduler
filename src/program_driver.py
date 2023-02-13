@@ -59,6 +59,7 @@ from sys import exit
 from pathlib import Path
 from os import path
 
+
 from alias_module import *
 from catalog_parser import update_course_info
 from batch_process import batch_process
@@ -72,6 +73,7 @@ from courses_needed_parser import get_courses_needed
 from program_generated_evaluator import evaluate_container, NonDAGCourseInfoError, InvalidCourseError
 from excel_formatter import excel_formatter
 from plain_text_formatter import plain_text_export
+from pdf_formatter import pdf_export
 from user_submitted_validator import validate_user_submitted_path
 from path_to_grad_parser import parse_path_to_grad
 
@@ -135,8 +137,9 @@ class SmartPlannerController:
             
             # Load the user interface -- this should only block execution if graphics are presented
             self.load_interface(self.session_configuration.is_graphical and graphics_enabled) # Override conifg settings if graphics are suppressed
-        except (ConfigFileError, FileNotFoundError, IOError, NonDAGCourseInfoError, InvalidCourseError, ValueError):
+        except (ConfigFileError, FileNotFoundError, IOError, NonDAGCourseInfoError, InvalidCourseError, ValueError) as e:
             # Some error was encountered during loading (enter the error menu)
+            print(e)
             self.output_error('A problem was encountered during loading--entering error menu...')
             self.enter_error_menu()
     
@@ -248,6 +251,13 @@ class SmartPlannerController:
         '''Output an error message to the user.'''
         self.output('ERROR: {0}'.format(message))
     
+    
+    def output_clear(self):
+        '''Clear the terminal of content (intended for CLI interface).'''
+        if os.name == 'nt':
+            os.system('cls')
+        else:
+            os.system('clear')
     
     def get_input(self):
         '''Get input text from the user with the current interface's/menu's name in the prompt.'''
@@ -590,7 +600,7 @@ class SmartPlannerController:
         if not self._export_types:
             self.output_warning('No schedule exported.')
             self.output_error('No export type selected.')
-            return
+            return 
         
         
         
@@ -610,6 +620,7 @@ class SmartPlannerController:
                 container = self._scheduler.generate_schedule()
                 confidence_factor = container.get_cf()
                 semesters_listing = container.get_schedule()
+                
                 #semesters_listing, confidence_factor = self._scheduler.generate_schedule()
                 self.output('Path generated with confidence value of {0:.1f}%'.format(confidence_factor*100))
                 
@@ -620,11 +631,19 @@ class SmartPlannerController:
                     # Lew erased 'Path To Graduation' from here to work with excel_formatter
                     excel_formatter(Path(template_path), unique_ptg_destination, semesters_listing, self._scheduler.get_course_info())
                     self.output('Schedule (Path to Graduation) exported as {0}'.format(unique_ptg_destination))
+                    os.startfile(unique_ptg_destination)
                 
                 if PLAIN_TEXT_EXPORT_TYPE in self._export_types:
                     unique_ptext_destination = get_next_free_filename(desired_destination.with_suffix('.txt'))
                     plain_text_export(unique_ptext_destination, semesters_listing, 'Spring', 2022)
                     self.output('Schedule (plain text) exported as {0}'.format(unique_ptext_destination))
+                    os.startfile(unique_ptext_destination)
+
+                if PDF_EXPORT_TYPE in self._export_types:
+                    unique_pdf_destination = get_next_free_filename(desired_destination.with_suffix('.pdf'))
+                    pdf_export(unique_pdf_destination, semesters_listing, 'Spring', 2022)
+                    self.output('Schedule (PDF) exported as {0}'.format(unique_pdf_destination))
+                    os.startfile(unique_pdf_destination)
                 
             else:
                 self.output_error('Validation over a file list is not supported yet.')

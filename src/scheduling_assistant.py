@@ -102,10 +102,10 @@ class FitnessConfiguration:
         self.coreq_rules = coreq_rules
     
     # function: (string, course_info_container) -> float
-    def add_atomic_rule(function):
+    def add_atomic_rule(self, function):
         self.atomic_rules.add(function)
     
-    def add_coreq_rule(required_course, optional_course, additional_fitness):
+    def add_coreq_rule(self, required_course, optional_course, additional_fitness):
         self.coreq_rules.add(CoreqRule(required_course, optional_course, additional_fitness))
     
 
