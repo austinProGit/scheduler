@@ -27,6 +27,7 @@ import os
 # TODO: Have the protocol node track the course selection state throught the key-value binding dictionary
 # TODO: finsih search and undo (with snapshot)
 #           Undo might mess with admin vs user mode!!!
+# TODO: traversal is print the listing multiple times (fix)
 
 # Intermediate node keys: 
 # shallow course    s
@@ -420,7 +421,7 @@ class NeededCoursesInterface(GeneralInterface):
         self.add_command(self.print_commands, '', 'commands')
         
         self.add_command(self.navigate_to_nodes, 'move', 'cd', 'go')
-        self.add_command(self.navigate_back, 'back', 'prev', 'previous')
+        self.add_command(self.navigate_back, 'back', 'prev', 'previous', 'quit', 'exit')
         self.add_command(self.navigate_to_root, 'root', 'home', 'base')
                 
         self.add_command(self.show_all, 'show_all', 'display_all', 'map')
@@ -2049,7 +2050,7 @@ class DeliverableCourse(_NodeSuper):
         'i': 'instructions',
         'c': 'credits',
         'dn': 'deliver name',
-        'p': 'duplicate priority'
+        'dp': 'duplicate priority'
     }
     KEYS_LIST = ['name', 'instance id', 'instructions', 'credits', 'deliver name', 'duplicate priority']
     NON_NIL_KEYS = {'name', 'credits'}
@@ -2116,7 +2117,7 @@ class CourseProtocol(_NodeSuper):
         'm': 'matching',
         'r': 'rejection',
         's': 'stub_name',
-        'p': 'duplicate priority'
+        'dp': 'duplicate priority'
     }
     KEYS_LIST = ['name', 'instructions', 'credits', 'matching', 'rejection', 'stub_name', 'duplicate priority']
     NON_NIL_KEYS = {'name', 'credits', 'matching'}
@@ -2738,6 +2739,30 @@ class DeepCreditBasedNode(_GroupNode):
         return result
     
     
+
+class TreeParser:
+    # TODO: move parser code here
+    pass
+    
+
+# TODO: implement this:
+class RequirementsContainer:
+        
+    def __init__(self, decision_tree=None):
+        
+        self._decision_tree = decision_tree or ExhaustiveNode()
+        # TODO: perform this using a good practice
+        self._decision_tree._duplicate_priority = DEFAULT_PRIORITY
+    
+    def persistent_register(self):
+        pass
+        
+    def tentative_register(self):
+        pass
+    
+    def tentative_unregister(self):
+        pass
+
 
 class CoursesNeededContainer:
 
