@@ -16,75 +16,79 @@ from pypdf import PdfReader
     # 2. Process each chunk fully with all trimming functions in a loop until the chunk no longer changes.
         # Once all chunks are static, remove all empty chunks.
     # 3. Interface with tree generator.
+    # 4. Figure out the situation with the '3 to 6 Credits'...ask Dr. Carroll
 
 def remove_substring_after_last_relevant(input_string):
     match_reversed = re.search(r'[0-9]{4}|@|\)', input_string[::-1])
     end_index = len(input_string) - match_reversed.start() if match_reversed else 0
     return input_string[:end_index]
 
-def remove_minor_in(chunk, index, list):
+def remove_minor_in(chunk, index, lst):
     chunk = chunk[:chunk.find('Minor in ')] if 'Minor in ' in chunk else chunk
     return chunk
 
-def remove_select_one(chunk, index, list):
+def remove_select_one(chunk, index, lst):
     chunk = chunk[:chunk.find('Select one as a pre-requesite for ')] if 'Select one as a pre-requesite for ' in chunk else chunk
     return chunk
 
-def remove_empty(chunk, index, list):
+def remove_empty(chunk, index, lst):
     if len(chunk) == 0:
-        list.pop(index)
+        lst.pop(index)
 
-def remove_empty_items(list):
-    return [item for item in list if item]
+def remove_empty_items(lst):
+    return [item for item in lst if item]
 
-def remove_major_in(chunk, index, list):
+def remove_major_in(chunk, index, lst):
     chunk = chunk[:chunk.find('Major in ')] if 'Major in ' in chunk else chunk
     return chunk
 
-def remove_AREA_X(chunk, index, list):
+def remove_AREA_X(chunk, index, lst):
     chunk = chunk[:chunk.find('AREA ')] if 'AREA ' in chunk else chunk
     return chunk
 
-def remove_chunk_without_course_block(chunk, index, list):
+def remove_chunk_without_course_block(chunk, index, lst):
     if not re.search(r'([A-Z]{4}\s{1})', chunk):
-        #print(f'executing on chunk: {chunk}')
         chunk = ''
     return chunk
 
 # find the number of season year groups
 # find all instances of course block patterns and record their end indices
 # get end index of the (number of season year groups + 1 from the end of the list)
-def remove_curr_taken_courses(chunk, index, list):
+def remove_curr_taken_courses(chunk, index, lst):
     new_chunk = ''
-    num_season_year_blocks = len(re.findall(r'(Spring|Fall)\s\d{4}', chunk))
-    courses_block_iterator = re.finditer(r'([A-Z]{4}\s{1}\d{4}( \))?)|(or \d{4}( \))?)|(, \d{4}( \))?)|(\d@( \))?)', chunk)
-    course_block_indices_list = []
-    # print(f'chunk: {chunk}')
-    # print(f'courses_block_iterator: {courses_block_iterator}')
-    for course in courses_block_iterator:
-        # print(f'course_block_iterator_item: {course.groups()}')
-        # print(course.end())
-        course_block_indices_list.append(course.end())
-    # print(course_block_indices_list)
-        # print(f'course_block_iterator_item: {course.groups()}')
-    # print(f'chunk before slicing: {chunk}')
+    # print(chunk)
     # print()
-    # print(course_block_indices_list)
-    
+    num_season_year_blocks = len(re.findall(r'(Spring|Fall)\s\d{4}', chunk))
+    courses_block_iterator = re.finditer(r'([A-Z]{4}\s{1}\d{4}( \))?)|(or \d{4}( \))?)|(, \d{4}( \))?)|(\d@( \))?)|[A-Z]{4} \d\*\*\*', chunk)
+    course_block_indices_list = []
+    for course in courses_block_iterator:
+        course_block_indices_list.append(course.end())
     if num_season_year_blocks:
-        # print('block ACTIVATEDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD')
-        # print(chunk)
-        # print(f'course_block_indices_list: {course_block_indices_list}')
-        # print(f'len(course_block_indices_list: {len(course_block_indices_list)}')
-        # print(f'num_season_year_blocks: {num_season_year_blocks}')
-        # print(f'course_block_indices_list[len(course_block_indices_list) - num_season_year_blocks] - 1: {course_block_indices_list[len(course_block_indices_list) - (num_season_year_blocks + 1)] + 1}')
         new_chunk = chunk[:course_block_indices_list[len(course_block_indices_list) - num_season_year_blocks - 1]]
-        # print(f'new chunk: {new_chunk}')
+        # print(f'chunk containing courses taken: {chunk[course_block_indices_list[len(course_block_indices_list) - num_season_year_blocks - 1]:]}')
+        # courses_block_iterator = re.finditer(r'([A-Z]{4} \d{4}[A-Z]?)', chunk)
+        # for course_match in courses_block_iterator:
+        #     curr_taken_list.append(course_match.group())
     else:
         new_chunk = chunk
-    # print(f'newchunk: {new_chunk}')
     return new_chunk
 
+# TODO: Complete get_curr_taken_courses
+def get_curr_taken_courses(str):
+    # curr_taken_courses_list = []
+    # str = str[:str.find('Fallthrough Courses')]
+    # if re.search(r'(Spring|Fall)\s\d{4}', str):
+    #     for season_year_block_match in re.finditer(r'(Spring|Fall)\s\d{4}', str):
+    #         # start = season_year_block_match.start()
+    #         substring = str[season_year_block_match.start():]
+    #         print(substring)
+    #         print(season_year_block_match.group())
+    #         print(season_year_block_match.start())
+    #         print()
+    #         # for course_block_match in re.finditer(r'[A-Z]{4} \d{4}[A-Z]?', substring[::-1]):
+    #         #     curr_taken_courses_list.append(course_block_match.group()[::-1])
+    # return curr_taken_courses_list
+    pass
 def filter_deliverables(chunk):
     deliverable = None
     if (re.match(r'(\d{1} Class in [A-Z]{4} [0-9]{4})$|([A-Z]{4} [0-9]{4})$', chunk)):
@@ -101,38 +105,138 @@ def input_deliverables_to_export_str(input_list):
     return result_str
 
 def classify_and_handle_chunk(chunk):
-    intermediate_substring = ''
+    working_intermediate_substring = ''
+    # indicates that a shallow_selection node has been found 's'
+    if (match_obj := re.search(r'(Choose from \d{1} of the following:)', chunk)):
+        match_str = match_obj.group(1)
+        required_count = match_str[match_str.find(' of the following:') - 1]
+        working_intermediate_substring += f'[s <c={required_count}, n={match_str}>'
+        # print(f'intermediate_substring: {intermediate_substring}')
+        chunk = chunk.replace('Ellucian Degree Works Report','')
+        chunk = re.sub(r'Choose from \d{1} of the following:\n', '', chunk)
+        options_chunks_list = []
+        options_chunks_list = chunk.split(') or\n')
+        for index in range(len(options_chunks_list) - 1):
+            options_chunks_list[index] = options_chunks_list[index] + ') or'
+        
+        for chunk in options_chunks_list:
+            courses_block_list = []
+            name = chunk[0:chunk.find('Still Needed:')]
+            if (match_obj := re.search(r'(\( \d{1} Credit?s)', chunk)):
+                match_str = match_obj.group(1)
+                required_count = match_str[match_str.find(' Credit') - 1]
+                courses_block_iterator = re.finditer(r'([A-Z]{4}\s{1}\d{4}( \))?)|(or \d{4}( \))?)|(, \d{4}( \))?)|(\d@( \))?)', chunk)
+                for course_match in courses_block_iterator:
+                    courses_block_list.append(course_match.group())
+                current_letter_block = courses_block_list[0][0:4]
+                for index in range(len(courses_block_list)):
+                    number_block = re.search(r'\d{4}', courses_block_list[index]).group(0)
+                    if (re.search(r'([A-Z]{4})', courses_block_list[index])):
+                        current_letter_block = re.search(r'[A-Z]{4}', courses_block_list[index]).group(0)
+                    else:
+                        courses_block_list[index] = f'{current_letter_block} {number_block}'
+                working_intermediate_substring += f'[r <c={required_count}, n={name}>'
+                for course in courses_block_list:
+                    working_intermediate_substring += f'[d <n={course}>]'
+                working_intermediate_substring += ']'
+            elif (match_obj := re.search(r'(\( \d{1} Class?es)', chunk)):
+                match_str = match_obj.group(1)
+                required_count = match_str[match_str.find(' Class') - 1]
+                courses_block_iterator = re.finditer(r'([A-Z]{4}\s{1}\d{4}( \))?)|(or \d{4}( \))?)|(, \d{4}( \))?)|(\d@( \))?)|(and \d{4})', chunk)
+                for course_match in courses_block_iterator:
+                    courses_block_list.append(course_match.group())
+                current_letter_block = courses_block_list[0][0:4]
+                for index in range(len(courses_block_list)):
+                    number_block = re.search(r'\d{4}', courses_block_list[index]).group(0)
+                    if (re.search(r'([A-Z]{4})', courses_block_list[index])):
+                        current_letter_block = re.search(r'[A-Z]{4}', courses_block_list[index]).group(0)
+                    else:
+                        courses_block_list[index] = f'{current_letter_block} {number_block}'
+                working_intermediate_substring += f'[c <c={required_count}, n={name}>'
+                for course in courses_block_list:
+                    working_intermediate_substring += f'[d <n={course}>]'
+                working_intermediate_substring += ']'
+        working_intermediate_substring += ']'
+        formatted_string = working_intermediate_substring.replace("]", "]\n")
+    elif (match_obj := re.search(r'(\d Credit?s in @)', chunk)):
+        chunk = re.sub(r'\n', '', chunk)
+        courses_block_list = []
+        exceptions_block_list = []
+        name=chunk[:chunk.find('Except')]
+        text_instructions = chunk[chunk.find('Except'):]
+        required_count = re.match(r'^\d{1,2}', chunk[:4])
+        if required_count:
+            required_count = re.match(r'^\d{1,2}', chunk[:4]).group()
+        working_intermediate_substring += f'[r <c={required_count}, n={name}, i={text_instructions}>'
+        courses_block_iterator = re.finditer(r'(\d@[A-Z]?)', chunk)
+        for course_match in courses_block_iterator:
+            courses_block_list.append(course_match.group())
+        exceptions_block_iterator = re.finditer(r'([A-Z]{4} \d{4}|\d{4})', chunk)
+        for exception_match in exceptions_block_iterator:
+            exceptions_block_list.append(exception_match.group())
+        current_letter_block = re.search(r'([A-Z]{4})', exceptions_block_list[0]).group()
+        for index in range(len(exceptions_block_list)):
+            number_block = re.search(r'\d{4}', exceptions_block_list[index]).group(0)
+            if (re.search(r'([A-Z]{4})', exceptions_block_list[index])):
+                current_letter_block = re.search(r'[A-Z]{4}', exceptions_block_list[index]).group(0)
+            else:
+                exceptions_block_list[index] = f'{current_letter_block} {number_block}'
+        exceptions_string = '|'.join(exceptions_block_list)
+        for course in courses_block_list:
+            course_suffix = course[-1] if course[-1].isupper() else '[A-Z]?'
+            working_intermediate_substring += f'[i <n=Insert {course}, ga={course} Course, gp=^(?!{exceptions_string})[A-Z]{{4}} {course[0]}\d{{3}}{course_suffix}>]'
+        working_intermediate_substring += ']'
+    # indicates that a deep credit selection node has been found 'r'
+    elif (match_obj := re.match(r'(\d Credit?s in [A-Z])', chunk)):
+        courses_block_list = []
+        name = chunk
+        match_str = match_obj.group(1)
+        required_count = re.match(r'^\d{1,2}', match_str)
+        if required_count:
+            required_count = re.match(r'^\d{1,2}', match_str).group()
+        courses_block_iterator = re.finditer(r'([A-Z]{4} \d{1}@|\d{1}@)', chunk)
+        for course_match in courses_block_iterator:
+            courses_block_list.append(course_match.group())
+        current_letter_block = re.search(r'([A-Z]{4})', courses_block_list[0]).group()
+        for index in range(len(courses_block_list)):
+            number_block = re.search(r'\d{4}|\d@', courses_block_list[index]).group(0)
+            if (re.search(r'([A-Z]{4})', courses_block_list[index])):
+                current_letter_block = re.search(r'[A-Z]{4}', courses_block_list[index]).group(0)
+            else:
+                courses_block_list[index] = f'{current_letter_block} {number_block}'
+        working_intermediate_substring += f'[r <c={required_count}, n={name}>'
+        
+        for course in courses_block_list:
+            working_intermediate_substring += f'[i <n=Insert {course}, ga={course} Course, gp={course[:-1]}\d{3}[A-Z]?>]'
+        working_intermediate_substring += ']'
 
-    # indicates that a ... has been found
-    if (re.search(r'(Choose [0-9]{1} of the following:)', chunk)):
-        pass
-    
-    if (re.search(r'()', chunk)):
-        pass
-    
-def get_courses_needed(file_name):
-    """
-    Gets the needed courses from the Degree Works.
+    elif (match_obj := re.match(r'(\d Classe?s? in [A-Z]{4})(?=.* or )', chunk)):
+        courses_block_list = []
+        name = chunk
+        match_str = match_obj.group(1)
+        required_count = re.match(r'^\d{1,2}', match_str)
+        if required_count:
+            required_count = re.match(r'^\d{1,2}', match_str).group()
+        courses_block_iterator = re.finditer(r'([A-Z]{4} \d{4}@?|\d{4}@?)', chunk)
+        for course_match in courses_block_iterator:
+            courses_block_list.append(course_match.group())
+        current_letter_block = re.search(r'([A-Z]{4})', courses_block_list[0]).group()
+        for index in range(len(courses_block_list)):
+            number_block = re.search(r'\d{4}@?', courses_block_list[index]).group(0)
+            if (re.search(r'([A-Z]{4})', courses_block_list[index])):
+                current_letter_block = re.search(r'[A-Z]{4}', courses_block_list[index]).group(0)
+            else:
+                courses_block_list[index] = f'{current_letter_block} {number_block}'
+        working_intermediate_substring += f'[s <c={required_count}, n={name}>'
+        for course in courses_block_list:
+            if re.search(r'\d{4}@', course):
+                working_intermediate_substring += f'[p <n={course}, m={course[:-1]}.*>]'
+            else:
+                working_intermediate_substring += f'[d <n={course}>]'
+        working_intermediate_substring += ']'
+    return working_intermediate_substring    
 
-    Parameters
-    ----------
-    arg1 : file_name
-        File name of the DegreeWorks being parsed
-
-    Returns
-    -------
-    courses_needed_container
-        This container contains a recursively-defined tree data structure 
-        that holds the relationships between all needed courses found in
-        a DegreeWorks pdf.
-
-    """
-    intermediate_str = get_courses_needed_intermediate_str(file_name)
-    container_name = 'Degree Plan'
-    return CoursesNeededContainer.make_from_course_selection_logic_string(container_name, intermediate_str)
-
-
-def get_courses_needed_intermediate_str(file_name): 
+def generate_tree_string(file_name): 
     
     with open(file_name, 'rb') as pdf_file:
         pdf_reader = PdfReader(pdf_file)
@@ -142,7 +246,8 @@ def get_courses_needed_intermediate_str(file_name):
         for page in range(len(pdf_reader.pages)):
             page_text = pdf_reader.pages[page].extract_text()
             document_string += page_text
-        # print(document_string)
+        # curr_taken_courses_lst = get_curr_taken_courses(document_string)
+        # print(f'curr_taken_courses_lst: {curr_taken_courses_lst}')
         start = document_string.find("Still Needed:") # Used to initiate every chunk
         while start != -1:
             end = document_string.find("Still Needed:", start + 1) # Searches for next instance of phrase
@@ -152,13 +257,12 @@ def get_courses_needed_intermediate_str(file_name):
             else: # This case accounts for the final instance of the phrase
                 still_needed_chunks_list.append(document_string[start:document_string.find('Fallthrough', start + 1)])
                 break
-        # for chunk in still_needed_chunks_list:
-        #     print(chunk)
-        #     print()
         currently_in_logical_block = False # Used to track if currently parsing a multi-line logical block
         logically_grouped_list = [] # Holds the chunks that contain all logical groupings of needed courses
         logical_chunk_string = '' # Holds the current chunk being parsed
-
+        # for chunk in still_needed_chunks_list:
+        #     print(chunk)
+        
         for chunk in still_needed_chunks_list:
             if 'of the following:' in chunk or ') or' in chunk: # Indicates the start or continuance of a logical chunk
                 currently_in_logical_block = True
@@ -173,6 +277,11 @@ def get_courses_needed_intermediate_str(file_name):
                     logically_grouped_list.append(chunk) # Appends simple chunks
 
         filtered_list = [] # Holds the filtered chunks
+        # for chunk in filtered_list:
+        #     print(chunk)
+        #     print()
+        # print(f'logically_grouped_list: {logically_grouped_list}')
+        # print()
         for chunk in logically_grouped_list:
             if not 'See ' in chunk and not 'YOU MUST APPLY FOR GRADUATION' in chunk and not 'Still Needed: Outcomes Assessment Exam' in chunk:
                 delimiter = 'Still Needed:'
@@ -181,7 +290,7 @@ def get_courses_needed_intermediate_str(file_name):
                     chunk = chunk[1:]
                 chunk = remove_substring_after_last_relevant(chunk)
                 filtered_list.append(chunk)
-        
+        # print(filtered_list)
         filtered_list = remove_empty_items(filtered_list)
         for index in range(len(filtered_list)):
             filtered_list[index] = remove_curr_taken_courses(filtered_list[index], index, filtered_list)
@@ -212,19 +321,12 @@ def get_courses_needed_intermediate_str(file_name):
             else:
                 complex_list.append(chunk)
         intermediate_str += input_deliverables_to_export_str(deliverables_list)
-        #print(intermediate_str)
-        #print('-'*60)
-        # TODO: remove this test
-        if __name__ == '__main__':
-            for item in complex_list:
-                print(item)
-                print()
-    
+        for chunk in complex_list:
+            intermediate_str += classify_and_handle_chunk(chunk)
+        # print(intermediate_str)
     return intermediate_str
-
-if __name__ == "__main__":
-    print(get_courses_needed('./input_files/degreeworks1.pdf'))
-
+if __name__ == '__main__':
+    print(generate_tree_string('./input_files/degreeworks1.pdf'))
     # Cases:
         # Case 1: 'POLS 1101'
         # Case 2: 'CPSC 4157 or 5157'
@@ -251,24 +353,26 @@ if __name__ == "__main__":
 # Course protocol node: a regex form that may be filled out to become any course matching that regex pattern (protocol)
 # Any course with an @
 # Inserter node: a node that, when selected, adds another node of a given form (for sections that have variable number of selections).
-def check_pdf_parser_consistency(filename):
-    with open(filename, 'rb') as pdf_file:
-        pdf_reader = PdfReader(pdf_file)
-        document_string = '' # Holds the entire parsed pdf text
-        for page in range(len(pdf_reader.pages)):
-            page_text = pdf_reader.pages[page].extract_text()
-            document_string += page_text
 
-        for i in range(1, 11):
-            with open(f'{filename}_{i}.txt', 'w') as txt_file:
-                txt_file.write(document_string)
 
-        contents = []
-        for i in range(1, 11):
-            with open(f'{filename}_{i}.txt', 'r') as txt_file:
-                contents.append(txt_file.read())
 
-        for content in contents[1:]:
-            if content != contents[0]:
-                return False
-        return True
+# def get_courses_needed(file_name):
+#     """
+#     Gets the needed courses from the Degree Works.
+
+#     Parameters
+#     ----------
+#     arg1 : file_name
+#         File name of the DegreeWorks being parsed
+
+#     Returns
+#     -------
+#     courses_needed_container
+#         This container contains a recursively-defined tree data structure 
+#         that holds the relationships between all needed courses found in
+#         a DegreeWorks pdf.
+
+#     """
+#     intermediate_str = generate_tree_string(file_name)
+#     container_name = 'Degree Plan'
+#     return CoursesNeededContainer.make_from_course_selection_logic_string(container_name, intermediate_str)
