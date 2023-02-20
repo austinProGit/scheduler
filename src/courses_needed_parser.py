@@ -349,58 +349,6 @@ if __name__ == '__main__':
         # Case 7: Except Case: 1 Credit in @ 1@ or 2@ or 3@ or 4@ or 5@U Except ENGL 1101 or 1102*
 
 
-def areBracketsBalanced(expr):
-    stack = []
-
-    def printIndex(index):
-        print(index, expr[index-10:index+10])
- 
-    # Traversing the Expression
-    for index, char in enumerate(expr):
-        if char in ["(", "{", "[", '<']:
- 
-            # Push the element in the stack
-            stack.append(char)
-        elif char in [")", "}", "]", '>']:
- 
-            # IF current character is not opening
-            # bracket, then it must be closing.
-            # So stack cannot be empty at this point.
-            if not stack:
-                print('Empty stack!')
-                printIndex(index)
-                return False
-            current_char = stack.pop()
-            if current_char == '(':
-                if char != ")":
-                    printIndex(index)
-                    return False
-            if current_char == '{':
-                if char != "}":
-                    printIndex(index)
-                    return False
-            if current_char == '[':
-                if char != "]":
-                    printIndex(index)
-                    return False
-            if current_char == '<':
-                if char != ">":
-                    printIndex(index)
-                    return False
- 
-    # Check Empty Stack
-    if stack:
-        return False
-    return True
-
-if __name__ == "__main__":
-    expr = generate_degree_extraction_container('./input_files/degreeworks1.pdf')
-    i, _ = generate_degree_extraction_container('./input_files/degreeworks1.pdf')
-    # Function call
-    if areBracketsBalanced(i):
-        print("Balanced")
-    else:
-        print("Not Balanced")
 # Shallow count node: requires n-many courses to be selected directly below it
 # Select 2 of the following: ABCD 1234 or ASDF 1234 or AIDJ 1234
 # Deep count node: requires n-many courses to be selected anywhere below it
