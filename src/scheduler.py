@@ -3,7 +3,7 @@
 # Contributor(s): Thomas Merino
 
 # TODO: THIS IS A TEST IMPORT (REMOVE)!!
-from courses_needed_container import CoursesNeededContainer
+from degree_extraction_container import DegreeExtractionContainer
 
 from scheduling_assistant import CoreqRule, FitnessConfiguration, get_fittest_courses
 from expert_system_module import ExpertSystem, DynamicKnowledge
@@ -102,7 +102,8 @@ class Scheduler:
             [p <n=Fill out 4___, gp=[A-Z]{4,5}\s?\d{4}[A-Z]?>]
         ]
         '''
-        self.courses_needed_container = CoursesNeededContainer.make_from_course_selection_logic_string('Degree Plan', construct_string_2)
+        degree_extraction = DegreeExtractionContainer([], construct_string_2)
+        self.courses_needed_container = degree_extraction.make_courses_needed_container()
 
         
         self.fitness_configuration = Scheduler._create_default_fitness_configuration()

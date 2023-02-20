@@ -29,7 +29,7 @@ class ConfigFileError(Exception):
 
 
 def get_source_path():
-    '''Get the path of the program's directory.'''
+    '''Get the path of the program's directory (a Path object).'''
     return Path(__file__).parent
     
 
@@ -37,7 +37,7 @@ def suffix_split(filtr, sequence):
     '''Split the passed sequence by a suffix: end section of the sequence such that every item meets the passed filter--
     the suffix ends as soon as one item doesn't meet the filter, and the entire sequence may be the suffix if all pass.
     The filter function is expeceted to take an item and returns a boolean. This returns a tuple with the sequence before
-    the suffix and then the suffix (both may be esequencempty).'''
+    the suffix and then the suffix (both may be empty).'''
     for index in range(len(sequence) - 1, -1, -1): # Iterate backwards
         if not filtr(sequence[index]): # Return if the filter does not pass
             return (sequence[:index + 1], sequence[index + 1:]) # Split on the index
@@ -49,8 +49,8 @@ def get_real_filepath(filepath):
     returns the corrected path if it exists and None if it does not. The argument is expected to be a string or Path and
     the function returns a Path.'''
     try:
-        corrected_filepath = Path(filepath).expanduser()                        # Change "~" to the user's home address if present
-        return corrected_filepath if corrected_filepath.exists() else None      # Return the path if it exists (otherwise None)
+        corrected_filepath = Path(filepath).expanduser() # Change "~" to the user's home address if present
+        return corrected_filepath if corrected_filepath.exists() else None # Return the path if it exists (otherwise None)
     except RuntimeError:
         # Runtime error occurred, which is likely a bad user directory expansion (return None)
         return None
