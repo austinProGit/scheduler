@@ -74,21 +74,30 @@ def remove_curr_taken_courses(chunk, index, lst):
     return new_chunk
 
 # TODO: Complete get_curr_taken_courses
-def get_curr_taken_courses(str):
-    # curr_taken_courses_list = []
-    # str = str[:str.find('Fallthrough Courses')]
-    # if re.search(r'(Spring|Fall)\s\d{4}', str):
-    #     for season_year_block_match in re.finditer(r'(Spring|Fall)\s\d{4}', str):
-    #         # start = season_year_block_match.start()
-    #         substring = str[season_year_block_match.start():]
-    #         print(substring)
-    #         print(season_year_block_match.group())
-    #         print(season_year_block_match.start())
-    #         print()
-    #         # for course_block_match in re.finditer(r'[A-Z]{4} \d{4}[A-Z]?', substring[::-1]):
-    #         #     curr_taken_courses_list.append(course_block_match.group()[::-1])
-    # return curr_taken_courses_list
-    pass
+import re
+
+def find_curr_taken_courses(string):
+    taken_course_year_pairing = set() # The format of this is '{course} - {year}'
+    season_year_block_indices_list = list(reversed([(match.start(), match.end()) for match in re.finditer(r'(Spring|Fall)\s\d{4}', string)]))
+    course_block_indices_list = list(reversed([(match.start(), match.end()) for match in re.finditer(r'[A-Z]{4} \d{4}[A-Z]?|[A-Z]{4} \d{1}\*\*\*', string)]))
+    number_of_course_blocks = len(course_block_indices_list)
+    curr_taken_courses = []
+    working_course_index = 0
+    for season_year_block_start_index, season_year_block_end_index in season_year_block_indices_list:
+        course_range = course_block_indices_list[working_course_index]
+        while course_range[0] > season_year_block_start_index and working_course_index < number_of_course_blocks:
+            working_course_index += 1
+            course_range = course_block_indices_list[working_course_index]
+        if working_course_index < number_of_course_blocks:
+            course_number = string[course_range[0]:course_range[1]].strip()
+            semester_year = string[season_year_block_start_index:season_year_block_end_index].strip()
+            course_year_pairing = f'{course_number} - {semester_year}'
+            if course_year_pairing not in taken_course_year_pairing:
+                curr_taken_courses.append(course_number)
+                taken_course_year_pairing.add(course_year_pairing)
+        
+    return curr_taken_courses
+
 def filter_deliverables(chunk):
     deliverable = None
     if (re.match(r'(\d{1} Class in [A-Z]{4} [0-9]{4})$|([A-Z]{4} [0-9]{4})$', chunk)):
@@ -236,7 +245,7 @@ def classify_and_handle_chunk(chunk):
         working_intermediate_substring += ']'
     return working_intermediate_substring    
 
-def generate_tree_string(file_name): 
+def generate_degree_extraction_container(file_name): 
     
     with open(file_name, 'rb') as pdf_file:
         pdf_reader = PdfReader(pdf_file)
@@ -246,8 +255,8 @@ def generate_tree_string(file_name):
         for page in range(len(pdf_reader.pages)):
             page_text = pdf_reader.pages[page].extract_text()
             document_string += page_text
-        # curr_taken_courses_lst = get_curr_taken_courses(document_string)
-        # print(f'curr_taken_courses_lst: {curr_taken_courses_lst}')
+        curr_taken_courses = find_curr_taken_courses(document_string[:document_string.find('Fallthrough Courses')])
+        # print(f'curr_taken_courses: {curr_taken_courses}')
         start = document_string.find("Still Needed:") # Used to initiate every chunk
         while start != -1:
             end = document_string.find("Still Needed:", start + 1) # Searches for next instance of phrase
@@ -324,9 +333,10 @@ def generate_tree_string(file_name):
         for chunk in complex_list:
             intermediate_str += classify_and_handle_chunk(chunk)
         # print(intermediate_str)
-    return intermediate_str
+    return intermediate_str, curr_taken_courses
 if __name__ == '__main__':
-    print(generate_tree_string('./input_files/degreeworks1.pdf'))
+    i, _ = generate_degree_extraction_container('./input_files/degreeworks1.pdf')
+    # print(i)
     # Cases:
         # Case 1: 'POLS 1101'
         # Case 2: 'CPSC 4157 or 5157'
@@ -338,6 +348,59 @@ if __name__ == '__main__':
         # We need to handle electives
         # Case 7: Except Case: 1 Credit in @ 1@ or 2@ or 3@ or 4@ or 5@U Except ENGL 1101 or 1102*
 
+
+def areBracketsBalanced(expr):
+    stack = []
+
+    def printIndex(index):
+        print(index, expr[index-10:index+10])
+ 
+    # Traversing the Expression
+    for index, char in enumerate(expr):
+        if char in ["(", "{", "[", '<']:
+ 
+            # Push the element in the stack
+            stack.append(char)
+        elif char in [")", "}", "]", '>']:
+ 
+            # IF current character is not opening
+            # bracket, then it must be closing.
+            # So stack cannot be empty at this point.
+            if not stack:
+                print('Empty stack!')
+                printIndex(index)
+                return False
+            current_char = stack.pop()
+            if current_char == '(':
+                if char != ")":
+                    printIndex(index)
+                    return False
+            if current_char == '{':
+                if char != "}":
+                    printIndex(index)
+                    return False
+            if current_char == '[':
+                if char != "]":
+                    printIndex(index)
+                    return False
+            if current_char == '<':
+                if char != ">":
+                    printIndex(index)
+                    return False
+ 
+    # Check Empty Stack
+    if stack:
+        return False
+    return True
+
+if __name__ == "__main__":
+    expr = generate_degree_extraction_container('./input_files/degreeworks1.pdf')
+    i, _ = generate_degree_extraction_container('./input_files/degreeworks1.pdf')
+    # Function call
+    if areBracketsBalanced(i):
+        print("Balanced")
+    else:
+        print("Not Balanced")
 # Shallow count node: requires n-many courses to be selected directly below it
 # Select 2 of the following: ABCD 1234 or ASDF 1234 or AIDJ 1234
 # Deep count node: requires n-many courses to be selected anywhere below it
