@@ -279,7 +279,7 @@ class ExpertSystem:
 
     #  .................................... Lew's Rules ....................................
     #  ------------------------------------ Senior Rule ------------------------------------
-    #  The senior_rule checks for 1000/2000 level classes in the senior year semester.
+    #  The senior_rule checks for 1000/2000 level classes in the senior year semesters.
 
     @confidencerule(confidence=1.0, rule_mask=PATH_RULE)
     def senior_rule(schedule, facts, course_info):
@@ -305,7 +305,7 @@ class ExpertSystem:
         return cf
 
     # ------------------------------------ Junior Rule ------------------------------------
-    #  The junior_rule checks for 1000 level classes in junior year semester.
+    #  The junior_rule checks for 1000 level classes in junior year semesters.
 
     @confidencerule(confidence=1.0, rule_mask=PATH_RULE)
     def junior_rule(schedule, facts, course_info):
@@ -327,7 +327,7 @@ class ExpertSystem:
         return cf
 
      # ------------------------------------ Sophmore Rule -----------------------------------
-     # The sophmore_rule checks for 4000 level classes in sophmore year semester.
+     # The sophmore_rule checks for 4000 level classes in sophmore year semesters.
 
     @confidencerule(confidence=1.0, rule_mask=PATH_RULE)
     def sophmore_rule(schedule, facts, course_info):
@@ -349,7 +349,7 @@ class ExpertSystem:
         return cf
 
     # ------------------------------------ Freshman Rule -----------------------------------
-    # The freshman_rule checks for 4000/3000 level classes in freshman year semester.
+    # The freshman_rule checks for 4000/3000 level classes in freshman year semesters.
 
     @confidencerule(confidence=1.0, rule_mask=PATH_RULE)
     def freshman_rule(schedule, facts, course_info):
@@ -376,51 +376,51 @@ class ExpertSystem:
 
     # ------------------------------------ CoReq Rule -----------------------------------
     # The coreq_rule checks for coreqs of courses colocation within the same semester.
+    # TODO: Refactor or throw away
+    #@confidencerule(confidence=1.0, rule_mask=PATH_RULE)
+    #def coreq_rule(schedule, facts, course_info):
+    #    es = ExpertSystem
+    #    rule = es.rule_coreq_ok | es.rule_coreq_a
+    #    return rule(schedule, facts, course_info)
 
-    @confidencerule(confidence=1.0, rule_mask=PATH_RULE)
-    def coreq_rule(schedule, facts, course_info):
-        es = ExpertSystem
-        rule = es.rule_coreq_ok | es.rule_coreq_a
-        return rule(schedule, facts, course_info)
+    #@rulepart(confidence=1)
+    #def rule_coreq_ok(schedule, facts, course_info):
+    #    if coreqs_invalid(schedule, course_info): return 0
+    #    return 1
 
-    @rulepart(confidence=1)
-    def rule_coreq_ok(schedule, facts, course_info):
-        if coreqs_invalid(schedule, course_info): return 0
-        return 1
-
-    @rulepart(confidence=1)
-    def rule_coreq_a(schedule, facts, course_info):
-        cf = 1
-        info = coreqs_invalid_count(schedule, course_info)
-        count, message = info[0], info[1]
-        cf -= (high() * count)
-        return cf
+    #@rulepart(confidence=1)
+    #def rule_coreq_a(schedule, facts, course_info):
+    #    cf = 1
+    #    info = coreqs_invalid_count(schedule, course_info)
+    #    count, message = info[0], info[1]
+    #    cf -= (high() * count)
+    #    return cf
 
     # ------------------------------------ Gateway Rule ----------------------------------
     # The gateway_rule ensures courses with heavy weights (child descendants of courses > 6) are in the first half of path.
+    # TODO: Refactor or throw away
+    #@confidencerule(confidence=1.0, rule_mask=PATH_RULE)
+    #def gateway_rule(schedule, facts, course_info):
+    #    es = ExpertSystem
+    #    rule = es.rule_gateway_ok | es.rule_gateway_a
+    #    return rule(schedule, facts, course_info)
 
-    @confidencerule(confidence=1.0, rule_mask=PATH_RULE)
-    def gateway_rule(schedule, facts, course_info):
-        es = ExpertSystem
-        rule = es.rule_gateway_ok | es.rule_gateway_a
-        return rule(schedule, facts, course_info)
+    #@rulepart(confidence=1)
+    #def rule_gateway_ok(schedule, facts, course_info):
+    #    if gateway_courses_invalid(schedule, course_info)[0]: return 0
+    #    return 1
 
-    @rulepart(confidence=1)
-    def rule_gateway_ok(schedule, facts, course_info):
-        if gateway_courses_invalid(schedule, course_info)[0]: return 0
-        return 1
-
-    @rulepart(confidence=1)
-    def rule_gateway_a(schedule, facts, course_info):
-        cf = 1
-        info = gateway_courses_invalid(schedule, course_info)
-        count, message = info[0], info[1]
-        cf -= (high() * count)
-        return cf
+    #@rulepart(confidence=1)
+    #def rule_gateway_a(schedule, facts, course_info):
+    #    cf = 1
+    #    info = gateway_courses_invalid(schedule, course_info)
+    #    count, message = info[0], info[1]
+    #    cf -= (high() * count)
+    #    return cf
 
     # ------------------------------------ Importance Rule ----------------------------------
     # The importance_rule is ambigiously set by user or admin.  A rating less than 50 found in schedule drops confidence.
-
+    # Highly dependent on user importance input on Course Info.xlsx.  May throw away...
     @confidencerule(confidence=1.0, rule_mask=PATH_RULE)
     def importance_rule(schedule, facts, course_info):
         es = ExpertSystem
