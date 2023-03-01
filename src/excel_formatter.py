@@ -24,7 +24,7 @@ def excel_formatter(input_path, output_file_name, sched, container):  # first pa
 # ...............HELPER METHODS...............HELPER METHODS...............HELPER METHODS...............HELPER METHODS
     
 def format(sheet, sched, container, num):
-    current_seas = [1, 4] # We can switch to actual date reference by using current_season(); default to Fall for now.
+    current_seas = [1, 4] # We can switch to actual date reference by using current_season()
     for i in range(len(sched)):
         if(i > 0): # Skip 1st iteration before we change semester to next
             current_seas = next_season(current_seas, num)
