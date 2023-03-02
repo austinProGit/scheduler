@@ -1,10 +1,12 @@
 # Thomas Merino
-# 9/24/22
+# 1/3/23
 # CPSC 4175 Group Project
 
-SEMESTER_TYPE_SUCCESSOR = {'Fall': 'Spring', 'Spring':'Summer', 'Summer':'Fall'}    # Translation map from semester K to the next
+#SEMESTER_TYPE_SUCCESSOR = {'Fall': 'Spring', 'Spring':'Summer', 'Summer':'Fall'}    # Translation map from semester K to the next
 
-def plain_text_export(filepath, schedule, starting_semester_type, starting_year):
+from general_utilities import *
+
+def plain_text_export(filepath, schedule, starting_semester_type, starting_year) -> None:
     '''Export the passed schedule to a new text file at the passed path. The starting_semester_type
     argument is expended to be "Fall", "Spring", or "Summer".'''
     

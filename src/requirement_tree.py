@@ -9,7 +9,11 @@ from math import inf
 
 # from cli_interface import HelpMenu
 
-# TODO: make the commands similar in spacers ("_" vs "-" to seperate words) 
+# TODO: Add check for coreq.s
+# TODO: Add some sort of handling for "3 to 6 hours"
+
+
+# TODO: make the commands similar in spacers ("_" vs "-" to seperate words)
 # TODO: add help menu back!
 # TODO: add documentation
 # TODO: pull credit count into protocol node when filling out
@@ -80,19 +84,19 @@ HARD_CLEAR = 0x06
 
 DEFAULT_STUB_COURSE_DESCRIPTION = "COURSE XXXX"
 
-class SchedulableItem:
+class SchedulableParameters:
     
-    def __init__(self, course_description, is_stub=False):
-        self.course_description = course_description
+    def __init__(self, course_number, is_stub=False):
+        self.course_number = course_number
         self.is_stub = is_stub
-        self.stub_availability = 'Fa Sp Su'
+        self.stub_availability = 'Fa Sp'
         self.stub_credits = 3
         
     def __str__(self):
-        return self.course_description
+        return self.course_number
     
     def get_course_id(self):
-        return self.course_description if not self.is_stub else None
+        return self.course_number if not self.is_stub else None
 
     def get_stub_credit(self):
             return self.stub_credits
@@ -101,7 +105,7 @@ class SchedulableItem:
 
 
 def default_stub_generator(credits_string=None, name=None):
-    new_item = SchedulableItem(name or DEFAULT_STUB_COURSE_DESCRIPTION, is_stub=True)
+    new_item = SchedulableParameters(name or DEFAULT_STUB_COURSE_DESCRIPTION, is_stub=True)
     new_item.stub_credits = int(credits_string) if (credits_string is not None and credits_string.isnumeric()) else 3
     return new_item
     
@@ -907,7 +911,7 @@ class DeliverableCourse(_NodeSuper):
     
     def get_aggregate(self):
         '''This gets a list of SchedulableItem objects from the node and all of its children.'''
-        return [SchedulableItem(self._course_description or self._printable_description or "Course")]
+        return [SchedulableParameters(self._course_description or self._printable_description or "Course")]
     
     def get_course_id(self):
         '''Return the unique ID this course represents or None if it is not concrete.'''
@@ -996,9 +1000,9 @@ class CourseProtocol(_NodeSuper):
         '''This gets a list of SchedulableItem objects from the node and all of its children.'''
         
         if not self.has_shallow_stub() and self.is_shallow_resolved():
-            return [SchedulableItem(self._selected_course or self._printable_description)]
+            return [SchedulableParameters(self._selected_course or self._printable_description)]
         else:
-            return [SchedulableItem(self._stub_description or self._printable_description, is_stub=True)]
+            return [SchedulableParameters(self._stub_description or self._printable_description, is_stub=True)]
 
     def get_course_id(self):
         '''Return the unique ID this course represents or None if it is not concrete.'''

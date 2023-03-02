@@ -2,14 +2,22 @@
 # 18 September 2022
 # Contributor(s): Thomas Merino
 
+# The following are imported for type annotations
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Optional
+    from scheduling_parameters_container import ConstructiveSchedulingParametersContainers
+
 # TODO: THIS IS A TEST IMPORT (REMOVE)!!
 from degree_extraction_container import DegreeExtractionContainer
+
 
 from scheduling_assistant import CoreqRule, FitnessConfiguration, get_fittest_courses
 from expert_system_module import ExpertSystem, DynamicKnowledge
 from schedule_info_container import *
+from general_utilities import *
 
-SEMESTER_TYPE_SUCCESSOR = {'Fa': 'Sp', 'Sp': 'Su', 'Su': 'Fa'}    # Translation map from semester K to the next
 DEFAULT_HOURS_PER_SEMESTER = 15
 INITIAL_SEMESTER = {'Fa': [], 'Sp': [[]], 'Su': [[], []]}
 
@@ -43,7 +51,6 @@ def availability_rule(courseID, course_info_container):
 
 
 
-
 class Scheduler:
     
     @staticmethod
@@ -62,11 +69,11 @@ class Scheduler:
         
         return FitnessConfiguration(atomic_rules, coreq_rules)
     
-    def __init__(self):
-        self.hours_per_semester = DEFAULT_HOURS_PER_SEMESTER
-        self.courses_needed = []
-        self.courses_needed_container = None
-        self.semester_type = 'Sp'
+    def __init__(self, parameters_container: ConstructiveSchedulingParametersContainers):
+        #self.hours_per_semester = DEFAULT_HOURS_PER_SEMESTER
+        #self.courses_needed = []
+        #self.courses_needed_container = None
+        self.semester_start: SemesterType = SPRING
 
 
         # TODO: REMOVE THIS TEST!!!
@@ -102,13 +109,22 @@ class Scheduler:
             [p <n=Fill out 4___, gp=[A-Z]{4,5}\s?\d{4}[A-Z]?>]
         ]
         '''
-        degree_extraction = DegreeExtractionContainer([], construct_string_2)
-        self.courses_needed_container = degree_extraction.make_courses_needed_container()
-
+        # DegreeExtractionContainer([], construct_string_2)
         
-        self.fitness_configuration = Scheduler._create_default_fitness_configuration()
-        self.schedule_evaluator = ExpertSystem()
+        self.degree_extraction: Optional[DegreeExtractionContainer] = None
+        self._parameters_container: ConstructiveSchedulingParametersContainers = parameters_container
+        
+        self.fitness_configuration: FitnessConfiguration = Scheduler._create_default_fitness_configuration()
+        self.schedule_evaluator: ExpertSystem = ExpertSystem()
+
+        #self.courses_needed_container = degree_extraction.make_courses_needed_container()
     
+    def get_parameter_container(self):
+        return self._parameters_container
+
+    def configure_parameters(self, parameters_containter: ConstructiveSchedulingParametersContainers) -> None:
+        self._parameters_container = parameters_containter
+
     def get_course_info(self):
         return self.course_info_container
         

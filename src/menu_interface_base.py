@@ -1,5 +1,5 @@
 # Thomas Merino
-# 9/22/22
+# 2/27/23
 # CPSC 4175 Group Project
 
 # TL;DR: Interfaces are expected to have a parse_input method that takes as input the controller and
@@ -19,10 +19,22 @@
 #                            just looks for and executes functions from _commands, passing the extra input as the argumen.t
 # _report_invalid_command_error: this is the default handler for invalid commands when using the default implementation of parse_input
 
+
+# The following are imported for type annotations
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Callable
+    from program_driver import SmartPlannerController
+    ControllerCommand = Callable[[SmartPlannerController, str], None]
+
+
 # TODO: Maybe make the command dictionary statically set (may be a better approach).
 
 # The following is the base class for interface objects.
 class GeneralInterface:
+
+    name = 'MENU'
     
     def add_command(self, callback, *command_names):
         '''Adds a command (the provided callback) to the menu. The method add the command to the _commands dictionary using the names provided after the callback.'''

@@ -122,7 +122,7 @@ class _Schedulable:
         result = _Schedulable()
         result.courses = self.courses.union(schedulable.courses)
         result.hours = self.hours + schedulable.hours
-        result.fitness = self.fitness + self.fitness
+        result.fitness = self.fitness + schedulable.fitness
         return result
         
     def get_fitness_per_credit_hour(self):

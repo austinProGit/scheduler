@@ -13,9 +13,9 @@ class DegreeExtractionContainer:
     # degree_plan_name is a string
     # student_number is a string
     # student_name is a string
-    def __init__(self, certain_courses, courses_needed_constuction_string, degree_plan_name=None, student_number=None, student_name=None):
+    def __init__(self, taken_courses, courses_needed_constuction_string, degree_plan_name=None, student_number=None, student_name=None):
 
-        self._certain_courses = certain_courses
+        self._taken_courses = taken_courses
         self._courses_needed_constuction_string = courses_needed_constuction_string
 
         self._degree_plan_name = degree_plan_name

@@ -2,15 +2,24 @@
 # 2/20/23
 # CPSC 4175 Group Project
 
+# The following are imported for type annotations
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Callable, Optional
+    from program_driver import SmartPlannerController as Controller
+    from PySide6.QtWidgets import QApplication
+    from menu_interface_base import ControllerCommand
+
+
 # TODO: (ENSURE) help file parser ends predictably at "<END>" (no extra blank lines)
 # TODO: (ORGANIZE) Remove redundant file explorer code
 # TODO: (WISH) make help loading the documentation happen only once and only when needed (static and lazy)
 
 from courses_needed_container import NeededCoursesInterface, CONSTANT_REFRESHING
 
-from PySide6 import QtCore, QtWidgets, QtGui
+from PySide6 import QtWidgets, QtGui
 from sys import exit
-
 
 
 from driver_fs_functions import *
@@ -19,8 +28,7 @@ from item_selection_interface import ItemSelectionInterface
 from menu_interface_base import GeneralInterface
 from help_interface import HelpMenu
 
-
-ICON_FILENAME = 'icon.png' # The filename of the program's icon (when GUI)
+ICON_FILENAME: str = 'icon.png' # The filename of the program's icon (when GUI)
 
 
 
@@ -33,9 +41,9 @@ ICON_FILENAME = 'icon.png' # The filename of the program's icon (when GUI)
 # configuring scheduling parameters, generating the schedule, etc.
 class MainMenuInterface(GeneralInterface):
     
-    def __init__(self):
-        self.name = 'MAIN MENU'
-        self._commands = {}
+    def __init__(self) -> None:
+        self.name: str = 'MAIN MENU'
+        self._commands: dict[str, ControllerCommand] = {}
         
         # e: explorer
         # i: immediate
@@ -63,9 +71,9 @@ class MainMenuInterface(GeneralInterface):
         self.add_command(quit_command,'quit', 'exit')
     
     
-    def report_invalid_command_error(self, controller, command_string):
+    def report_invalid_command_error(self, controller: Controller, command_string: str) -> None:
         '''Report when an unsupported command is entered (this may be overridden to provide relevant tools/help).'''
-        controller.output_error('Sorry, no command matching "{0}" was found. Use "commands" or "help" to find the command you are looking for.'.format(command_string))
+        controller.output_error(f'Sorry, no command matching "{command_string}" was found. Use "commands" or "help" to find the command you are looking for.')
         
 
 # This a special menu that, once pushed, presents the user with a graphical user interface for interfacing with
@@ -75,35 +83,36 @@ class MainMenuInterface(GeneralInterface):
 class GraphicalUserMenuInterface(GeneralInterface):
     
     
-    def __init__(self):
-        self.name = 'GUI MENU'
+    def __init__(self) -> None:
+        self.name: str = 'GUI MENU'
     
     
-    def was_pushed(self, controller):
+    def was_pushed(self, controller: Controller) -> None:
         '''Method that is called upon the interface being pushed onto the interface stack.'''
         
-        application = controller.get_graphical_application() # Get the application object from the controller
+        application: Optional[QApplication] = controller.get_graphical_application() # Get the application object from the controller
         # TODO: This is not sustainable (using __file__)
-        application.setWindowIcon(QtGui.QIcon(str(os.path.join(os.path.dirname(__file__), ICON_FILENAME))))   # Set the window icon
+        icon: QtGui.QIcon = QtGui.QIcon(str(os.path.join(os.path.dirname(__file__), ICON_FILENAME)))
+        #application.setWindowIcon(icon)   # Set the window icon
         main_window = MainProgramWindow(controller) # Create a new window for the application to present
         main_window.resize(800, 400) # Set the initial window size
         main_window.show() # Present the window
         application.exec() # Execute the application until closed (block execution)
         
         # At this point, the GUI has been closed and the program should resume normal execution
-        # Since that menu has served it's purpose, it will be popped if still in the stack
+        # Since that menu has served its purpose, it will be popped if still in the stack
         
         # Ensure the controller has an interface and that the current interface is indeed this menu
         # This check is required in case of future changes and when an error menu interrupts execution
-        if controller.has_interface() and controller.get_current_interface() == self:
+        if controller.has_interface() and controller.get_current_interface() is self:
             controller.pop_interface(self)
     
         
-    def deconstruct(self, controller):
+    def deconstruct(self, controller: Controller):
         '''Destruction method that is called upon the interface being dismissed.'''
         # Disconnect program IO from graphics
-        controller.set_output_listener(None)
-        controller.set_warning_listener(None)
+        controller.remove_output_listener("GUIOutput")
+        controller.remove_warning_listener("GUIWarning")
         
         # Get and terminate the graphical application component
         application = QtWidgets.QApplication.instance()
@@ -131,7 +140,7 @@ class ErrorMenu(GeneralInterface):
 ## --------------------------------------------------------------------- ##
 
 
-def list_available_commands_command(controller, argument):
+def list_available_commands_command(controller: Controller, argument: str):
     '''Output the commands that may be entered.'''
     
     controller.output('Here are the commands available:\ncommands, load, load-e, destination, destination-e, set-hours, set-exports, list-parameters, schedule, verify, verify-e, batch, batch-verify, gui, cli, gui-i, help, quit')
