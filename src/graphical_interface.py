@@ -13,6 +13,7 @@ from os import path
 
 from driver_fs_functions import *
 
+cli = False # Used for controlling console window display
 
 ## --------------------------------------------------------------------- ##
 ## ---------------------- Graphical User Interface --------------------- ##
@@ -24,6 +25,7 @@ class MainProgramWindow(QtWidgets.QMainWindow):
     
     def __init__(self, controller):
         super().__init__()
+        self.controller = controller
         self.setWindowTitle('Smart Planner')
         self.widget = MainMenuWidget(controller)
         self.setCentralWidget(self.widget)
@@ -31,7 +33,13 @@ class MainProgramWindow(QtWidgets.QMainWindow):
         # Set the controller's listeners to two of widget's output handlers
         controller.set_output_listener(self.widget.receive_process_output)
         controller.set_warning_listener(self.widget.receive_process_warning)
-        
+
+    def closeEvent(self, event):
+        '''Override closeEvent to exit the program when GUI window is closed.'''
+        global cli
+        if not cli:
+            self.controller.clear_all_interfaces()
+        cli = False
 
 # This subclass of the QT text field clears its contenct when focus is changed or the user presses enter/return
 # --this changes the contents to the placeholder text.
@@ -317,6 +325,8 @@ class MainMenuWidget(QtWidgets.QWidget):
     def _reload_in_cli_callback(self):
         '''Callback for entering the CLI. This sends the user immediately into the CLI, but outputs instructions on
         how to get back to the GUI.'''
+        global cli
+        cli = True
         self.controller.reload_in_cli()
         self.controller.output('Interface mode changed to command line. Enter "gui-i" to change back.')
     
