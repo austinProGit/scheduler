@@ -96,7 +96,8 @@ def user_submitted_validator_tests():
     excused_prereqs = ['MISM 3145', 'MISM 3115', 'MISM 3109', 'MATH 1111', 'MATH 1131', 'MATH 1132']
 
     # Create a course info container from the real Course Info input
-    container = CourseInfoContainer(load_course_info('src/input_files/Course Info.xlsx'), excused_prereqs)
+    container = CourseInfoContainer(load_course_info('src/input_files/Course Info.xlsx'))
+    #container = CourseInfoContainer(load_course_info('src/input_files/Course Info.xlsx'), excused_prereqs)
 
     test_case_list = []
 

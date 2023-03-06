@@ -6,8 +6,8 @@ import re
 import pickle
 from dataframe_io import *
 from driver_fs_functions import *
-from courses_needed_container import *
-from program_generated_evaluator import evaluate_container
+#from courses_needed_container import *
+#from program_generated_evaluator import evaluate_container
 
 class CourseInfoContainer:
     
@@ -155,6 +155,7 @@ class CourseInfoContainer:
     # methods account for None, 'none', or '??' values, and still return lists
 
     def get_data(self, columnHeader, courseid): # helper method to access contents of df
+        if courseid == None: return
         data = None
         department = re.findall(r"^\w+", courseid)
         department = department[0]
@@ -184,7 +185,7 @@ class CourseInfoContainer:
     def get_imbedded_hours(self, data):
         if data == None:
             return 0
-        if (len(str(data)) == 1):
+        elif (len(str(data)) == 1):
             return int(data)
         else:
             data = list(map(int, re.findall(r'\d+', data)))

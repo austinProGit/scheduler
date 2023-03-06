@@ -67,20 +67,26 @@ def get_pickle_file(filename):
 
 
 def update_course_info(dept=None):
-    #dept_dict = get_department_dict() #commented out for faster build
-    #course_dict = get_course_dict() #comment out for faster build
+    #dept_dict = get_department_dict() #commented out for faster processing
+    #course_dict = get_course_dict() #comment out for faster processing
     df_dict = {}
     dept_dict = get_pickle_file("department_dictionary.pickle") #Quick way
     course_dict = get_pickle_file("course_dictionary.pickle") #Quick way
-    if dept in dept_dict.keys():
+    if type(dept) == str and dept in dept_dict.keys():
         df = parse_catalog(dept)
         df_dict[dept] = df
-    elif dept == "all":
+    elif type(dept) == list:
+        for d in dept:
+            if d in dept_dict.keys():
+                df = parse_catalog(d)
+                df_dict[d] = df
+    elif dept == None:
         for depts in dept_dict.keys():
             df = parse_catalog(depts)
             df_dict[depts] = df
     else:
-        print("Must specify department or all.")
+        print("Must specify department, department list, or all.")
+        return None
 
     file0 = get_source_path()
     file0 = get_source_relative_path(file0, 'output_files/New Course Info.xlsx')
@@ -104,8 +110,11 @@ def parse_catalog(dept):
         courseID = all_course_blocks[index].find("span", class_="text col-3 detail-code margin--tiny text--semibold text--huge").text
         name = all_course_blocks[index].find("span", class_="text col-3 detail-title margin--tiny text--bold text--huge").text
         hours = all_course_blocks[index].find("span", class_="text detail-coursehours text--bold text--huge").text
-        prereqs = get_prereqs(all_course_blocks[index])
+
+        # We get the coreqs first so we can delete them out of the prereqs.
         coreqs = get_coreqs(all_course_blocks[index])
+        prereqs = get_prereqs(all_course_blocks[index], coreqs)
+
 
         df.loc[len(df.index)] = [courseID, name, hours, "", prereqs, coreqs, "", "", "", ""]
 
@@ -176,14 +185,14 @@ def split_letter_digit(string):
     return result
 
 
-def get_prereqs(course_block):
+def get_prereqs(course_block, coreqs):
     prereqs = ""
     course_body = course_block.find_all("p", class_="courseblockextra noindent")
     if no_prereqs(course_body): return ""
     for index in range(len(course_body)):
         section = course_body[index].text
         if re.search(r"Prerequisite\(s\)", section):
-            section = clean_prereqs_section(section)
+            section = clean_prereqs_section(section, coreqs)
             if no_req_after_cleaning(section): return ""
             prereqs = build_tree_string(section)
     return prereqs
@@ -192,12 +201,14 @@ def get_prereqs(course_block):
 def get_coreqs(course_block):
     coreqs = ""
     course_body = course_block.find_all("p", class_="courseblockextra noindent")
+    for index in range(len(course_body)):
+        course_body[index] = course_body[index].text
+        course_body[index] = course_body[index].replace("\xa0", " ")
     if no_coreqs(course_body): return ""
     for index in range(len(course_body)):
-        section = course_body[index].text
-        section = section.replace("\xa0", " ")
-        if re.search(r"Corequisite:\s[A-Z]{3}[A-Z]?\s\d{4}[A-Z]?|Corequisite:\sConcurrent\senrollment\sin\s[A-Z]{3}[A-Z]?\s\d{4}[A-Z]?", section):
-            coreqsA = re.findall(r"Corequisite:\s([A-Z]{3}[A-Z]?\s\d{4}[A-Z]?)", section)
+        section = course_body[index]
+        if re.search(r"Co-?requisite:\s[A-Z]{3}[A-Z]?\s\d{4}[A-Z]?|Corequisite:\sConcurrent\senrollment\sin\s[A-Z]{3}[A-Z]?\s\d{4}[A-Z]?", section):
+            coreqsA = re.findall(r"Co-?requisite:\s([A-Z]{3}[A-Z]?\s\d{4}[A-Z]?)", section)
             coreqsB = re.findall(r"Corequisite:\sConcurrent\senrollment\sin\s([A-Z]{3}[A-Z]?\s\d{4}[A-Z]?)", section)
             tree = RecursiveDescentParser(coreqsA) if coreqsA != [] else RecursiveDescentParser(coreqsB)
             tree = tree.expression()
@@ -211,7 +222,7 @@ def no_prereqs(course_body):
     for index in range(len(course_body)):
         section = course_body[index].text
         match1 = re.search(r"Prerequisite\(s\)", section)
-        # Need to handle this later implementation. Where prereqs are in another section or are in both.  
+        # Need to handle this in later implementation. Where prereqs are in another section or are in both.  
         #match2 = re.search(r"Prerequisite:\s[A-Z]{3}[A-Z]?\s\d{4}[A-Z]?", section)
         if match1:no = False # or match2: no = False
     return no
@@ -220,9 +231,10 @@ def no_prereqs(course_body):
 def no_coreqs(course_body):
     no = True
     for index in range(len(course_body)):
-        section = course_body[index].text
-        match1 = re.search(r"Corequisite:\s[A-Z]{3}[A-Z]?\s\d{4}[A-Z]?|Corequisite:\sConcurrent\senrollment\sin", section)
-        if match1: no = False
+        section = course_body[index]
+        match1 = re.search(r"Co-?requisite:\s[A-Z]{3}[A-Z]?\s\d{4}[A-Z]?", section)
+        match2 = re.search(r"Corequisite:\sConcurrent\senrollment\sin", section)
+        if match1 or match2: no = False
     return no
 
 
@@ -233,7 +245,7 @@ def no_req_after_cleaning(section):
 
 
 # Cleaning up text for easier formatting.
-def clean_prereqs_section(section):
+def clean_prereqs_section(section, coreqs):
     concurrently = re.findall(r"( \(may be taken concurrently\))", section)
     letter = re.findall(r" with a minimum grade of ([A-D])", section)
     if concurrently != []: section = section.replace(concurrently[0], "")
@@ -241,12 +253,13 @@ def clean_prereqs_section(section):
     section = section.replace("Prerequisite(s): ", "")
     section = section.replace("\xa0", " ")
     # There is much more cleaning to do in the future when we integrate other prereq sections of the website
-    section = validate_courses(section)
+    section = validate_courses(section, coreqs)
     return section
 
 
-def validate_courses(section):
+def validate_courses(section, coreqs):
     courses_with_words = verify_and_create_list_logic(section)
+    courses_with_words = delete_coreq_in_prereq(courses_with_words, coreqs)
     courses_with_words = delete_extra_ands_ors(courses_with_words)
     # Join list together to form string
     section = " ".join(courses_with_words)
@@ -271,6 +284,15 @@ def verify_and_create_list_logic(section):
         valid_course = re.findall(course_pattern, course)
         if valid_course != [] and valid_course[0] not in course_dict.keys():
             courses_with_words.remove(valid_course[0])
+    return courses_with_words
+
+
+def delete_coreq_in_prereq(courses_with_words, coreqs):
+    if coreqs != "":
+        pattern = r"([A-Z]{3}[A-Z]?\s\d{4}[A-Z]?)"
+        coreq = re.findall(pattern, coreqs)
+        if coreq[0] in courses_with_words:
+            courses_with_words.remove(coreq[0])
     return courses_with_words
 
 
@@ -321,7 +343,5 @@ def create_tokenized_logic(section):
     tokens = re.findall(regex_pattern, section)
     return tokens
 
-
-#pd.set_option('display.max_rows', None)
-#pd.set_option('display.max_columns', None)
-#update_course_info('all')
+#lst = ["ACCT", "CPSC", "CYBR"]
+#update_course_info()
