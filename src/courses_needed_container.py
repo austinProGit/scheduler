@@ -1,7 +1,15 @@
 # Thomas Merino and Austin Lee
-# 2/20/2023
+# 3/4/2023
 # CPSC 4176 Project
+
+# TODO: type annotations are not complete
     
+# The following are imported for type annotations
+from __future__ import annotations
+from typing import TYPE_CHECKING, Iterator
+if TYPE_CHECKING:
+    from typing import Optional
+
 from requirement_tree import *
 from requirement_interface import NeededCoursesInterface
 from requirement_parser import *
@@ -32,10 +40,10 @@ class CoursesNeededContainer:
     #     return courses_needed_container
 
     
-    def __init__(self, degree_plan, certain_courses_list=None, decision_tree=None):
-        self._degree_plan = degree_plan
-        self._decision_tree = decision_tree or ExhaustiveNode()
-        self._certain_courses_list = ListingNode(printable_description='Core Curriculum')
+    def __init__(self, degree_plan: str, certain_courses_list: Optional[list[str]] = None, decision_tree: Optional[ExhaustiveNode] = None) -> None:
+        self._degree_plan: str = degree_plan
+        self._decision_tree: ExhaustiveNode = decision_tree or ExhaustiveNode()
+        self._certain_courses_list: ListingNode = ListingNode(printable_description='Required Course')
         self._decision_tree.add_child(self._certain_courses_list)
         self._decision_tree.reorder_child(-1, 0)
 
@@ -43,13 +51,14 @@ class CoursesNeededContainer:
         self._decision_tree._duplicate_priority = DEFAULT_PRIORITY
 
         if certain_courses_list:
+            course_string: str
             for course_string in certain_courses_list:
                 self.add_certain_course(course_string)
     
     def __iter__(self):
         return self.get_courses_list().__iter__()
     
-    def pickle(self):
+    def pickle(self) -> bytes:
         return pickle.dumps(self)
     
     def get_degree_plan_name(self):
@@ -72,11 +81,11 @@ class CoursesNeededContainer:
     def get_certain_courses(self):
         return self._certain_courses_list.get_aggregate()
     
-    def stub_all_unresolved_nodes(self):
+    def stub_all_unresolved_nodes(self) -> None:
         self._decision_tree.stub_all_unresolved_nodes()
 
-    def add_certain_course(self, course_string):
-        added = False
+    def add_certain_course(self, course_string: str) -> bool:
+        added: bool = False
         if not self._certain_courses_list.get_child_by_description(course_string):
             added = self._certain_courses_list.add_child(DeliverableCourse(course_string))
         return added

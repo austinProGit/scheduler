@@ -4,7 +4,6 @@
 
 # The following are imported for type annotations
 from __future__ import annotations
-from turtle import st
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Optional
@@ -99,6 +98,12 @@ class SchedulerParameterContainer:
 
 # A standard scheduler parameters container (the current implementation treats this the same as the base class).
 class ConstructiveSchedulingParametersContainers (SchedulerParameterContainer):
-    pass
+    
+    def set_hours(self, semester_type: SemesterType, hours: int) -> None:
+        '''Get the acceptability range for hours for a given semester type and year.'''
+        if semester_type != SUMMER:
+            self._fall_spring_hours = hours
+        else:
+            self._summer_hours = hours
 
 

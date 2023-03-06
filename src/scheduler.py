@@ -8,6 +8,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Optional
     from scheduling_parameters_container import ConstructiveSchedulingParametersContainers
+    from course_info_container import CourseInfoContainer
+    from courses_needed_container import CoursesNeededContainer
 
 # TODO: THIS IS A TEST IMPORT (REMOVE)!!
 from degree_extraction_container import DegreeExtractionContainer
@@ -69,12 +71,13 @@ class Scheduler:
         
         return FitnessConfiguration(atomic_rules, coreq_rules)
     
-    def __init__(self, parameters_container: ConstructiveSchedulingParametersContainers):
+    def __init__(self, course_info_container: CourseInfoContainer, parameters_container: ConstructiveSchedulingParametersContainers):
         #self.hours_per_semester = DEFAULT_HOURS_PER_SEMESTER
         #self.courses_needed = []
         #self.courses_needed_container = None
         self.semester_start: SemesterType = SPRING
 
+        self.course_info_container: Optional[CourseInfoContainer] = course_info_container
 
         # TODO: REMOVE THIS TEST!!!
         construct_string_2 = '''
@@ -111,7 +114,8 @@ class Scheduler:
         '''
         # DegreeExtractionContainer([], construct_string_2)
         
-        self.degree_extraction: Optional[DegreeExtractionContainer] = None
+        self._degree_extraction: Optional[DegreeExtractionContainer] = None
+        self.courses_needed_container: Optional[CoursesNeededContainer] = None
         self._parameters_container: ConstructiveSchedulingParametersContainers = parameters_container
         
         self.fitness_configuration: FitnessConfiguration = Scheduler._create_default_fitness_configuration()
@@ -125,7 +129,7 @@ class Scheduler:
     def configure_parameters(self, parameters_containter: ConstructiveSchedulingParametersContainers) -> None:
         self._parameters_container = parameters_containter
 
-    def get_course_info(self):
+    def get_course_info(self) -> Optional[CourseInfoContainer]:
         return self.course_info_container
         
     def get_schedule_evaluator(self):
@@ -145,7 +149,8 @@ class Scheduler:
         self.courses_needed_container = courses_needed_container
     
     def configure_hours_per_semester(self, number_of_hours):
-        self.hours_per_semester = number_of_hours
+        # self.hours_per_semester = number_of_hours
+        self._parameters_container.set_hours(FALL, number_of_hours)
     
     def generate_schedule(self):
         """Primary method to schedule a path to graduation

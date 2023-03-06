@@ -1,55 +1,131 @@
-# Max Lewis and Thomas Merino 02/19/23
+# Max Lewis and Thomas Merino 03/5/23
 # CPSC 4176 Project
+
+# TODO: dataframes may not be suitable for construction given the result will not be rectanglular.
+# We will need to set the maximum before hand, and the empty slots will be filled with nulls.
+
+# The following are imported for type annotations
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Any, Tuple, Optional
+    import pandas as pd
+    from pandas.core.series import Series as pdSeries
+
 
 import pickle
 from general_utilities import *
 from instance_identifiers import StudentIdentifier
 
+from math import nan
+
+def course_is_null(course_string) -> bool:
+    return course_string == nan or course_string.strip() == '' or course_string is None
+
 class SemesterDescription:
+    '''The description of a given semester (other than courses/schedulables).'''
     
-    def __init__(self, year, semester_type, courses):
-        self.year = year
-        self.semester_type = semester_type
-        self.courses = courses
+    def __init__(self, year: int, semester_type: SemesterType) -> None:
+        self.year: int = year
+        self.semester_type: SemesterType = semester_type
 
-    def __str__(self):
-        header = f'{self.year}, {SEMESTER_DESCRIPTION_MAPPING[self.semester_type]}: '
-        return header + ', '.join(self.courses)
-
-    def course_count(self):
-        return sum(self.courses)
+    def __str__(self) -> str:
+        header: str = f'{self.year}, {SEMESTER_DESCRIPTION_MAPPING[self.semester_type]}: '
+        return header # + ', '.join(self.courses)
 
 
-DEFAULT_DEGREE_DESCRIPTION = 'Degree Plan'
+DEFAULT_DEGREE_DESCRIPTION: str = 'Degree Plan'
 
 class ScheduleInfoContainer:
-    
+
     # cf = confidence factor
-    def __init__(self, semesters, student_identifier=None, degree_description=DEFAULT_DEGREE_DESCRIPTION, confidence_level=None):
-        self._semesters = semesters
-        self._student_identifier = student_identifier if student_identifier is not None else StudentIdentifier()
-        self._degree_description = degree_description
-        self._confidence_level = confidence_level
+    def __init__(self, semesters: Optional[pd.DataFrame] = None, student_identifier: Optional[StudentIdentifier] = None, \
+            degree_description: str = DEFAULT_DEGREE_DESCRIPTION, confidence_level: float = None):
+        # The dataframe for semsters will have str objects for columns and entries and will have int entires
+        # for the rows.
+        self._semesters: pd.DataFrame = semesters if semesters is not None else pd.DataFrame()
+        # The following is used to query the description of the semester by using the same key as the 
+        # dataframe.
+        self._semester_descriptions: dict[Any, SemesterDescription]
+        self._student_identifier: StudentIdentifier = student_identifier if student_identifier is not None \
+            else StudentIdentifier()
+        self._degree_description: str = degree_description
+        self._confidence_level: float = confidence_level
+
+    def __str__(self) -> str:
+        return f'{self._semesters}\n{self._semester_descriptions}'
+
+    def __iter__(self) -> SemesterIterator:
+        dataframe_iterator = self._semesters.__iter__()
+        return ScheduleInfoContainer.SemesterIterator(dataframe_iterator, self._semester_descriptions, self.max_semester_course_count())
 
     # This method pickles ScheduleInfoContainer class object so data can be saved
-    def pickle(self):
-        pickled_data = pickle.dumps(self)
+    def pickle(self) -> bytes:
+        pickled_data: bytes = pickle.dumps(self)
         return pickled_data
 
-    def __str__(self):
-        return '\n'.join(self._semesters)
+    def debug_display_container(self) -> None:
+        print(self._schedule)
+        print(self._cf)
 
-    def get_schedule(self):
+    def get_schedule(self) -> pd.DataFrame:
         return self._schedule
 
-    def get_confidence_level(self):
+    def get_confidence_level(self) -> float:
         return self._confidence_level
 
-    def semester_count(self):
+    def semester_count(self) -> int:
+        return len(self._semesters.columns)
+
+    def max_semester_course_count(self) -> int:
         return len(self._semesters)
 
-    def course_count(self):
-        return sum(semester.course_count() for semester in self._semesters)
+    def course_count(self) -> int:
+        count: int = 0
+        semester_column: str
+        for semester_column in self._schedule:
+            semester: pdSeries = self._schedule[semester_column]
+            course: str
+            for course in semester:
+                if not course_is_null(course):
+                    count += 1
+        return count
+    
+    class SemesterIterator:
+
+        def __init__(self, dataframe_series: map, semester_descriptions: dict[Any, SemesterDescription], max_index: int) -> None:
+            self.dataframe_series: map = dataframe_series
+            self.semester_descriptions: dict[Any, SemesterDescription] = semester_descriptions
+            self._max_index: int = max_index
+
+        def __next__(self) -> Tuple[ScheduleInfoContainer.SemesterElement, SemesterDescription]:
+            next_column: Any = self.dataframe_series.__next__()
+            series: pdSeries = self.dataframe_series[next_column]
+            return ScheduleInfoContainer.SemesterElement(series, self._max_index), self.semester_descriptions[next_column]
+
+    class SemesterElement:
+        def __init__(self, series: pdSeries, max_index: int) -> None:
+            self.series: pdSeries = series
+            self._max_index: int = max_index
+
+        def __iter__(self) -> ScheduleInfoContainer.SemesterElement.CourseIterator:
+            return ScheduleInfoContainer.SemesterElement.CourseIterator(self.series, self._max_index)
+
+        class CourseIterator:
+            def __init__(self, series: pdSeries, max_index: int) -> None:
+                self.series: pdSeries = series
+                self._working_index = 0
+                self._max_index = max_index
+
+            def __next__(self) -> str:
+                if (self._working_index >= self._max_index):
+                    raise StopIteration
+                result = self.series[self._working_index]
+                if not course_is_null(result):
+                    raise StopIteration
+                self._working_index += 1
+                return result
+
 
 
 

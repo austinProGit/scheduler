@@ -274,6 +274,7 @@ def list_parameters_command(controller, arguements):
         
         if courses_needed:
             controller.output('Courses:')
+            course: str
             for course in courses_needed:
                 controller.output('  {0}'.format(course))
         else:

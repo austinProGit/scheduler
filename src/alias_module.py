@@ -8,7 +8,6 @@ if TYPE_CHECKING:
     from typing import Union
     from pathlib import Path
 
-
 import pandas as pd
 
 
@@ -23,6 +22,7 @@ def setup_aliases(alias_file: Union[str, Path] = COURSE_ALIAS_FILE) -> None:
     '''Setup the alias system for course number updating from the contents of the passed filepath.'''
 
     courses_needed_df = pd.read_excel(alias_file, sheet_name='Sheet1')
+    row: pd.Series
     for _, row in courses_needed_df.iterrows():
         alias_translations[row[OLD_LABEL]] = row[NEW_LABEL]
 

@@ -86,12 +86,15 @@ class SessionConfiguration():
     
     def set_from_encodable(self, encodable: dict[str, Any]) -> None:
         '''Set all of the object's via encodable data--in this case "encodable" is just a dictionary where the keys are the attribute names and the values are the attribute values.'''
+        attribute_name: str
+        attribute_value: Any
         for attribute_name, attribute_value in encodable.items():
             setattr(self, attribute_name, attribute_value)
             
     def get_missing_attributes(self):
         '''Get a list of the missing attributes if any (may be used to check load validity).'''
         result = []
+        expected_attribute: str
         for expected_attribute in SessionConfiguration.expected_attributes:
             if expected_attribute not in self.__dict__ or self.__dict__[expected_attribute] == None:
                 result.append(expected_attribute)

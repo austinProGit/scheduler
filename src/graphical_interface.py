@@ -168,7 +168,12 @@ class MainMenuWidget(QWidget):
         self.hours_per_semester_field: TextField = TextField()
         self.hours_per_semester_field.setValidator(QtGui.QIntValidator())
         self.hours_per_semester_field.returnPressed.connect(self._hours_per_semester_callback)
-        self.hours_per_semester_field.setPlaceholderText(str(self.controller.get_hours_per_semester()))
+        
+        hours_range: Optional[range] = self.controller.get_hours_per_semester()
+        if hours_range is not None:
+            self.hours_per_semester_field.setPlaceholderText(f'{hours_range.start} to {hours_range.stop}')
+        else:
+            self.hours_per_semester_field.setPlaceholderText('Unspecified')
         
         # Create checkboxes for controlling the output types to generate
         self.path_to_graduation_checkbox: QCheckBox = QCheckBox('Export Path to Graduation Excel')
@@ -276,7 +281,11 @@ class MainMenuWidget(QWidget):
         if hours_text.isdigit():
             number = int(hours_text)                                # Cast the input to an integer
             self.controller.configure_hours_per_semester(number)    # Set the number of hours per semester
-            self.hours_per_semester_field.setPlaceholderText(str(self.controller.get_hours_per_semester()))
+            hours_range: Optional[range] = self.controller.get_hours_per_semester()
+            if hours_range is not None:
+                self.hours_per_semester_field.setPlaceholderText(f'{hours_range.start} to {hours_range.stop}')
+            else:
+                self.hours_per_semester_field.setPlaceholderText('Unspecified')
         else:
             # The argument was not valid (report to the user)
             self.controller.output('Sorry, that is not a valid input (please use a number).')

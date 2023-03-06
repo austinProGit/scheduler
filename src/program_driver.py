@@ -1,5 +1,5 @@
 # Thomas Merino
-# 3/1/23
+# 3/6/23
 # CPSC 4175 Group Project
 
 # TODO: add final semester rule
@@ -42,8 +42,6 @@
 # The following are imported for type annotations
 from __future__ import annotations
 from typing import TYPE_CHECKING
-
-from general_utilities import FALL
 if TYPE_CHECKING:
     from typing import Callable, Optional, Union
     from pandas import DataFrame
@@ -60,9 +58,8 @@ IS_TESTING_MEMORY = False
 
 if IS_TESTING_MEMORY:
     from guppy import hpy
+    # Create a guppy heap tracking object if in memeory testing mode
     heap = hpy() 
-
-
 
 from PySide6 import QtWidgets
 
@@ -72,6 +69,7 @@ from os import path
 
 
 from courses_needed_container import CoursesNeededContainer
+from general_utilities import FALL
 
 
 from alias_module import *
@@ -109,9 +107,12 @@ class InterfaceProcedureError(Exception):
 class SmartPlannerController:
     
     def __init__(self, graphics_enabled: bool = True) -> None:
+
         self.setup(graphics_enabled)
         
         if IS_TESTING_MEMORY:
+            # Initialize information regarding the heap.
+            # This is done after setup to simplify the deltas.
             heap.setrelheap()
     
     def setup(self, graphics_enabled: bool = True) -> None:
@@ -125,9 +126,9 @@ class SmartPlannerController:
         parameter_container: ConstructiveSchedulingParametersContainers = \
             ConstructiveSchedulingParametersContainers(path=Path.home(), export_types=[PATH_TO_GRADUATION_EXPORT_TYPE])
         
-        # Setup the scheduler.
+        # Setup the scheduler--object for heading the model.
         # The scheduler functions as the program's model. It may be serialized to save the save of the process.
-        self._scheduler: Scheduler = Scheduler(parameter_container) # Create a scheduler object for heading the model
+        self._scheduler: Scheduler = Scheduler(course_info_container=None, parameters_container=parameter_container)
 
         # In this context, an 'interface' is an object that handles user input and performs actions on the passed
         # controller given those inputs. Interfaces are not expected to directly interact with the user (input or
@@ -170,9 +171,14 @@ class SmartPlannerController:
             self.output_error('A I/O error was encountered during loading--entering error menu...')
             self.enter_error_menu()
 
-        except (NonDAGCourseInfoError, InvalidCourseError, ValueError) as data_error:
+        except (NonDAGCourseInfoError, InvalidCourseError) as data_error:
             # Some data error was encountered during loading (enter the error menu)
-            self.output_error('A data error was encountered during loading--entering error menu...')
+            self.output_error(f'A data error was encountered during loading: "{str(data_error)}"--entering error menu...')
+            self.enter_error_menu()
+
+        except ValueError as value_error:
+            # A value error was encountered during loading (enter the error menu)
+            self.output_error(f'A data error was encountered during loading--entering error menu...')
             self.enter_error_menu()
     
     
@@ -268,6 +274,7 @@ class SmartPlannerController:
     
     def output(self, message: str) -> None:
         '''Output a message to the user.'''
+        callback: Callable[[str], None]
         for callback in self._output_callbacks.values():
             callback(message)
         print(message)
@@ -275,6 +282,7 @@ class SmartPlannerController:
     
     def output_warning(self, message: str) -> None:
         '''Output a warning message to the user.'''
+        callback: Callable[[str], None]
         for callback in self._warning_callbacks.values():
             callback(message)
         self.output(f'WARNING: {message}')
@@ -282,6 +290,7 @@ class SmartPlannerController:
     
     def output_error(self, message: str) -> None:
         '''Output an error message to the user.'''
+        callback: Callable[[str], None]
         for callback in self._error_callbacks.values():
             callback(message)
         self.output(f'ERROR: {message}')
@@ -417,16 +426,17 @@ class SmartPlannerController:
     
     ## ----------- Scheduling parameter getting ----------- ##
     
+
     def get_courses_needed(self) -> Optional[CourseInfoContainer]:
         '''Get the coursed needed that have been loaded into the scheduler. This return a list of strings (IDs).'''
         return self._scheduler.get_courses_needed()
         
     
-    def get_hours_per_semester(self) -> Optional[int]:
+    def get_hours_per_semester(self) -> Optional[range]:
         '''Get the hours per semester to use.'''
         parameters: ConstructiveSchedulingParametersContainers = self._scheduler.get_parameter_container()
         # TODO: this just uses Fall 2023 for hours
-        return parameters.get_hours_for(FALL).stop
+        return parameters.get_hours_for(FALL)
     
     
     def get_export_type(self) -> list[ExportType]:
@@ -454,7 +464,7 @@ class SmartPlannerController:
     
     ## ----------- Scheduling parameter configuration ----------- ##
     
-    
+
     def load_courses_needed(self, filename: str) -> bool:
         '''Load the courses that must be scheduled into the scheduler (from the passed filename).
         This return the success of the load.'''
@@ -501,7 +511,9 @@ class SmartPlannerController:
     
     def set_export_types(self, export_types: list[ExportType]) -> None:
         '''Set the types of formats to export with (schedule formatters to use).'''
-        self._export_types = export_types[:]
+        #self._export_types = export_types[:]
+        parameters: ConstructiveSchedulingParametersContainers = self._scheduler.get_parameter_container()
+        parameters.set_export_type(export_types)
     
     
     def configure_destination_directory(self, directory: Union[str, Path]) -> bool:
@@ -511,7 +523,9 @@ class SmartPlannerController:
         # Verify the passed directory exists and is indeed a directory
         directory_path: Optional[Path] = get_real_filepath(directory)   # Get the verified path (this is a Path object that exists, but it is not necessarily a directory)
         if directory_path is not None and directory_path.is_dir():
-            self._destination_directory = directory_path
+            parameters: ConstructiveSchedulingParametersContainers = self._scheduler.get_parameter_container()
+            parameters.set_destination_directory(directory_path)
+            # self._destination_directory = directory_path
             self.output('Destination directory set to {0}.'.format(directory_path))
             success = True
         else:
@@ -523,7 +537,9 @@ class SmartPlannerController:
     
     def set_destination_filename(self, filename: str) -> None:
         '''Simply set the destination filename (what to name the schedule).'''
-        self._destination_filename = filename
+        # self._destination_filename = filename
+        parameters: ConstructiveSchedulingParametersContainers = self._scheduler.get_parameter_container()
+        parameters.set_destination_filename(filename)
     
     
     def configure_destination_filename(self, filename: str) -> None:

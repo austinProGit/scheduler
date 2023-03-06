@@ -1,5 +1,5 @@
 # Thomas Merino and Austin Lee
-# 2/19/2023
+# 3/6/2023
 # CPSC 4176 Project
 
 import re
@@ -188,6 +188,8 @@ class _NodeSuper:
         self._max_count_propogation = None
         self._max_credits_propogation = None
         self._duplicate_priority = None
+
+        self._is_track_elective = 'no'
         
     
     ## ------------------------------ Clipboard ------------------------------ ##
@@ -441,6 +443,27 @@ class _NodeSuper:
     def get_aggregate(self):
         '''This gets a list of SchedulableItem objects from the node and all of its children.'''
         raise NotImplementedError
+
+    def get_as_schedulable_list(self):
+        return []
+
+    def get_all_aggragate(self):
+        result = []
+        if self.can_take_child():
+            result += self.get_as_schedulable_list()
+        else:
+            for child in self.get_all_children_list():
+                result.append(child.get_all_aggragate())
+        return result
+
+
+    def get_all_track_elective_aggragate(self):
+        result = []
+        if self._is_track_elective:
+            result += self.get_all_aggragate()
+        return result
+
+            
     
     def get_course_id(self):
         '''Return the unique ID this course represents or None if it is not concrete.'''
@@ -862,6 +885,10 @@ class _NodeSuper:
         return sum([node.get_active_deep_credits() for node in self.get_active_children_list()])
 
 
+
+## ------------------------------ End of Node Super ------------------------------ ##
+
+
 # Note that this is also a kind of node in a CoursesNeededContainer (a leaf node).
 class DeliverableCourse(_NodeSuper):
     
@@ -872,6 +899,7 @@ class DeliverableCourse(_NodeSuper):
         'credits': '_credits',
         'deliver name': '_course_description',
         'duplicate priority': '_duplicate_priority',
+        'track elective': '_is_track_elective'
     }
     KEY_ALIASES = {
         'n': 'name',
@@ -879,7 +907,8 @@ class DeliverableCourse(_NodeSuper):
         'i': 'instructions',
         'c': 'credits',
         'dn': 'deliver name',
-        'p': 'duplicate priority'
+        'p': 'duplicate priority',
+        'te': 'track elective'
     }
     KEYS_LIST = ['name', 'instance id', 'instructions', 'credits', 'deliver name', 'duplicate priority']
     NON_NIL_KEYS = {'name', 'credits'}
@@ -913,6 +942,9 @@ class DeliverableCourse(_NodeSuper):
         '''This gets a list of SchedulableItem objects from the node and all of its children.'''
         return [SchedulableParameters(self._course_description or self._printable_description or "Course")]
     
+    def get_as_schedulable_list(self):
+        return [SchedulableParameters(self._course_description or self._printable_description or "Course")]
+
     def get_course_id(self):
         '''Return the unique ID this course represents or None if it is not concrete.'''
         return self._explicit_id or self._course_description or self._printable_description
@@ -937,7 +969,8 @@ class CourseProtocol(_NodeSuper):
         'matching': '_match_description',
         'rejection': '_reject_description',
         'stub_name': '_stub_description',
-        'duplicate priority': '_duplicate_priority'
+        'duplicate priority': '_duplicate_priority',
+        'track elective': '_is_track_elective'
     }
     KEY_ALIASES = {
         'n': 'name',
@@ -946,7 +979,8 @@ class CourseProtocol(_NodeSuper):
         'm': 'matching',
         'r': 'rejection',
         's': 'stub_name',
-        'p': 'duplicate priority'
+        'p': 'duplicate priority',
+        'te': 'track elective'
     }
     KEYS_LIST = ['name', 'instructions', 'credits', 'matching', 'rejection', 'stub_name', 'duplicate priority']
     NON_NIL_KEYS = {'name', 'credits', 'matching'}
@@ -1003,6 +1037,9 @@ class CourseProtocol(_NodeSuper):
             return [SchedulableParameters(self._selected_course or self._printable_description)]
         else:
             return [SchedulableParameters(self._stub_description or self._printable_description, is_stub=True)]
+
+    def get_as_schedulable_list(self):
+        return [SchedulableParameters(self._stub_description or self._printable_description, is_stub=True)]
 
     def get_course_id(self):
         '''Return the unique ID this course represents or None if it is not concrete.'''
@@ -1239,14 +1276,16 @@ class ExhaustiveNode(_GroupNode):
         'instructions': '_verbose_instructions',
         'count bottleneck': '_max_count_propogation',
         'credits bottleneck': '_max_credits_propogation',
-        'duplicate priority': '_duplicate_priority'
+        'duplicate priority': '_duplicate_priority',
+        'track elective': '_is_track_elective'
     }
     KEY_ALIASES = {
         'n': 'name',
         'i': 'instructions',
         'cb': 'count bottleneck',
         'rb': 'credits bottleneck',
-        'dp': 'duplicate priority'
+        'dp': 'duplicate priority',
+        'te': 'track elective'
     }
     KEYS_LIST = ['name', 'instructions', 'count bottleneck', 'credits bottleneck', 'duplicate priority']
     NON_NIL_KEYS = {'name'}
@@ -1325,7 +1364,8 @@ class ShallowCountBasedNode(_GroupNode):
         'generator name': '_stub_generator_name',
         'generator parameter': '_generator_parameter',
         'aux parameter': '_aux_generator_parameter',
-        'duplicate priority': '_duplicate_priority'
+        'duplicate priority': '_duplicate_priority',
+        'track elective': '_is_track_elective'
     }
     KEY_ALIASES = {
         'n': 'name',
@@ -1336,7 +1376,8 @@ class ShallowCountBasedNode(_GroupNode):
         'gn': 'generator name',
         'gp': 'generator parameter',
         'ga': 'aux parameter',
-        'dp': 'duplicate priority'
+        'dp': 'duplicate priority',
+        'te': 'track elective'
     }
     KEYS_LIST = ['name', 'instructions', 'count', 'count bottleneck', 'credits bottleneck',
     'generator name', 'generator parameter', 'aux parameter', 'duplicate priority']
@@ -1400,7 +1441,8 @@ class DeepCountBasedNode(_GroupNode):
         'generator name': '_stub_generator_name',
         'generator parameter': '_generator_parameter',
         'aux parameter': '_aux_generator_parameter',
-        'duplicate priority': '_duplicate_priority'
+        'duplicate priority': '_duplicate_priority',
+        'track elective': '_is_track_elective'
     }
     KEY_ALIASES = {
         'n': 'name',
@@ -1411,7 +1453,8 @@ class DeepCountBasedNode(_GroupNode):
         'gn': 'generator name',
         'gp': 'generator parameter',
         'ga': 'aux parameter',
-        'dp': 'duplicate priority'
+        'dp': 'duplicate priority',
+        'te': 'track elective'
     }
     KEYS_LIST = ['name', 'instructions', 'count', 'count bottleneck', 'credits bottleneck',
     'generator name', 'generator parameter', 'aux parameter', 'duplicate priority']
@@ -1489,7 +1532,8 @@ class DeepCreditBasedNode(_GroupNode):
         'generator name': '_stub_generator_name',
         'generator parameter': '_generator_parameter',
         'aux parameter': '_aux_generator_parameter',
-        'duplicate priority': '_duplicate_priority'
+        'duplicate priority': '_duplicate_priority',
+        'track elective': '_is_track_elective'
     }
     KEY_ALIASES = {
         'n': 'name',
@@ -1500,7 +1544,8 @@ class DeepCreditBasedNode(_GroupNode):
         'gn': 'generator name',
         'gp': 'generator parameter',
         'ga': 'aux parameter',
-        'dp': 'duplicate priority'
+        'dp': 'duplicate priority',
+        'te': 'track elective'
     }
     KEYS_LIST = ['name', 'instructions', 'credits', 'count_bottleneck', 'credits_bottleneck',
     'generator name', 'generator parameter', 'aux parameter', 'duplicate priority']
