@@ -97,6 +97,7 @@ from user_submitted_validator import validate_user_submitted_path
 from path_to_grad_parser import parse_path_to_grad
 
 # Used for controlling console window display
+import platform
 OPERATING_SYSTEM = platform.system()
 if OPERATING_SYSTEM == "Windows":
     import pywintypes, win32gui, win32con, time, win32api
