@@ -5,18 +5,29 @@
 # This file contains constants and functions for the the driver/controller and the interface components.
 # TODO: rename get_real_filepath (it looks like "relative filepath")
 
+# The following are imported for type annotations
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Union, Optional, Callable, TypeVar, Sequence
+    T = TypeVar('T')
+    ExportType = int
+
+
 # NOTE: keep this file in the same directory as the config file
 
 from pathlib import Path
 import os
 
+
+
 # Constants for export types
-PATH_TO_GRADUATION_EXPORT_TYPE = 0x00
-PLAIN_TEXT_EXPORT_TYPE = 0x01
-PDF_EXPORT_TYPE = 0x02
+PATH_TO_GRADUATION_EXPORT_TYPE: ExportType = 0x00
+PLAIN_TEXT_EXPORT_TYPE: ExportType = 0x01
+PDF_EXPORT_TYPE: ExportType = 0x02
 
 # Dictionary from export types to their description
-EXPORT_TYPE_DESCRIPTIONS = {
+EXPORT_TYPE_DESCRIPTIONS: dict[ExportType, str] = {
     PATH_TO_GRADUATION_EXPORT_TYPE: 'Path to Graduation Excel',
     PLAIN_TEXT_EXPORT_TYPE: 'Plain txt',
     PDF_EXPORT_TYPE: 'PDF'
@@ -28,29 +39,29 @@ class ConfigFileError(Exception):
     pass
 
 
-def get_source_path():
-    '''Get the path of the program's directory.'''
+def get_source_path() -> Path:
+    '''Get the path of the program's directory (a Path object).'''
     return Path(__file__).parent
     
 
-def suffix_split(filtr, sequence):
+def suffix_split(filtr: Callable[[T], bool], sequence: Sequence[T]):
     '''Split the passed sequence by a suffix: end section of the sequence such that every item meets the passed filter--
     the suffix ends as soon as one item doesn't meet the filter, and the entire sequence may be the suffix if all pass.
     The filter function is expeceted to take an item and returns a boolean. This returns a tuple with the sequence before
-    the suffix and then the suffix (both may be esequencempty).'''
+    the suffix and then the suffix (both may be empty).'''
     for index in range(len(sequence) - 1, -1, -1): # Iterate backwards
         if not filtr(sequence[index]): # Return if the filter does not pass
             return (sequence[:index + 1], sequence[index + 1:]) # Split on the index
     return (sequence[:0], sequence[:]) # All items pass
     
 
-def get_real_filepath(filepath):
+def get_real_filepath(filepath: Union[str, Path]) -> Optional[Path]:
     '''Function to verify the existence of a file/directory and change any "~" prefix into the user's home directory. This
     returns the corrected path if it exists and None if it does not. The argument is expected to be a string or Path and
     the function returns a Path.'''
     try:
-        corrected_filepath = Path(filepath).expanduser()                        # Change "~" to the user's home address if present
-        return corrected_filepath if corrected_filepath.exists() else None      # Return the path if it exists (otherwise None)
+        corrected_filepath = Path(filepath).expanduser() # Change "~" to the user's home address if present
+        return corrected_filepath if corrected_filepath.exists() else None # Return the path if it exists (otherwise None)
     except RuntimeError:
         # Runtime error occurred, which is likely a bad user directory expansion (return None)
         return None

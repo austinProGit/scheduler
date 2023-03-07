@@ -1,9 +1,11 @@
 # Thomas Merino
-# 11/23/22
+# 3/6/23
 # CPSC 4175 Group Project
 
 # TODO: add final semester rule
 # TODO: change the name of the ES to "schedule_evaluator"
+# TODO: Clean up the mixing of string and Path objects (it is not clear what is what right now)
+# TODO: File existence check does not consider the to-be file extensions (fix this) -- we could do this with Path.with_suffix('') and Path.suffix
 
 # POTENTIAL GOALS FOR NEXT CYCLE:
 # - General refactoring
@@ -24,7 +26,6 @@
 # - Display help menu contents in GUI mode via a web browser
 # - Use number of courses OR number of credit hours
 # - Open finished schedule once generated
-# - Easy openning (PATH and/or desktop shortcut)
 # - Be able to manage config file with text editor (from software)
 # - Make the content panel better
 #           Have the content panel display the output schedule (so there aren't hundreds of windows opening during batch)
@@ -32,35 +33,49 @@
 # - Accept any/all courses
 # - Handle missing package errors better
 # - Fix program icon appearing for file explorer (default Python icon)
-# - Handler permission check when setting output directory
+# - Handle permission check when setting output directory
 # - Implement weakref into the GUI widgets and item selection callbacks to prevent strong reference cycles
 # - Add working popup warning/verifying GUI->CLI switch (adding this at the moment is bug-laden)
 #           this creates an issue where the GUI sometimes dones not dismiss when changing to CLI (after switching back and forth)
 
-# To-do Legend:
-#   Ensure: something that should work or should be fixed but has not been tested enough
-#   Organize: stuff that should be cleaned up (is not necessary to do)
-#   Fix: something that should be fixed ("suprise feature")
-#   Wish: something that should be implemented (is not necessary to do)
-#   Need: something that needs to be done
 
-# TODO: (ORGANIZE) Maybe have the listeners completely consume IO (otherwise, why not just use a notification pattern?)
-# TODO: (ORGANIZE) Consider useing f'{variable}' for formatting
-# TODO: (ORGANIZE) Clean up the mixing of string and Path objects (it is not clear what is what right now)
-# TODO: (ENSURE) File existence check does not consider the to-be file extensions (fix this) -- we could do this with Path.with_suffix('') and Path.suffix
+# The following are imported for type annotations
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Callable, Optional, Union
+    from pandas import DataFrame
+    from menu_interface_base import GeneralInterface
+    from program_generated_evaluator import CourseInfoEvaluationReport
+    from PySide6.QtWidgets import QApplication
+    from degree_extraction_container import DegreeExtractionContainer
+
+import warnings
 
 
-from PySide6 import QtWidgets, QtGui
+# NOTE: Set this to True if you want to run memory profiling
+# NOTE: Memory leak detecting; this requires loading in cli
+IS_TESTING_MEMORY = False
 
-# NOTE: Uncomment this if you want to run memory profiling
-#from guppy import hpy; heap = hpy() # NOTE: added this for testing! (memory leak detecting; this requires loading in cli)
+if IS_TESTING_MEMORY:
+    from guppy import hpy
+    # Create a guppy heap tracking object if in memeory testing mode
+    heap = hpy() 
+
+from PySide6 import QtWidgets
 
 import platform
 from sys import exit
 from pathlib import Path
 from os import path
 
+
+from courses_needed_container import CoursesNeededContainer
+from general_utilities import *
+
+
 import auto_update
+
 from alias_module import *
 from catalog_parser import update_course_info
 from batch_process import batch_process
@@ -69,8 +84,11 @@ from configuration_manager import *
 from driver_fs_functions import *
 from cli_interface import MainMenuInterface, GraphicalUserMenuInterface, ErrorMenu
 from scheduler import Scheduler
+from scheduling_parameters_container import ConstructiveSchedulingParametersContainers
 from course_info_container import *
-from courses_needed_parser import get_courses_needed
+# TODO: make courses needed parser work in dis file!
+# from courses_needed_parser import get_courses_needed
+from courses_needed_parser import generate_degree_extraction_container
 from program_generated_evaluator import evaluate_container, NonDAGCourseInfoError, InvalidCourseError
 from excel_formatter import excel_formatter
 from plain_text_formatter import plain_text_export
@@ -100,72 +118,97 @@ INSTALLER_INFO_FILE = "installer_info.txt"
 class InterfaceProcedureError(Exception):
     pass
 
-
 # This class manages the interactions between the interface of the program and the model (mostly the scheduler).
 # The class also manages the destination directory and filename.
 # Menuing is performed by having an interface stack--alike chain of responsibility and/or state machine.
 class SmartPlannerController:
-    
     
     def __init__(self, graphics_enabled=True):
         if OPERATING_SYSTEM == "Windows":
             win32gui.ShowWindow(HWND, win32con.SW_HIDE)
         if auto_update.update(VERSION, RELEASE_URL, INSTALLER_INFO_FILE):
             exit(0)
+        
         self.setup(graphics_enabled)
-        # NOTE: adding this for testing! (set size for relative heap comparison; you must launch in cli mode to use this)
-        # NOTE: Uncomment this if you want to run memory profiling
-        #heap.setrelheap()
+        
+        if IS_TESTING_MEMORY:
+            # Initialize information regarding the heap.
+            # This is done after setup to simplify the deltas.
+            heap.setrelheap()
     
-    
-    def setup(self, graphics_enabled=True):
+    def setup(self, graphics_enabled: bool = True) -> None:
         '''Perform setup for scheduling, general configuration, and user interface. Setting graphics_enabled to false will
         only suppress the graphical interface during setup.'''
         
-        # The scheduler functions as the program's model. It may be serialized to save the save of the process.
-        
         # Initialize important variables
-        self._scheduler = Scheduler() # Create a scheduler object for heading the model
-        # Create the default directoty to export to (set initially to home directory) This is always
-        # expected to be an existing path. Do not set it purely based on user input
-        self._destination_directory = Path.home()
-        self._export_types = [PATH_TO_GRADUATION_EXPORT_TYPE] # Create a list to track the export methods to use
-        self._interface_stack = [] # Create a stack (list) for storing the active interfaces
+
+        # Create a scheduler parameter container where the destination directory is defaulted to export to the home directory.
+        # Configuration should be inspected for validity. Do not set properties purely based on user input.
+        parameter_container: ConstructiveSchedulingParametersContainers = \
+            ConstructiveSchedulingParametersContainers(path=Path.home(), export_types=[PATH_TO_GRADUATION_EXPORT_TYPE])
         
-        # The following are IO listeners that respond to process output. Only one listener per channel can be active; these should only
-        # be used for adding custom GUI elements and for testing.
-        self.output_callback = None # A callback that is invoked when output is presented to the user
-        self.warning_callback = None # A callback that is invoked when a warning is presented to the user
-        
+        # Setup the scheduler--object for heading the model.
+        # The scheduler functions as the program's model. It may be serialized to save the save of the process.
+        self._scheduler: Scheduler = Scheduler(course_info_container=None, parameters_container=parameter_container)
+
         # In this context, an 'interface' is an object that handles user input and performs actions on the passed
         # controller given those inputs. Interfaces are not expected to directly interact with the user (input or
         # output) unless the interface presents graphical UI elements. Interfaces are covered more in
         # menu_interface_base.py and cli_interface.py.
 
+        # Create a stack (list) for storing the active interfaces
+        self._interface_stack: list[GeneralInterface] = []
+        
+        # The following are IO listeners that respond to process output. Only one listener per channel can be active; these should only
+        # be used for adding custom GUI elements and for testing.
+        self._output_callbacks: dict[str, Callable[[str], None]] = {} # A dict of keys to callbacks that are invoked when output is presented to the user
+        self._warning_callbacks: dict[str, Callable[[str], None]] = {} # A dict of keys to callbacks that are invoked when a warning is presented to the user
+        self._error_callbacks: dict[str, Callable[[str], None]] = {} # A dict of keys to callbacks that are invoked when a error is presented to the user
+        
+        # The following variables will be assigned (attempt to) in the following try block
+        # The values are set to acceptable defaults
+        self.session_configuration: SessionConfiguration = SessionConfiguration.make_default()
+
         try:
             # Attempt to get the program parameters from the config file
             self.session_configuration = self.load_config_parameters()
             
-            # Load the course info file
+            # Load the course info file via the session configuration (SessionConfiguration)
             self.load_course_info(self.session_configuration)
             
-            # Create the default destination filename (used when relevant)
-            self._destination_filename = self.session_configuration.initial_schedule_name
+            # Set the default destination filename (used when relevant)
+            parameter_container.set_destination_filename(self.session_configuration.initial_schedule_name)
             
             # Load the user interface -- this should only block execution if graphics are presented
             self.load_interface(self.session_configuration.is_graphical and graphics_enabled) # Override conifg settings if graphics are suppressed
-        except (ConfigFileError, FileNotFoundError, IOError, NonDAGCourseInfoError, InvalidCourseError, ValueError) as e:
-            # Some error was encountered during loading (enter the error menu)
-            print(e)
-            self.output_error('A problem was encountered during loading--entering error menu...')
+
+        except ConfigFileError as config_error:
+            # Some config file error was encountered during loading (enter the error menu)
+            self.output_error(f'A problem was encountered during loading: "{str(config_error)}"--entering error menu...')
+            self.enter_error_menu()
+
+        except (FileNotFoundError, IOError) as file_error:
+            # Some IO error was encountered during loading (enter the error menu)
+            self.output_error('A I/O error was encountered during loading--entering error menu...')
+            self.enter_error_menu()
+
+        except (NonDAGCourseInfoError, InvalidCourseError) as data_error:
+            # Some data error was encountered during loading (enter the error menu)
+            self.output_error(f'A data error was encountered during loading: "{str(data_error)}"--entering error menu...')
+            self.enter_error_menu()
+
+        except ValueError as value_error:
+            # A value error was encountered during loading (enter the error menu)
+            self.output_error(f'A data error was encountered during loading--entering error menu...')
             self.enter_error_menu()
     
     
     ## ----------- Process configuration ----------- ##
     
     
-    def load_config_parameters(self):
-        '''Load program configuration information from the config file. This returns a SessionConfiguration object or raises a ConfigFileError if the file is invalid.'''
+    def load_config_parameters(self) -> SessionConfiguration:
+        '''Load program configuration information from the config file. This returns a SessionConfiguration object or raises a
+        ConfigFileError if the file is invalid.'''
         
         try:
             # Return the session object
@@ -175,26 +218,26 @@ class SmartPlannerController:
             # Configuration is missing important data (report to the user and raise a config error)
             self.output_error(f'Invalid config file contents. Please see instructions on how to reconfigure. {str(config_file_error)}')
             raise config_file_error
-                    
+            
         except (FileNotFoundError, IOError):
             # Configuration file could not be found (report to the user and raise a ConfigFileError)
             self.output_error('Could not get config file. Please see instructions on how to reconfigure.')
             raise ConfigFileError()
     
     
-    def load_course_info(self, session_configuration):
+    def load_course_info(self, session_configuration: SessionConfiguration) -> None:
         '''Configure the scheduler with the course info file from the passes session object. This may re-raise a
         NonDAGCourseInfoError if one was raised during loading the course info.'''
-                    
-        course_info_filename = session_configuration.course_info_filename
-        excused_prereqs_filename = session_configuration.excused_prereqs
-        alias_filename = session_configuration.alias_filename
+        
+        course_info_filename: str = session_configuration.course_info_filename
+        excused_prereqs_filename: str = session_configuration.excused_prereqs
+        alias_filename: str = session_configuration.alias_filename
         
         # Get the filepaths relative to the source path
-        source_code_path = get_source_path()
-        course_info_relative_path = get_source_relative_path(source_code_path, course_info_filename)
-        excused_prereqs_relative_path = get_source_relative_path(source_code_path, excused_prereqs_filename)
-        alias_relative_path = get_source_relative_path(source_code_path, alias_filename)
+        source_code_path: Path = get_source_path()
+        course_info_relative_path: Path = get_source_relative_path(source_code_path, course_info_filename)
+        excused_prereqs_relative_path: Path = get_source_relative_path(source_code_path, excused_prereqs_filename)
+        alias_relative_path: Path = get_source_relative_path(source_code_path, alias_filename)
         
         # TODO: this is NOT in use at the moment (neither is availability in general...)
         #course_availability_relative_path = get_source_relative_path(source_code_path, course_availability_filename)
@@ -203,24 +246,25 @@ class SmartPlannerController:
         try:
             setup_aliases(alias_relative_path)
 
-            course_info = load_course_info(course_info_relative_path)
-            course_info_container = CourseInfoContainer(course_info)
+            course_info: Optional[DataFrame] = load_course_info(course_info_relative_path)
+            course_info_container: CourseInfoContainer = CourseInfoContainer(course_info)
             
             # This raises an exception if Course Info Container contains invalid data
-            evaluation_report = evaluate_container(course_info_container)
+            evaluation_report: CourseInfoEvaluationReport = evaluate_container(course_info_container)
             course_info_container.load_report(evaluation_report)
             
             self._scheduler.configure_course_info(course_info_container)
             
         except (FileNotFoundError, IOError) as file_error:
             # Course info could not be found/read (report to the user and re-raise the error to enter error menu)
-            self.output_error('Invalid course catalog file. Please rename the catalog to {0}, make sure it is accessible, and reload the catalog (enter "reload").'.format(course_info_relative_path))
+            self.output_error(f'Invalid course catalog file. Please rename the catalog to {course_info_relative_path}, make sure it is accessible, and reload the catalog (enter "reload").')
             raise file_error
             
-        except ValueError:
+        except ValueError as config_error:
             # ValueError is raised when the table has an invalid format or is the wrong type of file (check extension)
             self.output_error('Course catalog is not in the correct format. Please correct all issues and reload the catalog (enter "reload").')
             raise config_error
+
         except (NonDAGCourseInfoError, InvalidCourseError) as config_error:
             # The catalog was/is invalid (report to the user and re-raise the error to enter error menu)
             # NonDAGCourseInfoError is raised when a prequisite cycle is detected
@@ -231,12 +275,12 @@ class SmartPlannerController:
             raise config_error
     
     
-    def load_interface(self, is_graphical):
+    def load_interface(self, is_graphical: bool) -> None:
         '''Load the process's interface. This should be called only once during the lifecycle of the process--unless the
         process is reloaded from the error menu.'''
         
         # Set the bottom/first interface to be either a GUI menu or CLI main menu instance
-        bottom_interface = GraphicalUserMenuInterface() if is_graphical else MainMenuInterface()
+        bottom_interface: GeneralInterface = GraphicalUserMenuInterface() if is_graphical else MainMenuInterface()
         
         # Push the new menu
         self.push_interface(bottom_interface)
@@ -249,114 +293,151 @@ class SmartPlannerController:
     # Warnings are acceptable, but the user should still be notified in some way.
     # Errors cannot be ignored, but there is not as much of an emphasis placed on notifying the user.
     
-    
-    def output(self, message):
+    def output(self, message: str) -> None:
         '''Output a message to the user.'''
-        if self.output_callback:
-            self.output_callback(message)
+        callback: Callable[[str], None]
+        for callback in self._output_callbacks.values():
+            callback(message)
         print(message)
     
     
-    def output_warning(self, message):
+    def output_warning(self, message: str) -> None:
         '''Output a warning message to the user.'''
-        if self.warning_callback:
-            self.warning_callback(message)
-        self.output('WARNING: {0}'.format(message))
+        callback: Callable[[str], None]
+        for callback in self._warning_callbacks.values():
+            callback(message)
+        self.output(f'WARNING: {message}')
     
     
-    def output_error(self, message):
+    def output_error(self, message: str) -> None:
         '''Output an error message to the user.'''
-        self.output('ERROR: {0}'.format(message))
+        callback: Callable[[str], None]
+        for callback in self._error_callbacks.values():
+            callback(message)
+        self.output(f'ERROR: {message}')
     
-    
-    def output_clear(self):
+
+    def output_clear(self) -> None:
         '''Clear the terminal of content (intended for CLI interface).'''
         if os.name == 'nt':
             os.system('cls')
         else:
             os.system('clear')
     
-    def get_input(self):
+
+    def get_input(self) -> str:
         '''Get input text from the user with the current interface's/menu's name in the prompt.'''
-        current_interface = self.get_current_interface()
-        # MERINO: Added this for testing! Uncomment to print new heap allocations at every input
-        # MERINO: Uncomment this if you want to run memory profiling
-        #print(heap.heap())
-        return input('{0}: '.format(current_interface.name))
+        current_interface: GeneralInterface = self.get_current_interface()
+        
+        if IS_TESTING_MEMORY:
+            print(heap.heap())
+        
+        return input(f'{current_interface.name}: ')
     
     
-    def set_output_listener(self, output_callback=None):
-        '''Set the callback that's invoked when output is about to be presented to the user (that may only be one at a time).'''
-        self.output_callback = output_callback
+    def add_output_listener(self, key: str, output_callback: Callable[[str], None]) -> None:
+        '''Add a callback that's invoked when output is about to be presented to the user (that may only be one at a time for the passed key).'''
+        self._add_callback_listener(key, output_callback, self._output_callbacks)
     
+    def remove_output_listener(self, key: str) -> bool:
+        '''Remove the output callback for the passed key. The success of the removal is returned.'''
+        return self._remove_callback_listener(key, self._output_callbacks)
+
+
+    def add_warning_listener(self, key: str, warning_callback: Callable[[str], None]) -> None:
+        '''Add a warning callback that's invoked when a warning is about to be presented to the user (that may only be one at a time for the passed key).'''
+        self._add_callback_listener(key, warning_callback, self._warning_callbacks)
     
-    def set_warning_listener(self, warning_callback=None):
-        '''Set the callback that's invoked when a warning is about to be presented to the user (that may only be one at a time).'''
-        self.warning_callback = warning_callback
+    def remove_warning_listener(self, key: str) -> bool:
+        '''Remove the warning callback for the passed key. The success of the removal is returned.'''
+        return self._remove_callback_listener(key, self._warning_callbacks)
+
+
+    def add_error_listener(self, key: str, warning_callback: Callable[[str], None]) -> None:
+        '''Add a error callback that's invoked when an error is about to be presented to the user (that may only be one at a time for the passed key).'''
+        self._add_callback_listener(key, warning_callback, self._error_callbacks)
+    
+    def remove_error_listener(self, key: str) -> bool:
+        '''Remove the error callback for the passed key. The success of the removal is returned.'''
+        return self._remove_callback_listener(key, self._error_callbacks)
+
+
+    def _add_callback_listener(self, key: str, callback: Callable[[str], None], callback_map: dict[str, Callable[[str], None]]) -> None:
+        '''Internal method for modifying a callback mapping.'''
+        callback_map[key] = callback
+    
+    def _remove_callback_listener(self, key: str, callback_map: dict[str, Callable[[str], None]]) -> bool:
+        '''Internal method to remove the callback for the passed key. The success of the removal is returned.'''
+        will_remove = key in callback_map
+        if will_remove:
+            del callback_map[key]
+        return will_remove
     
     
     ## ----------- Interface/menu control ----------- ##
     
-    
-    def has_interface(self):
+
+    def has_interface(self) -> bool:
         '''Gets whether the is an interface in the interface stack.'''
         return len(self._interface_stack) != 0
     
-    
-    def get_current_interface(self):
-        '''Get the interface/menu that is presenting.'''
+
+    def get_current_interface(self) -> GeneralInterface:
+        '''Get the interface/menu that is presenting. This may raise an InterfaceProcedureError if there
+        is no interfaces left.'''
         
         # Ensure the is a interface (if not, raise a InterfaceProcedureError)
         if len(self._interface_stack) == 0:
-            raise InterfaceProcedureError()
+            raise InterfaceProcedureError('')
             
         # Return the top interface
         return self._interface_stack[-1]
     
     
-    def push_interface(self, interface):
+    def push_interface(self, interface: GeneralInterface) -> None:
         '''Push a given interface to the top of the interface stack.'''
         self._interface_stack.append(interface)
         interface.was_pushed(self)
     
     
-    def pop_interface(self, interface):
-        '''Pop the provided interface if it on top of the interface stack. Otherwise, raise a InterfaceProcedureError.'''
+    def pop_interface(self, interface: GeneralInterface) -> GeneralInterface:
+        '''Pop the provided interface if it on top of the interface stack. Otherwise, raise a
+        InterfaceProcedureError.'''
         
         # Check if the passed interface resides on the top of the stack
-        if interface == self.get_current_interface():
-            top_interface = self._interface_stack.pop() # Pop the passed interface
+        if interface is self.get_current_interface():
+            top_interface: GeneralInterface = self._interface_stack.pop() # Pop the passed interface
             top_interface.deconstruct(self) # Call the interface's deconstruct method
             return top_interface
         else:
             raise InterfaceProcedureError() # Raise an error about the illegal procedure
     
     
-    def clear_all_interfaces(self):
+    def clear_all_interfaces(self) -> None:
         '''Clear the interface stack (this dismisses all interface in order from highest to lowest).'''
         while self.has_interface():
             self.pop_interface(self.get_current_interface())
     
     
-    def reload_in_cli(self):
+    def reload_in_cli(self) -> None:
         '''Clear the interface stack (this dismisses all interface in order from highest to lowest) and push a cli menu.'''
         self.clear_all_interfaces()
         self.push_interface(MainMenuInterface())
     
     
-    def get_graphical_application(self):
+    def get_graphical_application(self) -> Optional[QApplication]:
         '''Get the current graphical application object. If it does not exist, create a new one.'''
-        application = QtWidgets.QApplication.instance()
-        if not application:
+        application: Optional[QApplication] = QtWidgets.QApplication.instance()
+        if application is None:
             # There is no application (create one)
             application = QtWidgets.QApplication([])
         return application
     
     
-    def enter_error_menu(self):
+    def enter_error_menu(self) -> None:
         '''Push an error menu onto the menu stack so the user can correct errors before reloading.
         This blocks execution until the error menu exits.'''
-        new_error_menu = ErrorMenu()
+        new_error_menu: ErrorMenu = ErrorMenu()
         self.push_interface(new_error_menu)
         
         # While the new error message is in the stack, run the top interface (most likely the error menu)
@@ -366,88 +447,111 @@ class SmartPlannerController:
     
     ## ----------- Scheduling parameter getting ----------- ##
     
-    def get_courses_needed(self):
+
+    def get_courses_needed(self) -> Optional[CourseInfoContainer]:
         '''Get the coursed needed that have been loaded into the scheduler. This return a list of strings (IDs).'''
-        return self._scheduler.get_courses_needed()
+        return self._scheduler.get_courses_needed_container()
         
     
-    def get_hours_per_semester(self):
+    def get_hours_per_semester(self) -> Optional[range]:
         '''Get the hours per semester to use.'''
-        return self._scheduler.get_hours_per_semester()
+        parameters: ConstructiveSchedulingParametersContainers = self._scheduler.get_parameter_container()
+        # TODO: this just uses Fall 2023 for hours
+        return parameters.get_hours_for(FALL)
     
     
-    def get_export_type(self):
+    def get_export_type(self) -> list[ExportType]:
         '''Get a set of the enabled export types.'''
-        return self._export_types.copy()
+        parameters: ConstructiveSchedulingParametersContainers = self._scheduler.get_parameter_container()
+        return parameters.get_export_types()
     
     
-    def get_destination_directory(self):
+    def get_destination_directory(self) -> Path:
         '''Get the path that the resulting schedule file will be exported to. This should always return a real directory.'''
-        return self._destination_directory
+        parameters: ConstructiveSchedulingParametersContainers = self._scheduler.get_parameter_container()
+        return parameters.get_destination_directory()
     
     
-    def get_destination_filename(self):
+    def get_destination_filename(self) -> str:
         '''Get string that will be used to name the resulting schedule file.'''
-        return self._destination_filename
+        parameters: ConstructiveSchedulingParametersContainers = self._scheduler.get_parameter_container()
+        return parameters.get_destination_filename()
             
     
-    def get_destination(self):
+    def get_destination(self) -> Path:
         '''Get the full path of the schedule destination. This should always return a valid destination.'''
-        return Path(self._destination_directory, self._destination_filename)
+        return Path(self.get_destination_directory(), self.get_destination_filename())
     
     
     ## ----------- Scheduling parameter configuration ----------- ##
     
-    
-    def load_courses_needed(self, filename):
+
+    def load_courses_needed(self, filename: str) -> bool:
         '''Load the courses that must be scheduled into the scheduler (from the passed filename).
         This return the success of the load.'''
-        success = False
+        success: bool = False
         try:
-            filepath = get_real_filepath(filename) # Get the file's path and check if it exists
-            if filepath:
-                courses_needed_container = get_courses_needed(filepath) # Get the needed courses from the file
-                self._scheduler.configure_courses_needed(courses_needed_container) # Load the course container into the scheduler
+            filepath: Optional[Path] = get_real_filepath(filename) # Get the file's path and check if it exists
+            if filepath is not None:
+                # Load degree extraction / courses needed contents here:
+                degree_extraction: DegreeExtractionContainer = generate_degree_extraction_container(filepath) # Get the needed courses from the file
+                self._scheduler.configure_degree_extraction(degree_extraction) # Load the course container / degree extraction into the scheduler
+
+                # TODO: this is temp (VERY BAD, VERY NO GOOD) ->
+                for node in self._scheduler._courses_needed_container._decision_tree.get_all_children_list():
+                    node.enable_stub()
+
+                #self._scheduler.configure_courses_needed(courses_needed_container) 
                 self.output('Course requirements loaded from {0}.'.format(filepath)) # Report success to the user
                 success = True # Set success to true
             else:
                 self.output_error('Sorry, {0} file could not be found.'.format(filename)) # Report if the file could not be found
         except IOError:
             self.output_error('Sorry, {0} file could not be openned.'.format(filename)) # Report if the file could not be openned
+
         return success
     
     
-    def configure_hours_per_semester(self, number_of_hours):
+    def configure_hours_per_semester(self, number_of_hours: int) -> bool:
         '''Set the number of hours that are scheduled per semester. This return the success of the load.'''
+
+        success: bool = True
         
         if number_of_hours <= self.session_configuration.strong_hours_minimum \
-           or self.session_configuration.strong_hours_limit < number_of_hours:
-           
-            self.output_warning('Please enter between {0} and {1} hours per semester.'.format(self.session_configuration.strong_hours_minimum, self.session_configuration.strong_hours_limit))
-            return False
-        
-        if number_of_hours > self.session_configuration.normal_hours_limit:
-            self.output_warning('Taking over {0} credit hours per semester is not recommended.'.format(self.session_configuration.normal_hours_limit))
+            or self.session_configuration.strong_hours_limit < number_of_hours:
             
-        
-        self._scheduler.configure_hours_per_semester(number_of_hours)
-        self.output('Hours per semester set to {0}.'.format(number_of_hours))
-        return True
+            # The user has entered an amount of credits above or below what us acceptable (output a warning)
+            strong_minimum: int = self.session_configuration.strong_hours_minimum
+            strong_maximum: int = self.session_configuration.strong_hours_limit
+            self.output_warning(f'Please enter between {strong_minimum} and {strong_maximum} hours per semester.')
+            success = False
+
+        else:
+            if number_of_hours > self.session_configuration.normal_hours_limit:
+                self.output_warning(f'Taking over {self.session_configuration.normal_hours_limit} credit hours per semester is not recommended.')
+            
+            self._scheduler.configure_hours_per_semester(number_of_hours)
+            self.output(f'Hours per semester set to {number_of_hours}.')
+        return success
         
     
-    def set_export_types(self, export_types):
+    def set_export_types(self, export_types: list[ExportType]) -> None:
         '''Set the types of formats to export with (schedule formatters to use).'''
-        self._export_types = export_types[:]
+        #self._export_types = export_types[:]
+        parameters: ConstructiveSchedulingParametersContainers = self._scheduler.get_parameter_container()
+        parameters.set_export_type(export_types)
     
     
-    def configure_destination_directory(self, directory):
+    def configure_destination_directory(self, directory: Union[str, Path]) -> bool:
         '''Set the destination directory (where to save the schedule). This return the success of the configuration.'''
         success = False
                 
         # Verify the passed directory exists and is indeed a directory
-        directory_path = get_real_filepath(directory)   # Get the verified path (this is a Path object that exists, but it is not necessarily a directory)
-        if directory_path and directory_path.is_dir():
-            self._destination_directory = directory_path
+        directory_path: Optional[Path] = get_real_filepath(directory)   # Get the verified path (this is a Path object that exists, but it is not necessarily a directory)
+        if directory_path is not None and directory_path.is_dir():
+            parameters: ConstructiveSchedulingParametersContainers = self._scheduler.get_parameter_container()
+            parameters.set_destination_directory(directory_path)
+            # self._destination_directory = directory_path
             self.output('Destination directory set to {0}.'.format(directory_path))
             success = True
         else:
@@ -457,21 +561,24 @@ class SmartPlannerController:
         return success
         
     
-    def set_destination_filename(self, filename):
+    def set_destination_filename(self, filename: str) -> None:
         '''Simply set the destination filename (what to name the schedule).'''
-        self._destination_filename = filename
+        # self._destination_filename = filename
+        parameters: ConstructiveSchedulingParametersContainers = self._scheduler.get_parameter_container()
+        parameters.set_destination_filename(filename)
     
     
-    def configure_destination_filename(self, filename):
+    def configure_destination_filename(self, filename: str) -> None:
         '''Set the destination filename (what to name the schedule). This should invoked when configuring output parameter, but
-        it should not be invoked just before exporting. Do not use this for modifying _destination_filename in all cases.'''
+        it should not be invoked just before exporting. Do not use this for modifying _destination_filename in all cases. This is
+        like the user interface method of changing the export filename.'''
         
         # Set the destination filename (not verified)
         self.set_destination_filename(filename)
         self.output('Result filename set to {0}.'.format(filename))
         
         # Check if a file already exists with the current destination
-        filepath = get_real_filepath(self.get_destination())
+        filepath: Optional[Path] = get_real_filepath(self.get_destination())
         if filepath:
             self.output_warning('A file already exists with that name. The exported files will have slightly different names.')
     
@@ -480,20 +587,23 @@ class SmartPlannerController:
     
     
     # TODO: TEST - this still has not been tested enough
-    def create_default_config_file(self, catalog_name=None, availability_name=None):
+    def create_default_config_file(self, catalog_name: Optional[str] = None, availability_name: Optional[str] = None):
         '''Create a default config file for the program. This uses the default catalog name if
         catalog name is empty or None and saves the config file to this file's directory '''
         
-        new_session_configuration = SessionConfiguration.make_default()
+        new_session_configuration: SessionConfiguration = SessionConfiguration.make_default()
         
-        # Set catalog_field to catalog_name unless it is None or ''
+        # Set catalog name field to catalog_name unless it is None or '' (falsey)
+        # Leaving the parameter None means the default value is used (from SessionConfiguration.make_default)
         if catalog_name:
             new_session_configuration.course_info_filename = catalog_name
         
+        # Set availability name field to availability_name unless it is None or '' (falsey)
+        # Leaving the parameter None means the default value is used (from SessionConfiguration.make_default)
         if availability_name:
             new_session_configuration.availability_filename = availability_name
         
-        missing_attributes = save_configuration_session(new_session_configuration)
+        missing_attributes: list[str] = save_configuration_session(new_session_configuration)
         
         if missing_attributes:
             self.output_error(f'Error encountered while saving default config file. Missing attributes: {", ".join(missing_attributes)}.')
@@ -608,17 +718,18 @@ class SmartPlannerController:
         '''Generate the schedule with a given filename or the current default filename if nothing is provided.'''
         
         # Check if any courses are loaded
-        if not self._scheduler.get_courses_needed():
+        if not self._scheduler.get_courses_needed_container():
             self.output_warning('No schedule exported.')
             self.output_error('No needed courses loaded.')
             return
+
+        export_types = self._scheduler.get_parameter_container().get_export_types()
         
         # Check if no export types are selected (empty)
-        if not self._export_types:
+        if not export_types:
             self.output_warning('No schedule exported.')
             self.output_error('No export type selected.')
             return 
-        
         
         
         self.output('Generating schedule...')
@@ -628,42 +739,48 @@ class SmartPlannerController:
         
         # Set _destination_filename to the passed filename if one was passed
         if filename:
-            self._destination_filename = filename
+            self.set_destination_filename(filename)
         
         desired_destination = self.get_destination()
         
         try:
-            if self._export_types:
-                container = self._scheduler.generate_schedule()
-                confidence_factor = container.get_cf()
-                semesters_listing = container.get_schedule()
-                
-                #semesters_listing, confidence_factor = self._scheduler.generate_schedule()
-                self.output('Path generated with confidence value of {0:.1f}%'.format(confidence_factor*100))
-                
-                template_path = Path(get_source_path(), 'input_files')
-                
-                if PATH_TO_GRADUATION_EXPORT_TYPE in self._export_types:
-                    unique_ptg_destination = get_next_free_filename(desired_destination.with_suffix('.xlsx'))
-                    # Lew erased 'Path To Graduation' from here to work with excel_formatter
-                    excel_formatter(Path(template_path), unique_ptg_destination, semesters_listing, self._scheduler.get_course_info())
-                    self.output('Schedule (Path to Graduation) exported as {0}'.format(unique_ptg_destination))
+            container = self._scheduler.generate_schedule()
+            confidence_factor = container.get_confidence_level()
+            semesters_listing = container.get_schedule()
+            
+            #semesters_listing, confidence_factor = self._scheduler.generate_schedule()
+            self.output('Path generated with confidence value of {0:.1f}%'.format(confidence_factor*100))
+            
+            template_path = Path(get_source_path(), 'input_files')
+            
+            if PATH_TO_GRADUATION_EXPORT_TYPE in export_types:
+                unique_ptg_destination = get_next_free_filename(desired_destination.with_suffix('.xlsx'))
+                # Lew erased 'Path To Graduation' from here to work with excel_formatter
+                excel_formatter(Path(template_path), unique_ptg_destination, semesters_listing, self._scheduler.get_course_info())
+                self.output('Schedule (Path to Graduation) exported as {0}'.format(unique_ptg_destination))
+                if os.name == 'nt':
                     os.startfile(unique_ptg_destination)
-                
-                if PLAIN_TEXT_EXPORT_TYPE in self._export_types:
-                    unique_ptext_destination = get_next_free_filename(desired_destination.with_suffix('.txt'))
-                    plain_text_export(unique_ptext_destination, semesters_listing, 'Spring', 2022)
-                    self.output('Schedule (plain text) exported as {0}'.format(unique_ptext_destination))
+                else:
+                    os.system(f'open {str(unique_ptg_destination.absolute())}')
+            
+            if PLAIN_TEXT_EXPORT_TYPE in export_types:
+                unique_ptext_destination = get_next_free_filename(desired_destination.with_suffix('.txt'))
+                plain_text_export(Path(unique_ptext_destination), container, FALL, 2022)
+                self.output('Schedule (plain text) exported as {0}'.format(unique_ptext_destination))
+                if os.name == 'nt':
                     os.startfile(unique_ptext_destination)
+                else:
+                    os.system(f'open {str(unique_ptext_destination.absolute())}')
 
-                if PDF_EXPORT_TYPE in self._export_types:
-                    unique_pdf_destination = get_next_free_filename(desired_destination.with_suffix('.pdf'))
-                    pdf_export(unique_pdf_destination, semesters_listing, 'Spring', 2022)
-                    self.output('Schedule (PDF) exported as {0}'.format(unique_pdf_destination))
+            if PDF_EXPORT_TYPE in export_types:
+                unique_pdf_destination = get_next_free_filename(desired_destination.with_suffix('.pdf'))
+                pdf_export(Path(unique_pdf_destination), container, FALL, 2022)
+                self.output('Schedule (PDF) exported as {0}'.format(unique_pdf_destination))
+                if os.name == 'nt':
                     os.startfile(unique_pdf_destination)
+                else:
+                    os.system(f'open {str(unique_pdf_destination.absolute())}')
                 
-            else:
-                self.output_error('Validation over a file list is not supported yet.')
                 
         except (FileNotFoundError, IOError):
             # This code will probably execute when file system permissions/organization change after setting parameters

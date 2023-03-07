@@ -1,6 +1,16 @@
 # Thomas Merino
-# 10/17/22
+# 2/20/23
 # CPSC 4175 Group Project
+
+# The following are imported for type annotations
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Callable, Optional
+    from program_driver import SmartPlannerController as Controller
+    from PySide6.QtWidgets import QApplication
+    from menu_interface_base import ControllerCommand
+
 
 # TODO: (ENSURE) help file parser ends predictably at "<END>" (no extra blank lines)
 # TODO: (ORGANIZE) Remove redundant file explorer code
@@ -8,16 +18,14 @@
 
 from courses_needed_container import NeededCoursesInterface, CONSTANT_REFRESHING
 
-from PySide6 import QtCore, QtWidgets, QtGui
+from PySide6 import QtWidgets, QtGui
 from sys import exit
-from difflib import SequenceMatcher
-import platform
-import os # TODO: this is only used for one thing, and it not good (see below)
 
 from driver_fs_functions import *
 from graphical_interface import MainProgramWindow
 from item_selection_interface import ItemSelectionInterface
 from menu_interface_base import GeneralInterface
+from help_interface import HelpMenu
 
 # Used for controlling console window display
 OPERATING_SYSTEM = platform.system()
@@ -26,17 +34,7 @@ if OPERATING_SYSTEM == "Windows":
     TITLE = win32api.GetConsoleTitle()
     HWND = win32gui.FindWindow(None, TITLE)
 
-HELP_FILENAME = 'help.html' # The filename of the program's help documentation (this must be kept in a specific format)
-HELP_TERMINATOR = '</body>' # The string that ends help documentation parsing
-HELP_PRE_START = '<h1>' # The string that will start help documentation parsing
-HELP_HEADER_START_TOKEN = '<h3>' # The string that will start header string
-HELP_HEADER_END_TOKEN = '</h3>' # The string that will end header string
-HELP_TAG_START_TOKEN = '<!--' # The string that will start tokens string
-HELP_TAG_END_TOKEN = '-->' # The string that will end tokens string
-HELP_PARAGRAPH_START_TOKEN = '<p>' # The string that will start paragraph string
-HELP_PARAGRAPH_END_TOKEN = '</p>' # The string that will end paragraph string
-ICON_FILENAME = 'icon.png' # The filename of the program's icon (when GUI)
-HELP_QUERY_ACCEPTANCE = 0.7 # Level of tolerance (0.0 to 1.0) while searching help documentation
+ICON_FILENAME: str = 'icon.png' # The filename of the program's icon (when GUI)
 
 
 
@@ -86,140 +84,10 @@ class MainMenuInterface(GeneralInterface):
         self.add_command(quit_command,'quit', 'exit')
     
     
-    def report_invalid_command_error(self, controller, command_string):
+    def report_invalid_command_error(self, controller: Controller, command_string: str) -> None:
         '''Report when an unsupported command is entered (this may be overridden to provide relevant tools/help).'''
-        controller.output_error('Sorry, no command matching "{0}" was found. Use "commands" or "help" to find the command you are looking for.'.format(command_string))
+        controller.output_error(f'Sorry, no command matching "{command_string}" was found. Use "commands" or "help" to find the command you are looking for.')
         
-
-
-# The following is the help menu for the program. It handles presenting and searching for program documentation. It loads
-# the contents of the help file upon being intialized. It stores the articles' headers, keywords (for searching), and content.
-# Searching does accept slightly misspelled words.
-
-class HelpMenu(GeneralInterface):
-
-    
-    def __init__(self):
-        self.name = 'HELP MENU'
-        self.headers = [] # List of help article headers (for displaying the title of the article)
-        self.keywords = [] # List of help article keywords (what is used to search for articles)
-        self.articles = [] # List of article contents
-        self.article_count = 0 # The number of articles loaded into the object
-        
-        # Open the help file and extract the headers, keywords, and articles
-        # The help file is expected to have the following format (breaks are indicated by \n escapes):
-        # Header \n Keywords seperated by white spaces \n Article contents \n Line seperator (for easier editing) \n ... \n <END>
-        
-        # TODO: This is not sustainable (using __file__)
-        help_filename = os.path.join(os.path.dirname(__file__), HELP_FILENAME)
-        with open(help_filename, 'r') as documentation:
-            # Consume head and other starting content
-            while HELP_PRE_START not in documentation.readline(): pass
-            
-            while documentation:
-                new_header = self.parse_file_with_tokens(documentation, HELP_HEADER_START_TOKEN, HELP_HEADER_END_TOKEN)
-                
-                if not new_header:
-                    break
-                self.headers.append(new_header)
-                new_tags = self.parse_file_with_tokens(documentation, HELP_TAG_START_TOKEN, HELP_TAG_END_TOKEN).split()
-                self.keywords.append(new_tags)
-                self.articles.append(self.remove_tokens_from_string(
-                    self.parse_file_with_tokens(documentation, HELP_PARAGRAPH_START_TOKEN, HELP_PARAGRAPH_END_TOKEN), '<table>', '</table>')
-                )
-                self.article_count += 1
-    
-    # Helper function for reading the contents of the help documentation
-    def parse_file_with_tokens(self, file, start_token, end_token):
-        result = ''
-        line = file.readline()
-        while line and start_token not in line:
-            line = file.readline()
-        if not line:
-            return None # EOF
-        if end_token in line:
-            return line[line.index(start_token) + len(start_token):line.index(end_token)]
-        result = line[line.index(start_token) + len(start_token):]
-        line = file.readline()
-        while end_token not in line:
-            result += line
-            line = file.readline()
-        result += line[:line.index(end_token)]
-        # print(f'result: {result}')
-        return result
-
-    def remove_tokens_from_string(self, string, start_token, end_token):
-        start_index = string.find(start_token)
-        end_index = string.find(end_token)
-        if start_index != -1 and end_index != -1:
-            result = self.remove_tokens_from_string(string[:start_index] + string[:end_index+len(end_token)], start_token, end_token)
-        return string
-
-    def parse_input(self, controller, input):
-        '''Handle input on behalf of the program.'''
-        
-        if input == 'exit' or input == 'quit' or input == '':
-            # Exit the help menu
-            controller.pop_interface(self)
-        
-        elif 'all' in input:
-            # List all articles
-            for article_index in range(self.article_count):
-                controller.output(self.headers[article_index])
-                controller.output(self.articles[article_index])
-        else:
-            # The input did not match a command (search for an article)
-            controller.output('Now searching for "{0}"...'.format(input))
-            possible_article_indices = self._search_for_keywords(input)
-            self.list_articles(controller, possible_article_indices)
-    
-    
-    def _search_for_keywords(self, query):
-        '''Get a list of article indices that match the passed query.'''
-        
-        possible_article_indices = []
-        matcher = SequenceMatcher()
-        query_words = set(query.split())
-        
-        # Helper function for determining if the article matches the query (close enough, anyhow)
-        def article_matches_query(keyword):
-            matcher.set_seq1(keyword)
-            for query_word in query_words:
-                matcher.set_seq2(query_word)
-                if matcher.ratio() >= HELP_QUERY_ACCEPTANCE:
-                    return True
-            return False
-        
-        for article_index in range(self.article_count):
-            for keyword in self.keywords[article_index]:
-                if article_matches_query(keyword):
-                    possible_article_indices.append(article_index)
-                    break
-        
-        return possible_article_indices
-    
-    
-    def list_articles(self, controller, possible_article_indices):
-        '''List the articles from the passed list of indices (as the result of a search).'''
-        
-        possible_articles_count = len(possible_article_indices)
-        
-        if possible_articles_count == 0:
-            controller.output('Sorry, no matches found. Please try using different keywords.\n')
-        elif possible_articles_count == 1:
-            controller.output('This might help:\n')
-            controller.output(self.headers[possible_article_indices[0]])
-            controller.output(self.articles[possible_article_indices[0]])
-        else:
-            # TODO: We may introduce an article selection menu here
-                    
-            controller.output('These might help:\n')
-            for article_index in possible_article_indices:
-                controller.output(self.headers[article_index])
-                controller.output(self.articles[article_index])
-    
-# End of HelpMenu definition
-
 
 # This a special menu that, once pushed, presents the user with a graphical user interface for interfacing with
 # the process. This will block execution until the GUI is closed, which will trigger the menu to pop itself. The
@@ -235,31 +103,32 @@ class GraphicalUserMenuInterface(GeneralInterface):
         self.name = 'GUI MENU'
     
     
-    def was_pushed(self, controller):
+    def was_pushed(self, controller: Controller) -> None:
         '''Method that is called upon the interface being pushed onto the interface stack.'''
         
-        application = controller.get_graphical_application() # Get the application object from the controller
+        application: Optional[QApplication] = controller.get_graphical_application() # Get the application object from the controller
         # TODO: This is not sustainable (using __file__)
-        application.setWindowIcon(QtGui.QIcon(str(os.path.join(os.path.dirname(__file__), ICON_FILENAME))))   # Set the window icon
+        icon: QtGui.QIcon = QtGui.QIcon(str(os.path.join(os.path.dirname(__file__), ICON_FILENAME)))
+        #application.setWindowIcon(icon)   # Set the window icon
         main_window = MainProgramWindow(controller) # Create a new window for the application to present
         main_window.resize(800, 400) # Set the initial window size
         main_window.show() # Present the window
         application.exec() # Execute the application until closed (block execution)
         
         # At this point, the GUI has been closed and the program should resume normal execution
-        # Since that menu has served it's purpose, it will be popped if still in the stack
+        # Since that menu has served its purpose, it will be popped if still in the stack
         
         # Ensure the controller has an interface and that the current interface is indeed this menu
         # This check is required in case of future changes and when an error menu interrupts execution
-        if controller.has_interface() and controller.get_current_interface() == self:
+        if controller.has_interface() and controller.get_current_interface() is self:
             controller.pop_interface(self)
     
         
-    def deconstruct(self, controller):
+    def deconstruct(self, controller: Controller):
         '''Destruction method that is called upon the interface being dismissed.'''
         # Disconnect program IO from graphics
-        controller.set_output_listener(None)
-        controller.set_warning_listener(None)
+        controller.remove_output_listener("GUIOutput")
+        controller.remove_warning_listener("GUIWarning")
         
         # Get and terminate the graphical application component
         application = QtWidgets.QApplication.instance()
@@ -287,7 +156,7 @@ class ErrorMenu(GeneralInterface):
 ## --------------------------------------------------------------------- ##
 
 
-def list_available_commands_command(controller, argument):
+def list_available_commands_command(controller: Controller, argument: str):
     '''Output the commands that may be entered.'''
     
     controller.output('Here are the commands available:\ncommands, load, load-e, destination, destination-e, set-hours, set-exports, list-parameters, schedule, verify, verify-e, batch, batch-verify, gui, cli, gui-i, help, quit')
@@ -415,12 +284,18 @@ def list_parameters_command(controller, arguements):
     if not arguements:
         controller.output('Scheduling Parameter:\n')
         controller.output('Destination: {0}'.format(controller.get_destination_directory()))
-        controller.output('Hourse per semester: {0}'.format(controller.get_hours_per_semester()))
+
+        hours_range: Optional[range] = controller.get_hours_per_semester()
+        if hours_range is not None:
+            controller.output(f'Hourse per semester: {hours_range.start} to {hours_range.stop}')
+        else:
+            controller.output('Unspecified')
         
         courses_needed = [str(s) for s in controller.get_courses_needed().get_courses_list()]
         
         if courses_needed:
             controller.output('Courses:')
+            course: str
             for course in courses_needed:
                 controller.output('  {0}'.format(course))
         else:

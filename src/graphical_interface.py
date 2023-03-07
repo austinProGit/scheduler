@@ -1,15 +1,30 @@
 # Thomas Merino
-# 9/29/22
+# 3/01/23
 # CPSC 4175 Group Project
+
+# TODO: MISSING ANOTTATIONS!
+
+# The following are imported for type annotations
+from __future__ import annotations
+from typing import TYPE_CHECKING, Any
+if TYPE_CHECKING:
+    from typing import Optional, Any
+    from program_driver import SmartPlannerController as Controller
+    from courses_needed_container import CoursesNeededContainer
+    from general_utilities import *
 
 # TODO: Add some meaningful comments/documentation
 # TODO: Needed courses label and listing box do not source from the data model (fix)
 # TODO: Get @QtCore.Slot decorator to work
 # TODO: (ORGANIZE) remove overuse of self.*widget*
 
-from PySide6 import QtCore, QtWidgets, QtGui
+# from msilib.schema import Control
+
+from PySide6 import QtWidgets, QtGui
+from PySide6.QtWidgets import QMainWindow, QWidget, QLabel, QPushButton, QHBoxLayout, QVBoxLayout, \
+    QGroupBox, QFormLayout, QLineEdit, QTextEdit, QCheckBox, QMessageBox, QFileDialog
+
 from pathlib import Path
-from os import path
 
 from driver_fs_functions import *
 
@@ -21,13 +36,13 @@ cli = False # Used for controlling console window display
 
 
 # This is the window for presenting the all graphical UI
-class MainProgramWindow(QtWidgets.QMainWindow):
+class MainProgramWindow(QMainWindow):
     
-    def __init__(self, controller):
+    def __init__(self, controller: Controller) -> None:
         super().__init__()
         self.controller = controller
         self.setWindowTitle('Smart Planner')
-        self.widget = MainMenuWidget(controller)
+        self.widget: MainMenuWidget = MainMenuWidget(controller)
         self.setCentralWidget(self.widget)
         
         # Set the controller's listeners to two of widget's output handlers
@@ -40,49 +55,50 @@ class MainProgramWindow(QtWidgets.QMainWindow):
         if not cli:
             self.controller.clear_all_interfaces()
         cli = False
+       
 
 # This subclass of the QT text field clears its contenct when focus is changed or the user presses enter/return
 # --this changes the contents to the placeholder text.
-class TextField(QtWidgets.QLineEdit):
+class TextField(QLineEdit):
     
-    def focusOutEvent(self, event):
+    def focusOutEvent(self, event: Any) -> None:
         '''Custom override of QLineEdit's focusOutEvent that clears text.'''
         super().focusOutEvent(event) # Invoke the super's implementation
         self.clear() # Remove all text (use splaceholder text)
 
 
-class ListingField(QtWidgets.QTextEdit):
+class ListingField(QTextEdit):
     
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.setReadOnly(True)
 
 
 # Graphical interface for the main menu
-class MainMenuWidget(QtWidgets.QWidget):
+class MainMenuWidget(QWidget):
     
     
-    def __init__(self, controller):
+    def __init__(self, controller) -> None:
         # Call the super's initialization
         super().__init__()
         
         # Initialize a reference to the program's controller
-        self.controller = controller
+        self.controller: Controller = controller
         
         # Create a label for presenting recent messages
-        self.message_label = QtWidgets.QLabel('Welcome to Smart Planner')
+        self.message_label: QLabel = QLabel('Welcome to Smart Planner')
         self.message_label.setWordWrap(True)
         
         # Row at the bottom to place miscellaneous buttons
-        self.bottom_bar = QtWidgets.QHBoxLayout()
+        self.bottom_bar: QHBoxLayout = QHBoxLayout()
         
         # Create a button to switch to the command line (interface)
-        self.command_line_button = QtWidgets.QPushButton('Enter Command Line')
+        self.command_line_button: QPushButton = QPushButton('Enter Command Line')
         self.command_line_button.clicked.connect(self._reload_in_cli_callback)
         self.bottom_bar.addWidget(self.command_line_button)
         
         # Create a button to verify a schedule
-        self.verify_schedule_button = QtWidgets.QPushButton('Verify Schedule')
+        self.verify_schedule_button: QPushButton = QPushButton('Verify Schedule')
         self.verify_schedule_button.clicked.connect(self._verify_schedule_callback)
         self.bottom_bar.addWidget(self.verify_schedule_button)
         
@@ -94,19 +110,19 @@ class MainMenuWidget(QtWidgets.QWidget):
         self.initialize_parameter_widgets()
         
         # Create a button that generate's the schedule
-        self.generate_schedule_button = QtWidgets.QPushButton('Generate Schedule')
+        self.generate_schedule_button: QPushButton = QPushButton('Generate Schedule')
         self.generate_schedule_button.clicked.connect(self._generate_schedule_callback)
         self.bottom_bar.addWidget(self.generate_schedule_button)
         
         # Create a vertical layout to store all UI elements
-        self.layout = QtWidgets.QVBoxLayout(self)
+        self.layout: QVBoxLayout = QVBoxLayout(self)
         
         # Create a horizontal box layout
         # This will hold scheduling parametes on the left and listing/information on the right
-        self.main_area = QtWidgets.QHBoxLayout()
+        self.main_area: QHBoxLayout = QHBoxLayout()
         
         # Create the form area for presenting the message label, parameters, scheduling button, etc.
-        self.interaction_area = QtWidgets.QFormLayout()
+        self.interaction_area: QFormLayout = QFormLayout()
         
         #self.interaction_area.addWidget(self.message_label)
         self.interaction_area.addRow(self.needed_courses_load_label, self.needed_courses_load_button)
@@ -118,10 +134,10 @@ class MainMenuWidget(QtWidgets.QWidget):
         self.interaction_area.addRow(self.schedule_name_label, self.schedule_name_field)
         
         # Create the area for presenting large amounts of data
-        self.listing_box = ListingField()
+        self.listing_box: ListingField = ListingField()
         
         # Add the form area to the horizontal box
-        self.group_box = QtWidgets.QGroupBox()
+        self.group_box: QGroupBox = QGroupBox()
         self.group_box.setTitle('Scheduling Parameters')
         self.group_box.setLayout(self.interaction_area)
         self.main_area.addWidget(self.group_box)
@@ -135,97 +151,108 @@ class MainMenuWidget(QtWidgets.QWidget):
         # Update if courses are loaded
 
         # TODO: this access of the courses list might be slow
-        needed_courses = controller.get_courses_needed()
-        if needed_courses and needed_courses.is_resolved():
+        self.needed_courses: Optional[CoursesNeededContainer] = controller.get_courses_needed()
+        if self.needed_courses is not None and self.needed_courses.is_resolved():
             self.needed_courses_load_label.setText('Courses loaded')
-            self.listing_box.setText('\n'.join(needed_courses.get_courses_string_list()))
+            self.listing_box.setText('\n'.join(self.needed_courses.get_courses_string_list()))
         
-    def initialize_parameter_widgets(self):
+
+    def initialize_parameter_widgets(self) -> None:
         '''Setup the widgets for scheduling parameters. This does not add them; it just initializes them
         and saves them as instance variables.'''
             
         # Create a button to load the needed courses file
-        self.needed_courses_load_label = QtWidgets.QLabel('No needed courses file loaded')
-        self.needed_courses_load_button = QtWidgets.QPushButton('Open Needed Courses')
+        self.needed_courses_load_label: QLabel = QLabel('No needed courses file loaded')
+        self.needed_courses_load_button: QtWidgets = QPushButton('Open Needed Courses')
         self.needed_courses_load_button.clicked.connect(self._needed_courses_load_callback)
                 
         # Create a button to select the working directory for output
-        self.destination_directory_label = QtWidgets.QLabel('*No destination directory selected*')
+        self.destination_directory_label: QLabel = QLabel('*No destination directory selected*')
         self._update_destination_label()
-        self.change_directory_button = QtWidgets.QPushButton('Change Directory')
+        self.change_directory_button: QtWidgets = QPushButton('Change Directory')
         self.change_directory_button.clicked.connect(self._change_directory_callback)
         
         # Create a text field that sets hours per semester after pressing enter/return
-        self.hours_per_semester_label = QtWidgets.QLabel('Hours per semester:')
-        self.hours_per_semester_field = TextField()
+        self.hours_per_semester_label: QLabel = QLabel('Hours per semester:')
+        self.hours_per_semester_field: TextField = TextField()
         self.hours_per_semester_field.setValidator(QtGui.QIntValidator())
         self.hours_per_semester_field.returnPressed.connect(self._hours_per_semester_callback)
-        self.hours_per_semester_field.setPlaceholderText(str(self.controller.get_hours_per_semester()))
+        
+        hours_range: Optional[range] = self.controller.get_hours_per_semester()
+        if hours_range is not None:
+            self.hours_per_semester_field.setPlaceholderText(f'{hours_range.start} to {hours_range.stop}')
+        else:
+            self.hours_per_semester_field.setPlaceholderText('Unspecified')
         
         # Create checkboxes for controlling the output types to generate
-        self.path_to_graduation_checkbox = QtWidgets.QCheckBox('Export Path to Graduation Excel')
-        active_export_types = self.controller.get_export_type()
+        self.path_to_graduation_checkbox: QCheckBox = QCheckBox('Export Path to Graduation Excel')
+        active_export_types: list[ExportType] = self.controller.get_export_type()
         self.path_to_graduation_checkbox.setChecked(PATH_TO_GRADUATION_EXPORT_TYPE in active_export_types)
         self.path_to_graduation_checkbox.toggled.connect(self._toggle_export_type_callback)
-        self.plain_text_checkbox = QtWidgets.QCheckBox('Export Simple txt')
+        self.plain_text_checkbox: QCheckBox = QCheckBox('Export Simple txt')
         self.plain_text_checkbox.setChecked(PLAIN_TEXT_EXPORT_TYPE in active_export_types)
         self.plain_text_checkbox.toggled.connect(self._toggle_export_type_callback)
-        self.pdf_checkbox = QtWidgets.QCheckBox('Export PDF')
+        self.pdf_checkbox: QCheckBox = QCheckBox('Export PDF')
         self.pdf_checkbox.setChecked(PDF_EXPORT_TYPE in active_export_types)
         self.pdf_checkbox.toggled.connect(self._toggle_export_type_callback)
         
         # Create a text field that set the schedule's name after pressing enter/return
-        self.schedule_name_label = QtWidgets.QLabel('Schedule name:')
-        self.schedule_name_field = TextField()
+        self.schedule_name_label: QLabel = QLabel('Schedule name:')
+        self.schedule_name_field: TextField = TextField()
         self.schedule_name_field.returnPressed.connect(self._schedule_name_callback)
         self.schedule_name_field.setPlaceholderText(self.controller.get_destination_filename())
         
-        
             
-    def receive_process_output(self, message):
+    def receive_process_output(self, message: str) -> None:
         '''Method to use for output listening. This methods just updates the message label.'''
         self.message_label.setText(message)
         
                 
-    def receive_process_warning(self, message):
+    def receive_process_warning(self, message: str) -> None:
         '''Method to use for warning listening. This methods presents a warning message box with the passed message.'''
-        message_box = QtWidgets.QMessageBox()
-        message_box.setIcon(QtWidgets.QMessageBox.Warning)
+        message_box: QMessageBox = QMessageBox()
+        message_box.setIcon(QMessageBox.Warning)
         message_box.setText(message)
         message_box.exec()
     
     
-    def _update_needed_courses_label(self, filename):
+    def _update_needed_courses_label(self, filename: str) -> None:
         '''Set the needed course label to reflect what the controller has loaded and list those courses in the listing box.'''
         # Get the file's description and set the label to the description
-        description = Path(filename).stem
-        self.needed_courses_load_label.setText('Needed Courses: {0}'.format(description))
+        description: str = Path(filename).stem
+        self.needed_courses_load_label.setText(f'Needed Courses: {description}')
+
+        self.needed_courses = self.controller.get_courses_needed()
 
         # TODO: fix this (possibly bad get-update)
         if self.needed_courses.is_resolved():
-            self.listing_box.setText('\n'.join([str(s) for s in self.controller.get_courses_needed().get_courses_list()]))
+            self.listing_box.setText('\n'.join([str(s) for s in self.needed_courses.get_courses_list()]))
+        else:
+            self.listing_box.setText('*NOT RESOLVED*')
     
     
-    def _needed_courses_load_callback(self):
+    def _needed_courses_load_callback(self) -> None:
         
-        file_loader_dialog = QtWidgets.QFileDialog()
-        file_loader_dialog.setFileMode(QtWidgets.QFileDialog.ExistingFile)
-        filename = None
+        file_loader_dialog: QFileDialog = QFileDialog()
+        file_loader_dialog.setFileMode(QFileDialog.ExistingFile)
+        filename: Optional[str] = None
 
         if file_loader_dialog.exec():
             filename = file_loader_dialog.selectedFiles()[0]
-            load_success = self.controller.load_courses_needed(filename)
+            load_success: bool = self.controller.load_courses_needed(filename)
             if load_success:
                 self._update_needed_courses_label(filename) 
-        if filename == None:
+        if filename is None:
             self.controller.output('Load cancelled.')
         
-    def _verify_schedule_callback(self):
-    
-        file_loader_dialog = QtWidgets.QFileDialog()
-        file_loader_dialog.setFileMode(QtWidgets.QFileDialog.ExistingFile)
-        filename = None
+    def _verify_schedule_callback(self) -> None:
         
+        file_loader_dialog: QFileDialog = QFileDialog()
+        file_loader_dialog.setFileMode(QFileDialog.ExistingFile)
+        filename: Optional[str] = None
+        
+        # TODO: ADD TYPE ANNOTATIONS ->
+
         if file_loader_dialog.exec():
             filename = file_loader_dialog.selectedFiles()[0]
             error_report = self.controller.check_schedule(filename)
@@ -237,7 +264,7 @@ class MainMenuWidget(QtWidgets.QWidget):
                 message_box.setIcon(QtWidgets.QMessageBox.Information)
                 message_box.setText('The loaded schedule appears to valid.')
                 message_box.exec()
-        if filename == None:
+        if filename is None:
             self.controller.output('Load cancelled.')
     
     def _update_destination_label(self):
@@ -245,17 +272,17 @@ class MainMenuWidget(QtWidgets.QWidget):
         self.destination_directory_label.setText('Destination Directory: {0}'.format(description))
         
     
-    def _change_directory_callback(self):
+    def _change_directory_callback(self) -> None:
         
-        file_loader_dialog = QtWidgets.QFileDialog()
-        file_loader_dialog.setFileMode(QtWidgets.QFileDialog.Directory)
+        file_loader_dialog: QFileDialog = QFileDialog()
+        file_loader_dialog.setFileMode(QFileDialog.Directory)
         directory_name = None
         
         if file_loader_dialog.exec():
             directory_name = file_loader_dialog.selectedFiles()[0]
             self.controller.configure_destination_directory(directory_name)
             self._update_destination_label()
-        if directory_name == None:
+        if directory_name is None:
             self.controller.output('Load cancelled.')
     
     
@@ -267,7 +294,11 @@ class MainMenuWidget(QtWidgets.QWidget):
         if hours_text.isdigit():
             number = int(hours_text)                                # Cast the input to an integer
             self.controller.configure_hours_per_semester(number)    # Set the number of hours per semester
-            self.hours_per_semester_field.setPlaceholderText(str(self.controller.get_hours_per_semester()))
+            hours_range: Optional[range] = self.controller.get_hours_per_semester()
+            if hours_range is not None:
+                self.hours_per_semester_field.setPlaceholderText(f'{hours_range.start} to {hours_range.stop}')
+            else:
+                self.hours_per_semester_field.setPlaceholderText('Unspecified')
         else:
             # The argument was not valid (report to the user)
             self.controller.output('Sorry, that is not a valid input (please use a number).')

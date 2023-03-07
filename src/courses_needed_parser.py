@@ -2,7 +2,7 @@
 # CPSC 4175 Project
 
 from alias_module import get_latest_id
-from courses_needed_container import CoursesNeededContainer
+from degree_extraction_container import DegreeExtractionContainer
 
 # from courses_needed_container import CoursesNeededContainer, \
 #     DeliverableCourse, CourseProtocol, CourseInserter, ExhaustiveNode, \
@@ -333,7 +333,9 @@ def generate_degree_extraction_container(file_name):
         for chunk in complex_list:
             intermediate_str += classify_and_handle_chunk(chunk)
         # print(intermediate_str)
-    return intermediate_str, curr_taken_courses
+    
+    return DegreeExtractionContainer(curr_taken_courses, intermediate_str)
+
 if __name__ == '__main__':
     i, _ = generate_degree_extraction_container('./input_files/degreeworks1.pdf')
     # print(i)

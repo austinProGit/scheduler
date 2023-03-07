@@ -1,69 +1,30 @@
 # Thomas Merino and Austin Lee
-# 3/4/2023
+# 2/19/2023
 # CPSC 4176 Project
-
-# TODO: type annotations are not complete
     
-# The following are imported for type annotations
-from __future__ import annotations
-from typing import TYPE_CHECKING, Iterator
-if TYPE_CHECKING:
-    from typing import Optional
-
 from requirement_tree import *
-from requirement_interface import NeededCoursesInterface
-from requirement_parser import *
-import os
 import pickle
 
+# NOTE: The following are optional importants that are just used for testing:
+from requirement_parser import RequirementsParser
+import os
+from requirement_interface import NeededCoursesInterface
 
 
-class CoursesNeededContainer:
-
-    # @staticmethod
-    # def make_from_course_selection_logic_string(name, logic_string):
-
-    #     certain_courses = []
-    #     string = logic_string.strip()
-
-    #     if string and string[0] == '(':
-    #         end_index = CoursesNeededContainer._pull_index(string, ')')
-    #         courses = string[1 : end_index].split(',')
-    #         string = string[end_index + 1:]
-    #         certain_courses = [course.strip() for course in set(courses)]
-        
-    #     encapsulated_string = f'[e<name=Requirements>{string}]'
-    #     decision_tree = CoursesNeededContainer._make_node_from_course_selection_logic_string(encapsulated_string)
-        
-    #     courses_needed_container = CoursesNeededContainer(name, certain_courses_list=certain_courses, decision_tree=decision_tree)
-        
-    #     return courses_needed_container
-
+class RequirementsContainer:
     
-    def __init__(self, degree_plan: str, certain_courses_list: Optional[list[str]] = None, decision_tree: Optional[ExhaustiveNode] = None) -> None:
-        self._degree_plan: str = degree_plan
-        self._decision_tree: ExhaustiveNode = decision_tree or ExhaustiveNode()
-        self._certain_courses_list: ListingNode = ListingNode(printable_description='Required Course')
-        self._decision_tree.add_child(self._certain_courses_list)
-        self._decision_tree.reorder_child(-1, 0)
+    def __init__(self, requirements_tree=None):
+        self._requirements_tree = requirements_tree or ExhaustiveNode()
 
         # TODO: perform this using a good practice
         self._decision_tree._duplicate_priority = DEFAULT_PRIORITY
-
-        if certain_courses_list:
-            course_string: str
-            for course_string in certain_courses_list:
-                self.add_certain_course(course_string)
     
     def __iter__(self):
         return self.get_courses_list().__iter__()
     
-    def pickle(self) -> bytes:
+    def pickle(self):
         return pickle.dumps(self)
     
-    def get_degree_plan_name(self):
-        return self._degree_plan
-
     def get_courses_list(self):
         '''Get a set containing all courses.'''
 
@@ -78,14 +39,11 @@ class CoursesNeededContainer:
     def get_courses_string_list(self):
         return [str(deliverable) for deliverable in self.get_courses_list()]
     
-    def get_certain_courses(self):
-        return self._certain_courses_list.get_aggregate()
-    
-    def stub_all_unresolved_nodes(self) -> None:
+    def stub_all_unresolved_nodes(self):
         self._decision_tree.stub_all_unresolved_nodes()
 
-    def add_certain_course(self, course_string: str) -> bool:
-        added: bool = False
+    def add_certain_course(self, course_string):
+        added = False
         if not self._certain_courses_list.get_child_by_description(course_string):
             added = self._certain_courses_list.add_child(DeliverableCourse(course_string))
         return added
@@ -96,9 +54,6 @@ class CoursesNeededContainer:
     def add_top_level_node(self, node):
         return self._decision_tree.add_child(node)
     
-    def rename_certain_list(self, name):
-        self._certain_courses_list.set_value_for_key('name', name)
-
     def is_resolved(self):
         return self._decision_tree.is_deep_resolved()
 
@@ -110,6 +65,7 @@ class CoursesNeededContainer:
         raise NotImplemented
         for course in courses:
             self._decision_tree.deep_select_child_by_description(course)
+
 
 
 class DummyController:
@@ -150,7 +106,6 @@ class DummyController:
             return True
         else:
             raise ValueError()
-
 
 if __name__ == '__main__':
 
@@ -256,8 +211,8 @@ if __name__ == '__main__':
     ]
     '''
 
-
-    courses_needed_container = CoursesNeededContainer.make_from_course_selection_logic_string('Degree Plan', construct_string_2)
+    parse_report  = RequirementsParser.make_from_course_selection_logic_string('Degree Plan', construct_string_2)
+    courses_needed_container = RequirementsContainer(parse_report.certain_courses, parse_report.decision_tree)
     courses_needed_container.rename_certain_list('Certain List')
 
     # (POL 111, POLSE 2323) [s <n=A>[d<n=1>][d<n=2>]] [r <c=9>[p<n=p,m=p.*>][i<>][d<n=IO>]]

@@ -22,8 +22,7 @@ class InvalidCourseError(Exception):
     """
     pass
 
-# Report object is used by the 
-class Report: # Lew added graph to Report
+class CourseInfoEvaluationReport: # Lew added graph to Report
     """
     Report is used to export the graph object of the Course Info input and 
     the number of descendants of each course in the given path.
@@ -131,7 +130,7 @@ def evaluate_container(container):
     courseids = container.get_courseIDs()
     graph = make_graph(container, courseids)
     dict = make_course_descendants_dict(graph)
-    return Report(dict, graph)
+    return CourseInfoEvaluationReport(dict, graph)
 
 # df = load_course_info('src/input_files/Course Info.xlsx')
 # lst = load_course_info_excused_prereqs('src/input_files/Course Info.xlsx')
