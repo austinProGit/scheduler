@@ -1,6 +1,6 @@
 # Smart Planner
 
-[v.2.0.0 Release Notes](https://github.com/austinProGit/scheduler/releases/latest)
+[v2.0.0 Release Notes](https://github.com/austinProGit/scheduler/releases/latest)
 
 A simple program to assist with scheduling a student's university courses.
 
