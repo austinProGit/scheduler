@@ -7,8 +7,7 @@ A simple program to assist with scheduling a student's university courses.
 ![Preview](https://github.com/austinProGit/scheduler/blob/main/preview.JPG)
 
 ## Downloads
-[smart-planner-setup-2.0.0.exe](https://github.com/austinProGit/scheduler/releases/download/v.2.0.0/smart-planner-setup-2.0.0.exe)  
-[Windows executable and dependencies (zip)](https://github.com/austinProGit/scheduler/releases/download/v.2.0.0/SmartPlanner-2.0.0.zip)  
+[smart-planner-setup-2.0.0.exe](https://github.com/austinProGit/scheduler/releases/download/v.2.0.0/smart-planner-setup-2.0.0.exe)   
 [Source code (zip)](https://github.com/austinProGit/scheduler/archive/refs/tags/v.2.0.0.zip)  
 [Source code (tar.gz)](https://github.com/austinProGit/scheduler/archive/refs/tags/v.2.0.0.tar.gz)
 
@@ -18,16 +17,7 @@ A simple program to assist with scheduling a student's university courses.
 
 *Note: Antivirus software will warn against downloading and launching the installer since we are not a known publisher*
 
-### Alternate
-#### Using the zip file (Currently only available for Windows)
-* Download [Windows executable and dependencies (zip)](https://github.com/austinProGit/scheduler/releases/download/v.2.0.0/SmartPlanner-2.0.0.zip)
-* Unzip file
-* Double-click on the ![Launcher](https://github.com/austinProGit/scheduler/blob/main/launcher.JPG) file to launch the program
-* Right-click on ![Launcher](https://github.com/austinProGit/scheduler/blob/main/launcher.JPG) to create a desktop shortcut or pin to taskbar
-
-*Note: Antivirus software will warn against launching the program since we are not a known publisher*
-
-#### Using the command line
+### Using the command line
 This option requires that Python3 version 3.8 or above and Java be installed on the computer that will run the scheduler program. 
 All program dependencies are found in requirements.txt. The user must have python (and pip) installed. To install the dependencies,
 the user can use the terminal command 'pip install -r requirements.txt'. After the aforementioned installation is complete, entering
