@@ -184,7 +184,7 @@ class CourseInfoContainer:
     # Covers cases where hours are imbedded in CSU's website format or stand alone
     def get_imbedded_hours(self, data):
         if data == None:
-            return 0
+            return 3
         elif (len(str(data)) == 1):
             return int(data)
         else:
