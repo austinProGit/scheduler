@@ -28,6 +28,7 @@ from menu_interface_base import GeneralInterface
 from help_interface import HelpMenu
 
 # Used for controlling console window display
+import platform
 OPERATING_SYSTEM = platform.system()
 if OPERATING_SYSTEM == "Windows":
     import pywintypes, win32gui, win32con, time, win32api
