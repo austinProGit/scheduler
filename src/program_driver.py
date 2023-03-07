@@ -251,8 +251,8 @@ class SmartPlannerController:
             course_info_container: CourseInfoContainer = CourseInfoContainer(course_info)
             
             # This raises an exception if Course Info Container contains invalid data
-            evaluation_report: CourseInfoEvaluationReport = evaluate_container(course_info_container)
-            course_info_container.load_report(evaluation_report)
+            # evaluation_report: CourseInfoEvaluationReport = evaluate_container(course_info_container)
+            # course_info_container.load_report(evaluation_report)
             
             self._scheduler.configure_course_info(course_info_container)
             

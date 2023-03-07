@@ -449,7 +449,7 @@ class _NodeSuper:
 
     def get_all_aggragate(self):
         result = []
-        if self.can_take_child():
+        if self.can_accept_children():
             result += self.get_as_schedulable_list()
         else:
             for child in self.get_all_children_list():

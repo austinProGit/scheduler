@@ -19,11 +19,13 @@ FITNESS_LISTING = [LOW_FITNESS, MID_FITNESS, HIGH_FITNESS]
 # The following are some atomic fitness rules:
 
 def gatekeeper_rule(courseID, course_info_container):
-    weight = course_info_container.get_weight(courseID)
-    if weight is None:
-        weight = LOW_FITNESS
-    fitness = HIGH_FITNESS - (HIGH_FITNESS - LOW_FITNESS) / (weight + 1)
-    return fitness
+    # TODO: this was commented out for the demonstration
+    # weight = course_info_container.get_weight(courseID)
+    # if weight is None:
+    #     weight = LOW_FITNESS
+    # fitness = HIGH_FITNESS - (HIGH_FITNESS - LOW_FITNESS) / (weight + 1)
+    # return fitness
+    return MID_FITNESS
     
 def availability_rule(courseID, course_info_container):
     # Lew replaced .availability_list(courseID) with .get_availability(courseID)

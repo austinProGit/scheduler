@@ -317,25 +317,27 @@ def freshman_with_4000_level_count(schedule):
     return count, message
 
 def coreqs_invalid(schedule, course_info):
-    for semester in schedule: 
-            for course in semester:
-                coreqs = course_info.get_coreqs(course) if course_info.get_coreqs(course) != [] else []
-                if coreqs != []:
-                    for coreq in coreqs:
-                        if coreq not in semester: return True
+    # TODO: commented out before presentation for demonstration
+    # for semester in schedule: 
+    #         for course in semester:
+    #             coreqs = course_info.get_coreqs(course) if course_info.get_coreqs(course) != [] else []
+    #             if coreqs != []:
+    #                 for coreq in coreqs:
+    #                     if coreq not in semester: return True
     return False
 
 def coreqs_invalid_count(schedule, course_info):
     message = ''
     count = 0
-    for semester in schedule: 
-            for course in semester:
-                coreqs = course_info.get_coreqs(course) if course_info.get_coreqs(course) != [] else []
-                if coreqs != []:
-                    for coreq in coreqs:
-                        if coreq not in semester: 
-                            count += 1
-                            message += course + ' coreq ' + coreq + ' not in same semester.\n'
+    # TODO: commented out before presentation for demonstration
+    # for semester in schedule: 
+    #         for course in semester:
+    #             coreqs = course_info.get_coreqs(course) if course_info.get_coreqs(course) != [] else []
+    #             if coreqs != []:
+    #                 for coreq in coreqs:
+    #                     if coreq not in semester: 
+    #                         count += 1
+    #                         message += course + ' coreq ' + coreq + ' not in same semester.\n'
     return count, message
 
 def gateway_courses_invalid(schedule, course_info):

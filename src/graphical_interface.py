@@ -46,8 +46,8 @@ class MainProgramWindow(QMainWindow):
         self.setCentralWidget(self.widget)
         
         # Set the controller's listeners to two of widget's output handlers
-        controller.set_output_listener(self.widget.receive_process_output)
-        controller.set_warning_listener(self.widget.receive_process_warning)
+        controller.add_output_listener("GUIOutput", self.widget.receive_process_output)
+        controller.add_warning_listener("GUIWarning", self.widget.receive_process_warning)
 
     def closeEvent(self, event):
         '''Override closeEvent to exit the program when GUI window is closed.'''

@@ -2,6 +2,8 @@
 # 9/28/22
 # CPSC 4175 Group Project
 
+from requirement_parser import RequirementsParser
+
 SEMESTER_TYPE_PREDECESSOR = {'Fa': 'Su', 'Su': 'Sp', 'Sp': 'Fa'} # Translation map from semester K to the next
 USER_READABLE_SEMESTER_DESCRIPTION = {'Fa': 'Fall', 'Sp': 'Spring', 'Su': 'Summer'}
 
@@ -19,7 +21,13 @@ def validate_user_submitted_path(container, schedule):
                 err_str = (f'{course} taken during the {USER_READABLE_SEMESTER_DESCRIPTION[current_semester]} term (not available).')
                 err_list.append(err_str)
 
-            course_coreqs = container.get_coreqs(course)
+            #course_coreqs = container.get_coreqs(course)
+
+            # TODO: this was added before presentation for demonstration
+            requirements = container.get_coreqs(course) or ''
+            tree = RequirementsParser.make_from_course_selection_logic_string(requirements)
+            course_coreqs = tree.decision_tree.get_all_aggragate()
+
             for coreq in course_coreqs:
                 if coreq in processed_list:
                     err_str = (f'{course} taken before {coreq}.')
@@ -33,7 +41,14 @@ def validate_user_submitted_path(container, schedule):
                 err_str = (f'{course} scheduled multiple times.')
                 if err_str not in err_list and 'XXX' not in course:
                     err_list.append(err_str)
-            course_prereqs = container.get_prereqs(course)
+
+            #course_prereqs = container.get_prereqs(course)
+            
+            # TODO: this was added before presentation for demonstration
+            requirements = container.get_prereqs(course) or ''
+            tree = RequirementsParser.make_from_course_selection_logic_string(requirements)
+            course_prereqs = tree.decision_tree.get_all_aggragate()
+
             for prereq in course_prereqs:
                 if prereq in processed_list:
                     err_str = (f'{course} taken before/during {prereq}.')

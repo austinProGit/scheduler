@@ -19,6 +19,7 @@ from scheduling_assistant import CoreqRule, FitnessConfiguration, get_fittest_co
 from expert_system_module import ExpertSystem, DynamicKnowledge
 from schedule_info_container import *
 from general_utilities import *
+from requirement_parser import RequirementsParser
 
 DEFAULT_HOURS_PER_SEMESTER = 15
 INITIAL_SEMESTER = {FALL: [], SPRING: [[]], SUMMER: [[], []]}
@@ -38,11 +39,13 @@ COREQ_ADDITIONAL_FITNESS = LOW_FITNESS
 # The following are some test atomic fitness rules:
 
 def gatekeeper_rule(courseID, course_info_container):
-    weight = course_info_container.get_weight(courseID)
-    if weight is None:
-        weight = LOW_FITNESS
-    fitness = HIGH_FITNESS - (HIGH_FITNESS - LOW_FITNESS) / (weight + 1)
-    return fitness
+    # TODO: this was commented out for the demonstration
+    # weight = course_info_container.get_weight(courseID)
+    # if weight is None:
+    #     weight = LOW_FITNESS
+    # fitness = HIGH_FITNESS - (HIGH_FITNESS - LOW_FITNESS) / (weight + 1)
+    # return fitness
+    return MID_FITNESS
     
 def availability_rule(courseID, course_info_container):
     # Lew replaced .availability_list(courseID) with .get_availability(courseID)
@@ -69,7 +72,13 @@ class Scheduler:
         coreq_rules = []
         if course_info_container is not None:
             for courseID in course_info_container.get_courseIDs():
-                for coreq in course_info_container.get_coreqs(courseID):
+
+                # TODO: this was added before presentation for demonstration
+                requirements = course_info_container.get_prereqs(courseID) or ''
+                tree = RequirementsParser.make_from_course_selection_logic_string(requirements)
+                coreqs = tree.decision_tree.get_all_aggragate()
+
+                for coreq in coreqs:
                     coreq_rules.append(CoreqRule(courseID, coreq, COREQ_ADDITIONAL_FITNESS))
         
         return FitnessConfiguration(atomic_rules, coreq_rules)
@@ -177,7 +186,10 @@ class Scheduler:
             return SEMESTER_LEGACY_MAP[working_semester_type] in availability
             
         def check_prerequisites(course_id):
-            prerequisites = course_info.get_prereqs(course_id)
+            # TODO: this was added before presentation for demonstration
+            requirements = course_info.get_prereqs(course_id) or ''
+            tree = RequirementsParser.make_from_course_selection_logic_string(requirements)
+            prerequisites = tree.decision_tree.get_all_aggragate()
             # if prerequisite course is in courses_needed, can't take course yet.
             for prerequisite in prerequisites:
                 if prerequisite in courses_needed:
