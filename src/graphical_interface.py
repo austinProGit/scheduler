@@ -142,10 +142,10 @@ class MainMenuWidget(QWidget):
         # Update if courses are loaded
 
         # TODO: this access of the courses list might be slow
-        needed_courses: Optional[CoursesNeededContainer] = controller.get_courses_needed()
-        if needed_courses is not None and needed_courses.is_resolved():
+        self.needed_courses: Optional[CoursesNeededContainer] = controller.get_courses_needed()
+        if self.needed_courses is not None and self.needed_courses.is_resolved():
             self.needed_courses_load_label.setText('Courses loaded')
-            self.listing_box.setText('\n'.join(needed_courses.get_courses_string_list()))
+            self.listing_box.setText('\n'.join(self.needed_courses.get_courses_string_list()))
         
 
     def initialize_parameter_widgets(self) -> None:
@@ -213,9 +213,13 @@ class MainMenuWidget(QWidget):
         description: str = Path(filename).stem
         self.needed_courses_load_label.setText(f'Needed Courses: {description}')
 
+        self.needed_courses = self.controller.get_courses_needed()
+
         # TODO: fix this (possibly bad get-update)
         if self.needed_courses.is_resolved():
-            self.listing_box.setText('\n'.join([str(s) for s in self.controller.get_courses_needed().get_courses_list()]))
+            self.listing_box.setText('\n'.join([str(s) for s in self.needed_courses.get_courses_list()]))
+        else:
+            self.listing_box.setText('*NOT RESOLVED*')
     
     
     def _needed_courses_load_callback(self) -> None:

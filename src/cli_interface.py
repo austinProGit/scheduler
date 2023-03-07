@@ -268,7 +268,12 @@ def list_parameters_command(controller, arguements):
     if not arguements:
         controller.output('Scheduling Parameter:\n')
         controller.output('Destination: {0}'.format(controller.get_destination_directory()))
-        controller.output('Hourse per semester: {0}'.format(controller.get_hours_per_semester()))
+
+        hours_range: Optional[range] = controller.get_hours_per_semester()
+        if hours_range is not None:
+            controller.output(f'Hourse per semester: {hours_range.start} to {hours_range.stop}')
+        else:
+            controller.output('Unspecified')
         
         courses_needed = [str(s) for s in controller.get_courses_needed().get_courses_list()]
         

@@ -48,6 +48,7 @@ if TYPE_CHECKING:
     from menu_interface_base import GeneralInterface
     from program_generated_evaluator import CourseInfoEvaluationReport
     from PySide6.QtWidgets import QApplication
+    from degree_extraction_container import DegreeExtractionContainer
 
 import warnings
 
@@ -84,6 +85,7 @@ from scheduling_parameters_container import ConstructiveSchedulingParametersCont
 from course_info_container import *
 # TODO: make courses needed parser work in dis file!
 # from courses_needed_parser import get_courses_needed
+from courses_needed_parser import generate_degree_extraction_container
 from program_generated_evaluator import evaluate_container, NonDAGCourseInfoError, InvalidCourseError
 from excel_formatter import excel_formatter
 from plain_text_formatter import plain_text_export
@@ -429,7 +431,7 @@ class SmartPlannerController:
 
     def get_courses_needed(self) -> Optional[CourseInfoContainer]:
         '''Get the coursed needed that have been loaded into the scheduler. This return a list of strings (IDs).'''
-        return self._scheduler.get_courses_needed()
+        return self._scheduler.get_courses_needed_container()
         
     
     def get_hours_per_semester(self) -> Optional[range]:
@@ -472,10 +474,15 @@ class SmartPlannerController:
         try:
             filepath: Optional[Path] = get_real_filepath(filename) # Get the file's path and check if it exists
             if filepath is not None:
-                # TODO: implement the courses needed contents here:
-                courses_needed_container: CoursesNeededContainer = get_courses_needed(filepath) # Get the needed courses from the file
+                # Load degree extraction / courses needed contents here:
+                degree_extraction: DegreeExtractionContainer = generate_degree_extraction_container(filepath) # Get the needed courses from the file
+                self._scheduler.configure_degree_extraction(degree_extraction) # Load the course container / degree extraction into the scheduler
 
-                self._scheduler.configure_courses_needed(courses_needed_container) # Load the course container into the scheduler
+                # TODO: this is temp (VERY BAD, VERY NO GOOD) ->
+                for node in self._scheduler._courses_needed_container._decision_tree.get_all_children_list():
+                    node.enable_stub()
+
+                #self._scheduler.configure_courses_needed(courses_needed_container) 
                 self.output('Course requirements loaded from {0}.'.format(filepath)) # Report success to the user
                 success = True # Set success to true
             else:
@@ -692,17 +699,18 @@ class SmartPlannerController:
         '''Generate the schedule with a given filename or the current default filename if nothing is provided.'''
         
         # Check if any courses are loaded
-        if not self._scheduler.get_courses_needed():
+        if not self._scheduler.get_courses_needed_container():
             self.output_warning('No schedule exported.')
             self.output_error('No needed courses loaded.')
             return
+
+        export_types = self._scheduler.get_parameter_container().get_export_types()
         
         # Check if no export types are selected (empty)
-        if not self._export_types:
+        if not export_types:
             self.output_warning('No schedule exported.')
             self.output_error('No export type selected.')
             return 
-        
         
         
         self.output('Generating schedule...')
@@ -712,42 +720,48 @@ class SmartPlannerController:
         
         # Set _destination_filename to the passed filename if one was passed
         if filename:
-            self._destination_filename = filename
+            self.set_destination_filename(filename)
         
         desired_destination = self.get_destination()
         
         try:
-            if self._export_types:
-                container = self._scheduler.generate_schedule()
-                confidence_factor = container.get_cf()
-                semesters_listing = container.get_schedule()
-                
-                #semesters_listing, confidence_factor = self._scheduler.generate_schedule()
-                self.output('Path generated with confidence value of {0:.1f}%'.format(confidence_factor*100))
-                
-                template_path = Path(get_source_path(), 'input_files')
-                
-                if PATH_TO_GRADUATION_EXPORT_TYPE in self._export_types:
-                    unique_ptg_destination = get_next_free_filename(desired_destination.with_suffix('.xlsx'))
-                    # Lew erased 'Path To Graduation' from here to work with excel_formatter
-                    excel_formatter(Path(template_path), unique_ptg_destination, semesters_listing, self._scheduler.get_course_info())
-                    self.output('Schedule (Path to Graduation) exported as {0}'.format(unique_ptg_destination))
+            container = self._scheduler.generate_schedule()
+            confidence_factor = container.get_confidence_level()
+            semesters_listing = container.get_schedule()
+            
+            #semesters_listing, confidence_factor = self._scheduler.generate_schedule()
+            self.output('Path generated with confidence value of {0:.1f}%'.format(confidence_factor*100))
+            
+            template_path = Path(get_source_path(), 'input_files')
+            
+            if PATH_TO_GRADUATION_EXPORT_TYPE in export_types:
+                unique_ptg_destination = get_next_free_filename(desired_destination.with_suffix('.xlsx'))
+                # Lew erased 'Path To Graduation' from here to work with excel_formatter
+                excel_formatter(Path(template_path), unique_ptg_destination, semesters_listing, self._scheduler.get_course_info())
+                self.output('Schedule (Path to Graduation) exported as {0}'.format(unique_ptg_destination))
+                if os.name == 'nt':
                     os.startfile(unique_ptg_destination)
-                
-                if PLAIN_TEXT_EXPORT_TYPE in self._export_types:
-                    unique_ptext_destination = get_next_free_filename(desired_destination.with_suffix('.txt'))
-                    plain_text_export(unique_ptext_destination, semesters_listing, 'Spring', 2022)
-                    self.output('Schedule (plain text) exported as {0}'.format(unique_ptext_destination))
+                else:
+                    os.system(f'open {str(unique_ptg_destination.absolute())}')
+            
+            if PLAIN_TEXT_EXPORT_TYPE in export_types:
+                unique_ptext_destination = get_next_free_filename(desired_destination.with_suffix('.txt'))
+                plain_text_export(unique_ptext_destination, semesters_listing, 'Spring', 2022)
+                self.output('Schedule (plain text) exported as {0}'.format(unique_ptext_destination))
+                if os.name == 'nt':
                     os.startfile(unique_ptext_destination)
+                else:
+                    os.system(f'open {str(unique_ptext_destination.absolute())}')
 
-                if PDF_EXPORT_TYPE in self._export_types:
-                    unique_pdf_destination = get_next_free_filename(desired_destination.with_suffix('.pdf'))
-                    pdf_export(unique_pdf_destination, semesters_listing, 'Spring', 2022)
-                    self.output('Schedule (PDF) exported as {0}'.format(unique_pdf_destination))
+            if PDF_EXPORT_TYPE in export_types:
+                unique_pdf_destination = get_next_free_filename(desired_destination.with_suffix('.pdf'))
+                pdf_export(unique_pdf_destination, semesters_listing, 'Spring', 2022)
+                self.output('Schedule (PDF) exported as {0}'.format(unique_pdf_destination))
+                if os.name == 'nt':
                     os.startfile(unique_pdf_destination)
+                else:
+                    os.system(f'open {str(unique_pdf_destination.absolute())}')
                 
-            else:
-                self.output_error('Validation over a file list is not supported yet.')
                 
         except (FileNotFoundError, IOError):
             # This code will probably execute when file system permissions/organization change after setting parameters
