@@ -64,6 +64,7 @@ if IS_TESTING_MEMORY:
 
 from PySide6 import QtWidgets
 
+import platform
 from sys import exit
 from pathlib import Path
 from os import path
@@ -72,6 +73,8 @@ from os import path
 from courses_needed_container import CoursesNeededContainer
 from general_utilities import *
 
+
+import auto_update
 
 from alias_module import *
 from catalog_parser import update_course_info
@@ -93,6 +96,18 @@ from pdf_formatter import pdf_export
 from user_submitted_validator import validate_user_submitted_path
 from path_to_grad_parser import parse_path_to_grad
 
+# Used for controlling console window display
+OPERATING_SYSTEM = platform.system()
+if OPERATING_SYSTEM == "Windows":
+    import pywintypes, win32gui, win32con, time, win32api
+    TITLE = win32api.GetConsoleTitle()
+    HWND = win32gui.FindWindow(None, TITLE)
+
+# Used for auto-updating the program
+VERSION = "v2.0.0"
+RELEASE_URL = "https://api.github.com/repos/austinProGit/scheduler/releases/latest"
+INSTALLER_INFO_FILE = "installer_info.txt"
+
 
 ## --------------------------------------------------------------------- ##
 ## ---------------------- Smart Planner Controller --------------------- ##
@@ -108,8 +123,12 @@ class InterfaceProcedureError(Exception):
 # Menuing is performed by having an interface stack--alike chain of responsibility and/or state machine.
 class SmartPlannerController:
     
-    def __init__(self, graphics_enabled: bool = True) -> None:
-
+    def __init__(self, graphics_enabled=True):
+        if OPERATING_SYSTEM == "Windows":
+            win32gui.ShowWindow(HWND, win32con.SW_HIDE)
+        if auto_update.update(VERSION, RELEASE_URL, INSTALLER_INFO_FILE):
+            exit(0)
+        
         self.setup(graphics_enabled)
         
         if IS_TESTING_MEMORY:

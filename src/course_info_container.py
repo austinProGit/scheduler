@@ -6,6 +6,8 @@ import re
 import pickle
 from dataframe_io import *
 from driver_fs_functions import *
+#from courses_needed_container import *
+#from program_generated_evaluator import evaluate_container
 
 class CourseInfoContainer:
     
@@ -18,28 +20,27 @@ class CourseInfoContainer:
     def set_df_dict(self, df_dict):
         self._df_dict = df_dict
 
-    def df_exists(self, name):
+    def df_exists(self, dept):
         success = False
-        if name in list(self._df_dict.keys()):
+        if dept in self._df_dict.keys():
             success = True
         return success
 
-    def get_df(self, name):
-        if self.df_exists(name):
-            df = self._df_dict[name]
+    def get_df(self, dept):
+        if self.df_exists(dept):
+            df = self._df_dict[dept]
             return df
         return None
 
-    def set_df(self, name, df):
-        self._df_dict[name] = df
+    def get_df_courseIDs(self, dept):
+        if self.df_exists(dept):
+            df = self._df_dict[dept]
+            lst = df['courseID'].tolist()
+            return lst
+        return None
 
-    def get_excused_prereqs(self):
-        df = self._df_dict['ExcusedPrereqs']
-        lst = df['courseID'].tolist()
-        return lst
-
-    def set_excused_prereqs(self, excused_prereqs):
-        self._excused_prereqs = excused_prereqs
+    def set_df(self, dept, df):
+        self._df_dict[dept] = df
 
     # This method should only be used to load Report after construction of respective container and graph
     def load_report(self, report):
@@ -60,6 +61,11 @@ class CourseInfoContainer:
     def display_df_dict(self):
         print(self._df_dict)
 
+    def display_df(self, dept):
+        if self.df_exists(dept):
+            print(self.get_df(dept))
+        else: print("Dataframe for department not in dataframe dictionary.")
+
     def display_weights(self):
         print(self._report.course_descendants)
 
@@ -77,13 +83,12 @@ class CourseInfoContainer:
 
     def get_courseIDs(self):
         courseID_list = []
-        df_name_lst = list(self._df_dict.keys())
-        for name in df_name_lst:
-            if name != 'ExcusedPrereqs':
-                df = self._df_dict[name]
-                lst = df['courseID'].tolist()
-                for course in lst:        
-                    courseID_list.append(course)
+        df_dept_lst = list(self._df_dict.keys())
+        for dept in df_dept_lst:
+            df = self._df_dict[dept]
+            lst = df['courseID'].tolist()
+            for course in lst:        
+                courseID_list.append(course)
         return courseID_list
 
     def get_availability(self, courseid):
@@ -93,39 +98,20 @@ class CourseInfoContainer:
         return availability_list
 
     def get_prereqs(self, courseid):
-        prereqs_list = self.get_comma_split_list(self.get_data('prerequisites', courseid))
-        for prereq in prereqs_list:
-            if 'or' in prereq:
-                or_list = self.get_or_split_list(prereq) # May need to save outside to expand 'or' type prereqs.
-                prereqs_list = list(map(lambda x: x.replace(prereq, or_list[0]), prereqs_list)) # Default to first 'or' type prereq for now.
+        prereqs_list = self.get_data('prerequisites', courseid)
         return prereqs_list
 
     def get_coreqs(self, courseid):
-        coreqs_list = self.get_comma_split_list(self.get_data('co-requisites', courseid))
+        coreqs_list = self.get_data('co-requisites', courseid)
         return coreqs_list
 
     def get_recommended(self, courseid):
-        recommended_list = self.get_comma_split_list(self.get_data('recommended', courseid))       
+        recommended_list = self.get_data('recommended', courseid)     
         return recommended_list
 
-    def get_isElective(self, courseid):
-        success = False
-        isElective = self.get_data('isElective', courseid)   
-        if isElective == 1: success = True
-        return success
-
-    def get_electives(self):
-        courses = self.get_courseIDs()
-        electives = []
-        print(courses)
-        for course in courses:
-            if self.get_isElective(course):
-                electives.append(course)
-        return electives
-
     def get_restrictions(self, courseid):
-        restrictions_list = self.get_comma_split_list(self.get_data('restrictions', courseid))       
-        return restrictions_list
+        restrictions = self.get_data('restrictions', courseid)     
+        return restrictions
 
     def get_note(self, courseid):   
         note = self.get_data('note', courseid)
@@ -133,6 +119,8 @@ class CourseInfoContainer:
 
     def get_importance(self, courseid):
         importance = self.get_data('importance', courseid)
+        if importance == None:
+            return 60
         return importance
 
     # This method pickles CourseInfoContainer class so data can be saved
@@ -142,7 +130,7 @@ class CourseInfoContainer:
 
     # Combines parameter container dfs with this container dfs; the container with the most updated data needs to be first 
     # when listing frames.  Dataframes with sheet name matches will be added to each other, then duplicates will be deleted.
-    # Sheets without matches will be added.  Use this method to update this container with the most current data
+    # Sheets without matches will be added.  Use this method to update this container with the most current data.
     def update_container_keeping_external_duplicates(self, container):
         df_names_a = list(self._df_dict.keys())
         df_names_b = list(container.get_df_dict().keys())
@@ -167,25 +155,27 @@ class CourseInfoContainer:
     # methods account for None, 'none', or '??' values, and still return lists
 
     def get_data(self, columnHeader, courseid): # helper method to access contents of df
+        if courseid == None: return
         data = None
-        name = courseid[:4]
-        df = self.get_df(name)
-        if(self.df_exists(name) and self.validate_course(courseid)):
+        department = re.findall(r"^\w+", courseid)
+        department = department[0]
+        df = self.get_df(department)
+        if(self.df_exists(department) and self.validate_course(courseid)):
             index = df[df['courseID'] == courseid].index[0]
             data = df.at[index, columnHeader]
-            if df.isnull().at[index, columnHeader] or data == 'none' or data == '??' or data == '' or data == ' ' or data == '  ':
+            if df.isnull().at[index, columnHeader] or data == 'none' or data == None or data == '??' or data == '' or data == ' ' or data == '  ':
                 data = None
         return data
 
     def get_comma_split_list(self, data): # helper method to separate data by commas
-        if data == None: # or data == 'none' or data == '??'or data == '' or data == ' ' or data == '  ':
+        if data == None:
             return []
         else:
             data_list = [contents.strip() for contents in data.split(',')]
             return data_list
 
     def get_space_split_list(self, data): # helper method to separate data by space
-        if data == None: # or data == 'none' or data == '??'or data == '' or data == ' ' or data == '  ':
+        if data == None:
             return []
         else:
             data_list = data.split()
@@ -193,9 +183,9 @@ class CourseInfoContainer:
 
     # Covers cases where hours are imbedded in CSU's website format or stand alone
     def get_imbedded_hours(self, data):
-        if data == None: # or data == 'none' or data == '??'or data == '' or data == ' ' or data == '  ':
+        if data == None:
             return 0
-        if (len(str(data)) == 1):
+        elif (len(str(data)) == 1):
             return int(data)
         else:
             data = list(map(int, re.findall(r'\d+', data)))
@@ -204,10 +194,6 @@ class CourseInfoContainer:
     def validate_course(self, course):
         lst = self.get_courseIDs()
         return course in lst
-
-    def get_or_split_list(self, string):
-        lst = re.split(' or ', string)
-        return lst
 
 # ..........end of helper methods.......................end of helper methods......................helper methods
 # ------END OF CLASS---------END OF CLASS-----------END OF CLASS----------END OF CLASS---------------------------
@@ -219,7 +205,6 @@ def combine_container_keeping_right_duplicates(container_a, container_b):
     df_dict_a = container_a.get_df_dict()
     df_dict_b = container_b.get_df_dict()
     df_names_a = list(df_dict_a.keys())
-    print()
     df_names_b = list(df_dict_b.keys())
     for name_a in df_names_a:
         for name_b in df_names_b:
@@ -244,26 +229,16 @@ def write_df_dict_xlsx(container, filename):
 # Author: Vincent Miller
 # Contributer: Max Lewis
 def load_course_info(file_name):
-    pd.set_option('display.max_rows', None)
     df_dict = dataframe_xlsx_read(file_name, sheet=None)
     return df_dict
 
 # ******ending of course_info_parser**********ending of course_info_parser***************************************
 
-from program_generated_evaluator import evaluate_container # imported for self testing purposes
 # quick test below
 #file0 = get_source_path()
 #file0 = get_source_relative_path(file0, 'input_files/Course Info.xlsx')
-#file1 = get_source_path()
-#file1 = get_source_relative_path(file1, 'input_files/Course Info Y.xlsx')
-#file2 = get_source_path()
-#file2 = get_source_relative_path(file2, 'output_files/Course Info Z.xlsx')
-#df = load_course_info(file0)
-#df1 = load_course_info(file1)
-#container = CourseInfoContainer(df)
-#print(container.get_prereqs('ACCT 3111'))
-#container1 = CourseInfoContainer(df1)
-#write_df_dict_xlsx(container, file2)
+#dfdict = load_course_info(file0)
+#container = CourseInfoContainer(dfdict)
+#write_df_dict_xlsx(container, file0)
 #print(container.update_container_keeping_external_duplicates(container1))
 #print(combine_container_keeping_right_duplicates(container, container1))
-

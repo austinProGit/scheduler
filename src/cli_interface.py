@@ -21,12 +21,18 @@ from courses_needed_container import NeededCoursesInterface, CONSTANT_REFRESHING
 from PySide6 import QtWidgets, QtGui
 from sys import exit
 
-
 from driver_fs_functions import *
 from graphical_interface import MainProgramWindow
 from item_selection_interface import ItemSelectionInterface
 from menu_interface_base import GeneralInterface
 from help_interface import HelpMenu
+
+# Used for controlling console window display
+OPERATING_SYSTEM = platform.system()
+if OPERATING_SYSTEM == "Windows":
+    import pywintypes, win32gui, win32con, time, win32api
+    TITLE = win32api.GetConsoleTitle()
+    HWND = win32gui.FindWindow(None, TITLE)
 
 ICON_FILENAME: str = 'icon.png' # The filename of the program's icon (when GUI)
 
@@ -41,9 +47,16 @@ ICON_FILENAME: str = 'icon.png' # The filename of the program's icon (when GUI)
 # configuring scheduling parameters, generating the schedule, etc.
 class MainMenuInterface(GeneralInterface):
     
-    def __init__(self) -> None:
-        self.name: str = 'MAIN MENU'
-        self._commands: dict[str, ControllerCommand] = {}
+    def __init__(self):
+        if OPERATING_SYSTEM == "Windows":
+            win32gui.ShowWindow(HWND, win32con.SW_SHOW)
+            try:
+                win32gui.SetForegroundWindow(HWND)
+            except Exception as e:
+                print(e)
+
+        self.name = 'MAIN MENU'
+        self._commands = {}
         
         # e: explorer
         # i: immediate
@@ -83,8 +96,11 @@ class MainMenuInterface(GeneralInterface):
 class GraphicalUserMenuInterface(GeneralInterface):
     
     
-    def __init__(self) -> None:
-        self.name: str = 'GUI MENU'
+    def __init__(self):
+        if OPERATING_SYSTEM == "Windows":
+            win32gui.ShowWindow(HWND, win32con.SW_HIDE)
+        
+        self.name = 'GUI MENU'
     
     
     def was_pushed(self, controller: Controller) -> None:
