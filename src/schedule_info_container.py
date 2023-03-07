@@ -65,7 +65,7 @@ class ScheduleInfoContainer:
             semesters.append(SemesterDescription(running_year, running_semester, course_identifiers))
 
             running_semester = SEMESTER_TYPE_SUCCESSOR[running_semester]
-            if running_semester == FALL:
+            if running_semester == SPRING:
                 running_year += 1
 
         result: ScheduleInfoContainer = ScheduleInfoContainer(semesters=semesters, confidence_level=confidence_level)

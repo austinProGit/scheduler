@@ -70,7 +70,7 @@ from os import path
 
 
 from courses_needed_container import CoursesNeededContainer
-from general_utilities import FALL
+from general_utilities import *
 
 
 from alias_module import *
@@ -746,7 +746,7 @@ class SmartPlannerController:
             
             if PLAIN_TEXT_EXPORT_TYPE in export_types:
                 unique_ptext_destination = get_next_free_filename(desired_destination.with_suffix('.txt'))
-                plain_text_export(unique_ptext_destination, semesters_listing, 'Spring', 2022)
+                plain_text_export(Path(unique_ptext_destination), container, FALL, 2022)
                 self.output('Schedule (plain text) exported as {0}'.format(unique_ptext_destination))
                 if os.name == 'nt':
                     os.startfile(unique_ptext_destination)
@@ -755,7 +755,7 @@ class SmartPlannerController:
 
             if PDF_EXPORT_TYPE in export_types:
                 unique_pdf_destination = get_next_free_filename(desired_destination.with_suffix('.pdf'))
-                pdf_export(unique_pdf_destination, semesters_listing, 'Spring', 2022)
+                pdf_export(Path(unique_pdf_destination), container, FALL, 2022)
                 self.output('Schedule (PDF) exported as {0}'.format(unique_pdf_destination))
                 if os.name == 'nt':
                     os.startfile(unique_pdf_destination)

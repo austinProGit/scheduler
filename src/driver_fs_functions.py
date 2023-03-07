@@ -5,6 +5,7 @@
 # This file contains constants and functions for the the driver/controller and the interface components.
 # TODO: rename get_real_filepath (it looks like "relative filepath")
 
+# The following are imported for type annotations
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
