@@ -55,11 +55,12 @@ from PySide6 import QtWidgets, QtGui
 # NOTE: Uncomment this if you want to run memory profiling
 #from guppy import hpy; heap = hpy() # NOTE: added this for testing! (memory leak detecting; this requires loading in cli)
 
+import platform
 from sys import exit
 from pathlib import Path
 from os import path
 
-
+import auto_update
 from alias_module import *
 from catalog_parser import update_course_info
 from batch_process import batch_process
@@ -76,6 +77,18 @@ from plain_text_formatter import plain_text_export
 from pdf_formatter import pdf_export
 from user_submitted_validator import validate_user_submitted_path
 from path_to_grad_parser import parse_path_to_grad
+
+# Used for controlling console window display
+OPERATING_SYSTEM = platform.system()
+if OPERATING_SYSTEM == "Windows":
+    import pywintypes, win32gui, win32con, time, win32api
+    TITLE = win32api.GetConsoleTitle()
+    HWND = win32gui.FindWindow(None, TITLE)
+
+# Used for auto-updating the program
+VERSION = "v2.0.0"
+RELEASE_URL = "https://api.github.com/repos/austinProGit/scheduler/releases/latest"
+INSTALLER_INFO_FILE = "installer_info.txt"
 
 
 ## --------------------------------------------------------------------- ##
@@ -95,6 +108,10 @@ class SmartPlannerController:
     
     
     def __init__(self, graphics_enabled=True):
+        if OPERATING_SYSTEM == "Windows":
+            win32gui.ShowWindow(HWND, win32con.SW_HIDE)
+        if auto_update.update(VERSION, RELEASE_URL, INSTALLER_INFO_FILE):
+            exit(0)
         self.setup(graphics_enabled)
         # NOTE: adding this for testing! (set size for relative heap comparison; you must launch in cli mode to use this)
         # NOTE: Uncomment this if you want to run memory profiling
