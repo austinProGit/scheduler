@@ -14,8 +14,7 @@ if TYPE_CHECKING:
 
 # TODO: make courses needed parser work in dis file!
 
-# from courses_needed_parser import get_courses_needed
-
+from degreeworks_parser import *
 from scheduler import Scheduler
 from excel_formatter import excel_formatter
 from concurrent.futures import ProcessPoolExecutor
