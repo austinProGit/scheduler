@@ -69,7 +69,7 @@ from driver_fs_functions import *
 from cli_interface import MainMenuInterface, GraphicalUserMenuInterface, ErrorMenu
 from scheduler import Scheduler
 from course_info_container import *
-from courses_needed_parser import get_courses_needed
+from degreeworks_parser import get_courses_needed
 from program_generated_evaluator import evaluate_container, NonDAGCourseInfoError, InvalidCourseError
 from excel_formatter import excel_formatter
 from plain_text_formatter import plain_text_export

@@ -1,7 +1,7 @@
 # Author: Vincent Miller
 # Date: 17 October 2022
 # Description: Process batches of schedules
-from courses_needed_parser import get_courses_needed
+from degreeworks_parser import get_courses_needed
 from scheduler import Scheduler
 from excel_formatter import excel_formatter
 from concurrent.futures import ProcessPoolExecutor

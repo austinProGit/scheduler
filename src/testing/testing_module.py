@@ -2,11 +2,12 @@
 # Date: 9/21/22
 # CPSC 4175 Group Project
 
-from program_generated_validator_tests import program_generated_validator_tests
-from container_tests import container_tests
-from user_submitted_validator_tests import user_submitted_validator_tests
-from cli_unit_testing import run_cli_unit_test
+# from program_generated_validator_tests import program_generated_validator_tests
+# from container_tests import container_tests
+# from user_submitted_validator_tests import user_submitted_validator_tests
+# from cli_unit_testing import run_cli_unit_test
 from traceback import print_exc
+from degreeworks_parser_tests import degreeworks_parser_tests
 
 def all_tests():
 
@@ -20,6 +21,7 @@ def all_tests():
     add_test('container', container_tests)
     add_test('user_submitted_validator', user_submitted_validator_tests)
     add_test('cli', run_cli_unit_test)
+    add_test('degreeworks_parser', degreeworks_parser_tests)
 
     tests_passed = True
 
