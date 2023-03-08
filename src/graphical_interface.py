@@ -225,10 +225,13 @@ class MainMenuWidget(QWidget):
         self.needed_courses = self.controller.get_courses_needed()
 
         # TODO: fix this (possibly bad get-update)
-        if self.needed_courses.is_resolved():
-            self.listing_box.setText('\n'.join([str(s) for s in self.needed_courses.get_courses_list()]))
+        if self.needed_courses is not None:
+            if self.needed_courses.is_resolved():
+                self.listing_box.setText('\n'.join([str(s) for s in self.needed_courses.get_courses_list()]))
+            else:
+                self.listing_box.setText('*NOT RESOLVED*')
         else:
-            self.listing_box.setText('*NOT RESOLVED*')
+            self.listing_box.setText('')
     
     
     def _needed_courses_load_callback(self) -> None:
@@ -238,10 +241,12 @@ class MainMenuWidget(QWidget):
         filename: Optional[str] = None
 
         if file_loader_dialog.exec():
-            filename = file_loader_dialog.selectedFiles()[0]
-            load_success: bool = self.controller.load_courses_needed(filename)
+            selected_filename: str = file_loader_dialog.selectedFiles()[0]
+            filename = selected_filename
+            load_success: bool = self.controller.load_courses_needed(selected_filename)
             if load_success:
-                self._update_needed_courses_label(filename) 
+                self._update_needed_courses_label(selected_filename)
+        
         if filename is None:
             self.controller.output('Load cancelled.')
         
@@ -286,7 +291,7 @@ class MainMenuWidget(QWidget):
             self.controller.output('Load cancelled.')
     
     
-    def _hours_per_semester_callback(self):
+    def _hours_per_semester_callback(self) -> None:
         '''Callback for when enter/return is pressed while editing the hours per semester text field.'''
         
         hours_text = self.hours_per_semester_field.text()

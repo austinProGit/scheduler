@@ -31,7 +31,7 @@ def plain_text_export(filepath: Path, schedule: ScheduleInfoContainer, \
         semester: SemesterDescription
         for semester in schedule.get_schedule():
             writer.write(f'{SEMESTER_DESCRIPTION_MAPPING[current_semester_type]} {curent_year}:\n') # Write semester type and year
-            writer.write(', '.join(semester) if semester else '-No Courses-') # White courses or "-No Courses-"
+            writer.write(', '.join(semester.str_iterator()) if semester else '-No Courses-') # White courses or "-No Courses-"
             writer.write('\n\n') # Create spacing in file
             
             # Rotate the semester type and year if entering the spring

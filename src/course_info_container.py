@@ -200,7 +200,6 @@ class CourseInfoContainer:
 
 # Combining two containers dataframes where the left parameter container keeps duplicates and deletes one from
 # the right container dataframe
-@staticmethod
 def combine_container_keeping_right_duplicates(container_a, container_b):
     df_dict_a = container_a.get_df_dict()
     df_dict_b = container_b.get_df_dict()
@@ -220,7 +219,6 @@ def combine_container_keeping_right_duplicates(container_a, container_b):
                 container_a.set_df(name_b, right_df)
     return container_a.get_df_dict()
 
-@staticmethod
 def write_df_dict_xlsx(container, filename):
     dataframe_xlsx_writes(filename, container.get_df_dict())
 

@@ -83,7 +83,7 @@ class Scheduler:
         
         return FitnessConfiguration(atomic_rules, coreq_rules)
     
-    def __init__(self, course_info_container: CourseInfoContainer, parameters_container: ConstructiveSchedulingParametersContainers):
+    def __init__(self, course_info_container: Optional[CourseInfoContainer], parameters_container: ConstructiveSchedulingParametersContainers):
         #self.hours_per_semester = DEFAULT_HOURS_PER_SEMESTER
         #self.courses_needed = []
         #self.courses_needed_container = None

@@ -2,6 +2,12 @@
 # 3/6/2023
 # CPSC 4176 Project
 
+# The following are imported for type annotations
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Optional
+
 import re
 
 from typing import final
@@ -1170,7 +1176,7 @@ class ListingNode(_NodeSuper):
     }
     KEYS_LIST = ['name', 'instructions']
     NON_NIL_KEYS = {'name'}
-    INTEGER_KEYS = set()
+    INTEGER_KEYS: set[str] = set()
     
     def __init__(self, printable_description=None, is_delete_protected=True):
         super().__init__(printable_description)

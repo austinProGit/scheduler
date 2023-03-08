@@ -449,7 +449,7 @@ class SmartPlannerController:
     ## ----------- Scheduling parameter getting ----------- ##
     
 
-    def get_courses_needed(self) -> Optional[CourseInfoContainer]:
+    def get_courses_needed(self) -> Optional[CoursesNeededContainer]:
         '''Get the coursed needed that have been loaded into the scheduler. This return a list of strings (IDs).'''
         return self._scheduler.get_courses_needed_container()
         
@@ -499,8 +499,9 @@ class SmartPlannerController:
                 self._scheduler.configure_degree_extraction(degree_extraction) # Load the course container / degree extraction into the scheduler
 
                 # TODO: this is temp (VERY BAD, VERY NO GOOD) ->
-                for node in self._scheduler._courses_needed_container._decision_tree.get_all_children_list():
-                    node.enable_stub()
+                if self._scheduler._courses_needed_container is not None:
+                    for node in self._scheduler._courses_needed_container._decision_tree.get_all_children_list():
+                        node.enable_stub()
 
                 #self._scheduler.configure_courses_needed(courses_needed_container) 
                 self.output('Course requirements loaded from {0}.'.format(filepath)) # Report success to the user

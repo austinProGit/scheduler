@@ -211,9 +211,11 @@ if __name__ == '__main__':
     ]
     '''
 
-    parse_report  = RequirementsParser.make_from_course_selection_logic_string('Degree Plan', construct_string_2)
-    courses_needed_container = RequirementsContainer(parse_report.certain_courses, parse_report.decision_tree)
-    courses_needed_container.rename_certain_list('Certain List')
+    parse_report = RequirementsParser.make_from_course_selection_logic_string(construct_string_2)
+    # courses_needed_container = RequirementsContainer(parse_report.certain_courses, parse_report.decision_tree)
+    # TODO: determine if this or the line above is correct
+    courses_needed_container = RequirementsContainer(parse_report.decision_tree)
+    # courses_needed_container.rename_certain_list('Certain List')
 
     # (POL 111, POLSE 2323) [s <n=A>[d<n=1>][d<n=2>]] [r <c=9>[p<n=p,m=p.*>][i<>][d<n=IO>]]
     # (POL 111, POLSE 2323) [s <n=A>[e<n=1> [r<>[d<>][d<>]] [d<>]][d<n=2>]] [r <c=9>[p<n=p,m=p.*>][i<>][d<n=IO>]]

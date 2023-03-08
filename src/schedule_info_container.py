@@ -29,7 +29,7 @@ class SemesterDescription:
 
     def __str__(self) -> str:
         header: str = f'{self.year}, {SEMESTER_DESCRIPTION_MAPPING[self.semester_type]}: '
-        return header + ', '.join(self.courses)
+        return header + ', '.join(self.str_iterator())
 
     def __getitem__(self, index) -> str:
         # TODO: this is used to support legacy formatters
@@ -37,6 +37,9 @@ class SemesterDescription:
 
     def __len__(self) -> int:
         return len(self.courses)
+
+    def str_iterator(self) -> Iterator[str]:
+        return [str(course) for course in self.courses].__iter__()
 
 
 DEFAULT_DEGREE_DESCRIPTION: str = 'Degree Plan'
@@ -47,7 +50,7 @@ DEBUG_YEAR: int = 2023
 class ScheduleInfoContainer:
 
     @staticmethod
-    def make_from_string_list(raw_list: list[list[str]], confidence_level: float = None, year: int = DEBUG_YEAR) -> ScheduleInfoContainer:
+    def make_from_string_list(raw_list: list[list[str]], confidence_level: Optional[float] = None, year: int = DEBUG_YEAR) -> ScheduleInfoContainer:
 
         semesters: list[SemesterDescription] = []
         running_year: int = year
