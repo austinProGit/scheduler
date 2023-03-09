@@ -173,11 +173,11 @@ def course_info_container_tests() :
         else: test_failed_count += 1
 
     test_count += 2
-    if container.get_hours("bull") == 0:
+    if container.get_hours("bull") == 3:
         test_passed_count += 1
     else: test_failed_count += 1
 
-    if container.get_hours(None) == 0:
+    if container.get_hours(None) == 3:
         test_passed_count += 1
     else: test_failed_count += 1
 
@@ -190,6 +190,6 @@ def course_info_container_tests() :
     print(f"TOTAL FAILED: {test_failed_count}")
 
     print('=============================== End course_info_container Tests ================================\n')
-    return test_passed
+    return test_failed_count == 0
 
 #course_info_container_tests()

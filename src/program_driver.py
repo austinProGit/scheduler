@@ -105,6 +105,7 @@ if OPERATING_SYSTEM == "Windows":
         import pywintypes, win32gui, win32con, time, win32api
         TITLE = win32api.GetConsoleTitle()
         HWND = win32gui.FindWindow(None, TITLE)
+        WIN_CONTROL_FLAG = True
     except ModuleNotFoundError:
         pass
 
