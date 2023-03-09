@@ -2,6 +2,7 @@ import platform
 import urllib.request
 import subprocess
 import json
+import os
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QPushButton
 from PySide6.QtCore import Qt
@@ -57,5 +58,7 @@ def install(data, installer_info_file, operating_system):
         if operating_system == "Windows":
             url_pos = 1
             name_pos = 2
-        urllib.request.urlretrieve(installer_data[url_pos], installer_data[name_pos])
-        subprocess.Popen(installer_data[name_pos])
+        installer_file = os.path.join(os.path.expanduser("~"), "Downloads")
+        installer_file = os.path.join(installer_file, installer_data[name_pos])
+        urllib.request.urlretrieve(installer_data[url_pos], installer_file)
+        subprocess.Popen(installer_file)
