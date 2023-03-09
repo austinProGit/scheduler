@@ -110,7 +110,7 @@ if OPERATING_SYSTEM == "Windows":
         pass
 
 # Used for auto-updating the program
-VERSION = "v2.0.0"
+VERSION = "v2.0.1"
 RELEASE_URL = "https://api.github.com/repos/austinProGit/scheduler/releases/latest"
 INSTALLER_INFO_FILE = "installer_info.txt"
 

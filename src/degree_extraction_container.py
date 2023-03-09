@@ -30,6 +30,19 @@ class DegreeExtractionContainer:
     def make_student_identifier(self):
         return StudentIdentifier(self._student_number, self._student_name)
 
+    def __eq__(self, rhs: object) -> bool:
+        def strip_to_compare(string):
+            if string:
+                string = string.replace(" ", "").replace("\t", "").replace("\n","")
+                return string
+        result = False
+        if isinstance(rhs, DegreeExtractionContainer):
+            result = self._taken_courses == rhs._taken_courses and \
+                strip_to_compare(self._courses_needed_constuction_string) == strip_to_compare(rhs._courses_needed_constuction_string) and \
+                strip_to_compare(self._degree_plan_name) == strip_to_compare(rhs._degree_plan_name) and \
+                strip_to_compare(self._student_number) == strip_to_compare(rhs._student_number) and \
+                strip_to_compare(self._student_name) == strip_to_compare(rhs._student_name)
+        return result
 
 
 
