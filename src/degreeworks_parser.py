@@ -2,7 +2,7 @@
 # CPSC 4175 Project
 
 from alias_module import get_latest_id
-from courses_needed_container import CoursesNeededContainer
+from degree_extraction_container import DegreeExtractionContainer
 
 # from courses_needed_container import CoursesNeededContainer, \
 #     DeliverableCourse, CourseProtocol, CourseInserter, ExhaustiveNode, \
@@ -251,6 +251,14 @@ def classify_and_handle_chunk(chunk):
         working_intermediate_substring += ']'
     return working_intermediate_substring    
 
+def get_degree_plan_name(string):
+    degree_plan_name = ''
+    string = (string[:string.find('Degree Progress')])
+    degree_plan_name = re.search(r'Major [A-Z]{4}.*?\n', string).group()
+    degree_plan_name = degree_plan_name[degree_plan_name.find('Major ') + len('Major '):]
+    return degree_plan_name
+
+
 def generate_degree_extraction_container(file_name): 
     
     with open(file_name, 'rb') as pdf_file:
@@ -261,6 +269,7 @@ def generate_degree_extraction_container(file_name):
         for page in range(len(pdf_reader.pages)):
             page_text = pdf_reader.pages[page].extract_text()
             document_string += page_text
+        degree_plan_name = get_degree_plan_name(document_string)
         curr_taken_courses = find_curr_taken_courses(document_string[:document_string.find('Fallthrough Courses')])
         # print(f'curr_taken_courses: {curr_taken_courses}')
         start = document_string.find("Still Needed:") # Used to initiate every chunk
@@ -338,13 +347,13 @@ def generate_degree_extraction_container(file_name):
         intermediate_str += input_deliverables_to_export_str(deliverables_list)
         for chunk in complex_list:
             intermediate_str += classify_and_handle_chunk(chunk)
-        # print(intermediate_str)
-    return intermediate_str, curr_taken_courses
+    return DegreeExtractionContainer(curr_taken_courses, intermediate_str, degree_plan_name)
+
 if __name__ == '__main__':
-    i, _ = generate_degree_extraction_container('./input_files/degreeworks1.pdf')
-    print(i)
-    print()
-    print(_)
+    container = generate_degree_extraction_container('./input_files/degreeworks1.pdf')
+    print(container._taken_courses)
+    print(container._courses_needed_constuction_string)
+    print(container._degree_plan_name)
     # Cases:
         # Case 1: 'POLS 1101'
         # Case 2: 'CPSC 4157 or 5157'
