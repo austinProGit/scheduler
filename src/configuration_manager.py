@@ -91,7 +91,7 @@ class SessionConfiguration():
         for attribute_name, attribute_value in encodable.items():
             setattr(self, attribute_name, attribute_value)
             
-    def get_missing_attributes(self):
+    def get_missing_attributes(self) -> list[str]:
         '''Get a list of the missing attributes if any (may be used to check load validity).'''
         result = []
         expected_attribute: str

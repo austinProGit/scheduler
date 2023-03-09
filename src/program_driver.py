@@ -99,10 +99,14 @@ from path_to_grad_parser import parse_path_to_grad
 # Used for controlling console window display
 import platform
 OPERATING_SYSTEM = platform.system()
+WIN_CONTROL_FLAG = False
 if OPERATING_SYSTEM == "Windows":
-    import pywintypes, win32gui, win32con, time, win32api
-    TITLE = win32api.GetConsoleTitle()
-    HWND = win32gui.FindWindow(None, TITLE)
+    try:
+        import pywintypes, win32gui, win32con, time, win32api
+        TITLE = win32api.GetConsoleTitle()
+        HWND = win32gui.FindWindow(None, TITLE)
+    except ModuleNotFoundError:
+        pass
 
 # Used for auto-updating the program
 VERSION = "v2.0.0"
@@ -125,7 +129,7 @@ class InterfaceProcedureError(Exception):
 class SmartPlannerController:
     
     def __init__(self, graphics_enabled=True):
-        if OPERATING_SYSTEM == "Windows":
+        if OPERATING_SYSTEM == "Windows" and WIN_CONTROL_FLAG:
             win32gui.ShowWindow(HWND, win32con.SW_HIDE)
         if auto_update.update(VERSION, RELEASE_URL, INSTALLER_INFO_FILE):
             exit(0)
@@ -250,7 +254,7 @@ class SmartPlannerController:
             course_info: Optional[DataFrame] = load_course_info(course_info_relative_path)
             course_info_container: CourseInfoContainer = CourseInfoContainer(course_info)
             
-            # This raises an exception if Course Info Container contains invalid data
+            # This raises an exception i0-f Course Info Container contains invalid data
             # evaluation_report: CourseInfoEvaluationReport = evaluate_container(course_info_container)
             # course_info_container.load_report(evaluation_report)
             
@@ -449,7 +453,7 @@ class SmartPlannerController:
     ## ----------- Scheduling parameter getting ----------- ##
     
 
-    def get_courses_needed(self) -> Optional[CourseInfoContainer]:
+    def get_courses_needed(self) -> Optional[CoursesNeededContainer]:
         '''Get the coursed needed that have been loaded into the scheduler. This return a list of strings (IDs).'''
         return self._scheduler.get_courses_needed_container()
         
@@ -499,8 +503,9 @@ class SmartPlannerController:
                 self._scheduler.configure_degree_extraction(degree_extraction) # Load the course container / degree extraction into the scheduler
 
                 # TODO: this is temp (VERY BAD, VERY NO GOOD) ->
-                for node in self._scheduler._courses_needed_container._decision_tree.get_all_children_list():
-                    node.enable_stub()
+                if self._scheduler._courses_needed_container is not None:
+                    for node in self._scheduler._courses_needed_container._decision_tree.get_all_children_list():
+                        node.enable_stub()
 
                 #self._scheduler.configure_courses_needed(courses_needed_container) 
                 self.output('Course requirements loaded from {0}.'.format(filepath)) # Report success to the user

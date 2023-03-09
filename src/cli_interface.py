@@ -30,10 +30,15 @@ from help_interface import HelpMenu
 # Used for controlling console window display
 import platform
 OPERATING_SYSTEM = platform.system()
+WIN_CONTROL_FLAG = False
 if OPERATING_SYSTEM == "Windows":
-    import pywintypes, win32gui, win32con, time, win32api
-    TITLE = win32api.GetConsoleTitle()
-    HWND = win32gui.FindWindow(None, TITLE)
+    try:
+        import pywintypes, win32gui, win32con, time, win32api
+        TITLE = win32api.GetConsoleTitle()
+        HWND = win32gui.FindWindow(None, TITLE)
+        WIN_CONTROL_FLAG = True
+    except ModuleNotFoundError:
+        pass
 
 ICON_FILENAME: str = 'icon.png' # The filename of the program's icon (when GUI)
 
@@ -49,7 +54,7 @@ ICON_FILENAME: str = 'icon.png' # The filename of the program's icon (when GUI)
 class MainMenuInterface(GeneralInterface):
     
     def __init__(self):
-        if OPERATING_SYSTEM == "Windows":
+        if OPERATING_SYSTEM == "Windows" and WIN_CONTROL_FLAG:
             win32gui.ShowWindow(HWND, win32con.SW_SHOW)
             try:
                 win32gui.SetForegroundWindow(HWND)
@@ -98,7 +103,7 @@ class GraphicalUserMenuInterface(GeneralInterface):
     
     
     def __init__(self):
-        if OPERATING_SYSTEM == "Windows":
+        if OPERATING_SYSTEM == "Windows" and WIN_CONTROL_FLAG:
             win32gui.ShowWindow(HWND, win32con.SW_HIDE)
         
         self.name = 'GUI MENU'
@@ -108,6 +113,11 @@ class GraphicalUserMenuInterface(GeneralInterface):
         '''Method that is called upon the interface being pushed onto the interface stack.'''
         
         application: Optional[QApplication] = controller.get_graphical_application() # Get the application object from the controller
+
+        if application is None:
+            # TODO: determine the validity of this check
+            raise RuntimeError
+
         # TODO: This is not sustainable (using __file__)
         icon: QtGui.QIcon = QtGui.QIcon(str(os.path.join(os.path.dirname(__file__), ICON_FILENAME)))
         #application.setWindowIcon(icon)   # Set the window icon
@@ -280,7 +290,7 @@ def select_export_command(controller, argument):
     list_interface.list_progress(controller)                            # Output the current selection
 
 
-def list_parameters_command(controller, arguements):
+def list_parameters_command(controller, arguements) -> None:
     '''List the current scheduling parameters (destination directory, hours per semester, needed courses, etc.).'''
     if not arguements:
         controller.output('Scheduling Parameter:\n')

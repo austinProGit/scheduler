@@ -60,13 +60,14 @@ class CourseIdentifier:
 
     def get_credit_hours(self, course_info_container: CourseInfoContainer) -> int:
 
-        result: int = self._stub_credits
+        result: int = DEFAULT_COURSE_CREDIT_HOURS
 
         if self._is_concrete:
             # TODO: add the actual function call here:
-            course_info_container.get_credits(self._course_number)
-        elif result is None:
-            result = DEFAULT_COURSE_CREDIT_HOURS
+            #course_info_container.get_credits(self._course_number)
+            pass
+        elif result is None and self._stub_credits is not None:
+            result = self._stub_credits
         
         return result
 
@@ -86,22 +87,22 @@ class CourseIdentifier:
 class StudentIdentifier:
 
     def __init__(self, student_number: Optional[str] = None, student_name: Optional[str] = None) -> None:
-        self._student_number: Optional[str] = student_number
-        self._student_name: Optional[str] = student_name
+        self.student_number: Optional[str] = student_number
+        self.student_name: Optional[str] = student_name
 
     def is_concrete(self) -> bool:
-        return self._student_number is not None or self._student_name is not None
+        return self.student_number is not None or self.student_name is not None
 
     def __str__(self) -> str:
         description: str = 'Student'
 
-        if self._student_name is not None:
-            description = self._student_name
+        if self.student_name is not None:
+            description = self.student_name
 
-            if self._student_number is not None:
-                description += f' ({self._student_number})'
+            if self.student_number is not None:
+                description += f' ({self.student_number})'
 
-        elif self._student_number is not None:
-             description = str(self._student_number)
+        elif self.student_number is not None:
+             description = str(self.student_number)
 
         return description
