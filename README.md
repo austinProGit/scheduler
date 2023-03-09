@@ -1,19 +1,19 @@
 # Smart Planner
 
-[v2.0.0 Release Notes](https://github.com/austinProGit/scheduler/releases/latest)
+[v2.0.1 Release Notes](https://github.com/austinProGit/scheduler/releases/latest)
 
 A simple program to assist with scheduling a student's university courses.
 
 ![Preview](https://github.com/austinProGit/scheduler/blob/main/preview.JPG)
 
 ## Downloads
-[smart-planner-setup-2.0.0.exe](https://github.com/austinProGit/scheduler/releases/download/v.2.0.0/smart-planner-setup-2.0.0.exe)   
-[Source code (zip)](https://github.com/austinProGit/scheduler/archive/refs/tags/v.2.0.0.zip)  
-[Source code (tar.gz)](https://github.com/austinProGit/scheduler/archive/refs/tags/v.2.0.0.tar.gz)
+[smart-planner-setup-2.0.1.exe](https://github.com/austinProGit/scheduler/releases/download/v2.0.1/smart-planner-setup-2.0.1.exe)  
+[Source code (zip)](https://github.com/austinProGit/scheduler/archive/refs/tags/v2.0.1.zip)  
+[Source code (tar.gz)](https://github.com/austinProGit/scheduler/archive/refs/tags/v2.0.1.tar.gz)
 
 ## Installation
 ### Standard (Currently only available for Windows)
-* Download the [installer (exe)](https://github.com/austinProGit/scheduler/releases/download/v.2.0.0/smart-planner-setup-2.0.0.exe) and double-click to launch the installation wizard
+* Download the [installer (exe)](https://github.com/austinProGit/scheduler/releases/download/v2.0.1/smart-planner-setup-2.0.1.exe) and double-click to launch the installation wizard
 
 *Note: Antivirus software will warn against downloading and launching the installer since we are not a known publisher*
 
