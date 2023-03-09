@@ -2,7 +2,7 @@
 # CPSC 4175 Project
 
 from alias_module import get_latest_id
-from degree_extraction_container import DegreeExtractionContainer
+from courses_needed_container import CoursesNeededContainer
 
 # from courses_needed_container import CoursesNeededContainer, \
 #     DeliverableCourse, CourseProtocol, CourseInserter, ExhaustiveNode, \
@@ -17,20 +17,26 @@ from pypdf import PdfReader
         # Once all chunks are static, remove all empty chunks.
     # 3. Interface with tree generator.
     # 4. Figure out the situation with the '3 to 6 Credits'...ask Dr. Carroll
+    # 5. Standardize the 'course blocks' etc.
 
+# 
 def remove_substring_after_last_relevant(input_string):
     match_reversed = re.search(r'[0-9]{4}|@|\)', input_string[::-1])
     end_index = len(input_string) - match_reversed.start() if match_reversed else 0
     return input_string[:end_index]
 
+# Searches for 'Minor in ' in a given chunk. One time function
 def remove_minor_in(chunk, index, lst):
     chunk = chunk[:chunk.find('Minor in ')] if 'Minor in ' in chunk else chunk
     return chunk
 
+# Searches for 'Select one as a pre-requesite for ' and removes everything from the phrase to the end of the chunk. Need this because
+# it contains a course block and could cause issues. One time function.
 def remove_select_one(chunk, index, lst):
     chunk = chunk[:chunk.find('Select one as a pre-requesite for ')] if 'Select one as a pre-requesite for ' in chunk else chunk
     return chunk
 
+# Removes 
 def remove_empty(chunk, index, lst):
     if len(chunk) == 0:
         lst.pop(index)
@@ -333,12 +339,12 @@ def generate_degree_extraction_container(file_name):
         for chunk in complex_list:
             intermediate_str += classify_and_handle_chunk(chunk)
         # print(intermediate_str)
-    
-    return DegreeExtractionContainer(curr_taken_courses, intermediate_str)
-
+    return intermediate_str, curr_taken_courses
 if __name__ == '__main__':
     i, _ = generate_degree_extraction_container('./input_files/degreeworks1.pdf')
-    # print(i)
+    print(i)
+    print()
+    print(_)
     # Cases:
         # Case 1: 'POLS 1101'
         # Case 2: 'CPSC 4157 or 5157'

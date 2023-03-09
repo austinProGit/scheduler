@@ -88,7 +88,7 @@ from scheduling_parameters_container import ConstructiveSchedulingParametersCont
 from course_info_container import *
 # TODO: make courses needed parser work in dis file!
 # from courses_needed_parser import get_courses_needed
-from courses_needed_parser import generate_degree_extraction_container
+from degreeworks_parser import generate_degree_extraction_container
 from program_generated_evaluator import evaluate_container, NonDAGCourseInfoError, InvalidCourseError
 from excel_formatter import excel_formatter
 from plain_text_formatter import plain_text_export
