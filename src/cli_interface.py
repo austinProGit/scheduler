@@ -30,10 +30,15 @@ from help_interface import HelpMenu
 # Used for controlling console window display
 import platform
 OPERATING_SYSTEM = platform.system()
+WIN_CONTROL_FLAG = False
 if OPERATING_SYSTEM == "Windows":
-    import pywintypes, win32gui, win32con, time, win32api
-    TITLE = win32api.GetConsoleTitle()
-    HWND = win32gui.FindWindow(None, TITLE)
+    try:
+        import pywintypes, win32gui, win32con, time, win32api
+        TITLE = win32api.GetConsoleTitle()
+        HWND = win32gui.FindWindow(None, TITLE)
+        WIN_CONTROL_FLAG = True
+    except ModuleNotFoundError:
+        pass
 
 ICON_FILENAME: str = 'icon.png' # The filename of the program's icon (when GUI)
 
@@ -49,7 +54,7 @@ ICON_FILENAME: str = 'icon.png' # The filename of the program's icon (when GUI)
 class MainMenuInterface(GeneralInterface):
     
     def __init__(self):
-        if OPERATING_SYSTEM == "Windows":
+        if OPERATING_SYSTEM == "Windows" and WIN_CONTROL_FLAG:
             win32gui.ShowWindow(HWND, win32con.SW_SHOW)
             try:
                 win32gui.SetForegroundWindow(HWND)
@@ -98,7 +103,7 @@ class GraphicalUserMenuInterface(GeneralInterface):
     
     
     def __init__(self):
-        if OPERATING_SYSTEM == "Windows":
+        if OPERATING_SYSTEM == "Windows" and WIN_CONTROL_FLAG:
             win32gui.ShowWindow(HWND, win32con.SW_HIDE)
         
         self.name = 'GUI MENU'
