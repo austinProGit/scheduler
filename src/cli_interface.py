@@ -120,7 +120,7 @@ class GraphicalUserMenuInterface(GeneralInterface):
 
         # TODO: This is not sustainable (using __file__)
         icon: QtGui.QIcon = QtGui.QIcon(str(os.path.join(os.path.dirname(__file__), ICON_FILENAME)))
-        #application.setWindowIcon(icon)   # Set the window icon
+        application.setWindowIcon(icon)   # Set the window icon
         main_window = MainProgramWindow(controller) # Create a new window for the application to present
         main_window.resize(800, 400) # Set the initial window size
         main_window.show() # Present the window
