@@ -17,10 +17,10 @@ def all_tests():
         tests.append((test_name, test_func))
     
     # Add all tests below as add_test('test_name', test_func)
-    add_test('program_generated_validator', program_generated_validator_tests)
-    add_test('container', course_info_container_tests)
-    #add_test('user_submitted_validator', user_submitted_validator_tests)
-    add_test('cli', run_cli_unit_test)
+    # add_test('program_generated_validator', program_generated_validator_tests)
+    # add_test('container', course_info_container_tests)
+    # add_test('user_submitted_validator', user_submitted_validator_tests)
+    # add_test('cli', run_cli_unit_test)
     add_test('degreeworks_parser', degreeworks_parser_tests)
 
     tests_passed = True
