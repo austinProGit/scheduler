@@ -127,8 +127,6 @@ def degreeworks_parser_tests():
     print('=============================== Start Degreeworks Parser Tests ===============================\n')
 
     for test in test_case_list:
-
-        test_passed = False
         
         test_container = generate_degree_extraction_container(test["test_data"])
         if test_container._student_name and degreeworks_input_1_ex_out._student_name:
@@ -157,7 +155,6 @@ def degreeworks_parser_tests():
             print()
 
         if test_container.__eq__(test["ex_out"]):
-            test_passed = True
             print(f'The {test["test_name"]} test PASSED.')
         else:
             tests_passed = False
