@@ -77,7 +77,7 @@ from general_utilities import *
 import auto_update
 
 from alias_module import *
-from catalog_parser import update_course_info
+from CSU_public_data_parser import update_course_info
 from batch_process import batch_process
 from batch_validation import batch_validation
 from configuration_manager import *
@@ -641,7 +641,7 @@ class SmartPlannerController:
         
         self.output('Fetching data...')
         
-        update_course_info()
+        update_course_info(['BIOL', 'CHEM', 'CPSC', 'CYBR'])
         
         self.output('Course catalog info updated.')
         
