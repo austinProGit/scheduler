@@ -454,19 +454,21 @@ class _NodeSuper:
         return []
 
     def get_all_aggragate(self):
-        result = []
+        result = self.get_as_schedulable_list()
         if self.can_accept_children():
-            result += self.get_as_schedulable_list()
-        else:
             for child in self.get_all_children_list():
-                result.append(child.get_all_aggragate())
+                result += child.get_all_aggragate()
         return result
 
 
     def get_all_track_elective_aggragate(self):
         result = []
         if self._is_track_elective:
-            result += self.get_all_aggragate()
+            result = self.get_all_aggragate()
+        else:
+            if self.can_accept_children():
+                for child in self.get_all_children_list():
+                    result += child.get_all_track_elective_aggragate()
         return result
 
             
@@ -892,6 +894,7 @@ class _NodeSuper:
 
 
 
+
 ## ------------------------------ End of Node Super ------------------------------ ##
 
 
@@ -976,7 +979,8 @@ class CourseProtocol(_NodeSuper):
         'rejection': '_reject_description',
         'stub_name': '_stub_description',
         'duplicate priority': '_duplicate_priority',
-        'track elective': '_is_track_elective'
+        'track elective': '_is_track_elective',
+        'concurrency available': '_concurrency_available'
     }
     KEY_ALIASES = {
         'n': 'name',
@@ -986,7 +990,8 @@ class CourseProtocol(_NodeSuper):
         'r': 'rejection',
         's': 'stub_name',
         'p': 'duplicate priority',
-        'te': 'track elective'
+        'te': 'track elective',
+        'mbtc': 'concurrency available'
     }
     KEYS_LIST = ['name', 'instructions', 'credits', 'matching', 'rejection', 'stub_name', 'duplicate priority']
     NON_NIL_KEYS = {'name', 'credits', 'matching'}
@@ -1000,6 +1005,7 @@ class CourseProtocol(_NodeSuper):
         self._credits = credits
         self._reject_description = reject_description
         self._stub_description = stub_description
+        self._concurrency_available = False
         
         self._selected_course = None
 

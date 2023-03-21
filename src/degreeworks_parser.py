@@ -10,6 +10,7 @@ from degree_extraction_container import DegreeExtractionContainer
 
 import re
 from pypdf import PdfReader
+from degree_extraction_container import DegreeExtractionContainer
 
 # TODO:
     # 1. Create a tokenized_list that has all chunks normalized into predictable logical structures
