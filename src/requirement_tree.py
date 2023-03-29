@@ -10,8 +10,9 @@ if TYPE_CHECKING:
 
 import re
 
-from typing import final
+from typing import final, Union
 from math import inf
+from general_utilities import *
 
 # from cli_interface import HelpMenu
 
@@ -88,31 +89,34 @@ POSSIBLE_SOFT_CLEAR = 0x05
 HARD_CLEAR = 0x06
 
 
-DEFAULT_STUB_COURSE_DESCRIPTION = "COURSE XXXX"
+DEFAULT_COURSE_DESCRIPTION = "Course XXXX"
+DEFAULT_STUB_AVAILABILITY = set([FALL, SPRING])
+DEFAULT_STUB_CREDITS = 3
+
+
 
 class SchedulableParameters:
     
-    def __init__(self, course_number, is_stub=False):
-        self.course_number = course_number
-        self.is_stub = is_stub
-        self.stub_availability = 'Fa Sp'
-        self.stub_credits = 3
+    def __init__(self, course_number: Optional[str] = None, course_name: Optional[str] = None, is_stub: bool = False):
+        self.course_number: Optional[str] = course_number
+        self.course_name: str = course_name or DEFAULT_COURSE_DESCRIPTION
+        self.is_stub: bool = is_stub
+        self.stub_availability: set[SemesterType] = DEFAULT_STUB_AVAILABILITY
+        self.stub_hours: int = DEFAULT_STUB_CREDITS
+        self.stub_prereqs_logic_string: str = ''
+        self.stub_coreqs_logic_string: str = ''
+        self.stub_recommended_set: set[str] = set()
         
-    def __str__(self):
-        return self.course_number
+    def __str__(self) -> str:
+        return self.course_number or self.course_name
     
-    def get_course_id(self):
-        return self.course_number if not self.is_stub else None
-
-    def get_stub_credit(self):
-            return self.stub_credits
     
 
 
 
 def default_stub_generator(credits_string=None, name=None):
-    new_item = SchedulableParameters(name or DEFAULT_STUB_COURSE_DESCRIPTION, is_stub=True)
-    new_item.stub_credits = int(credits_string) if (credits_string is not None and credits_string.isnumeric()) else 3
+    new_item = SchedulableParameters(course_name = name or DEFAULT_COURSE_DESCRIPTION, is_stub = True)
+    new_item.stub_hours = int(credits_string) if (credits_string is not None and credits_string.isnumeric()) else 3
     return new_item
     
 def regex_course_protocol_generator(matching_description=r'.*', name=None):
@@ -165,12 +169,9 @@ def split_assignments(line):
         if last_index != working_index:
             result.append(line[last_index:])
 
-    #return line.split(',')
     return result
 
 
-
-# Exhaustive, DeepNum, DeepCred, ShallowNum, Deliverable, Protocol
 
 class _NodeSuper:
     
@@ -365,12 +366,20 @@ class _NodeSuper:
 
     ## ------------------------------ Descriptions matching ------------------------------ ##
 
+    @final
+    def matches_course_id(self, course_id: str) -> bool:
+        return self._printable_description == course_id
+
     def matches_description(self, description):
         '''Returns whether the passed description matches the name (printable description).'''
         # Ensure the string is non-empty and there is a match
         result = False
         if self._printable_description is not None:
-                result = self._printable_description == description
+
+                # Check for exact match
+                result = self.matches_course_id(description)
+
+                # Check for wildcard matching if not matching
                 if not result:
                     wildcard_index = description.find('*')
                     if wildcard_index != -1:
@@ -381,6 +390,7 @@ class _NodeSuper:
                             len(self._printable_description) >= len(search_lhs) + len(search_rhs)
         return result
     
+
     def get_child_by_description(self, description):
         
         result = None
@@ -396,6 +406,41 @@ class _NodeSuper:
                 if child.matches_description(description):
                     result = child
                     break
+        
+        return result
+
+    @final
+    def get_deep_child_parent_by_course_id(self, course_id: str) -> Optional[RequirementsTree]:
+        '''Gets the parent of the child matching the passed course_number (uses DFS search).'''
+
+        result: Optional[RequirementsTree] = None
+        children: list[RequirementsTree] = self.get_all_children_list()
+
+        child: RequirementsTree
+        for child in children:
+
+            result = child.get_deep_child_parent_by_course_id(course_id)
+
+            if result is None and child.matches_course_number(course_id):
+                result = self
+            
+            if result:
+                break
+        
+        return result
+
+    @final
+    def has_deep_child_by_course_id(self, course_id: str) -> bool:
+        '''(Note: this does not search itself for a match)'''
+        result: bool = False
+        children: list[RequirementsTree] = self.get_all_children_list()
+
+        child: RequirementsTree
+        for child in children:
+            result = child.has_deep_child_parent_by_course_id(course_id) or \
+                self.matches_course_number(course_id)
+            if result:
+                break
         
         return result
 
@@ -446,7 +491,7 @@ class _NodeSuper:
     ## ------------------------------ Aggregation ------------------------------ ##
 
     # Exhaustive, DeepNum, DeepCred, ShallowNum, Deliverable, Protocol
-    def get_aggregate(self):
+    def get_aggregate(self) -> list[SchedulableParameters]:
         '''This gets a list of SchedulableItem objects from the node and all of its children.'''
         raise NotImplementedError
 
@@ -471,7 +516,6 @@ class _NodeSuper:
                     result += child.get_all_track_elective_aggragate()
         return result
 
-            
     
     def get_course_id(self):
         '''Return the unique ID this course represents or None if it is not concrete.'''
@@ -595,6 +639,18 @@ class _NodeSuper:
         for node in self._children.values():
             node.reset_deep_selection()
     
+    @final
+    def deep_select_all_satified_children(self) -> None:
+        # TODO: check the validity of this!!
+        child_id: str
+        for child_id in self.get_all_children_ids():
+            child: RequirementsTree = self._children[child_id]
+            child.deep_select_all_satified_children()
+            if child.is_deep_resolved() and child.can_accept_children():
+                self.select_child(child)
+            
+
+
     def selection_new_node_generation(self):
         # Return a new node to add to the parent if the current node is a generator or None if it is normal 
         return None
@@ -609,6 +665,18 @@ class _NodeSuper:
             highest_priority = min(highest_priority, child.sync_find_deep_highest_priority(course_id, priority))
         
         return highest_priority
+
+    def sync_deep_selection(self, course_id: str) -> int:
+
+        child: RequirementsTree
+        for child in self.get_all_children_list():
+            if child.get_course_id() == course_id:
+                if not self.is_selecting_node_id(child._node_id):
+                    self.select_child(child)
+                
+            child.sync_deep_selection(course_id)
+        
+        return ADDITIONAL_EFFECTS
 
     def sync_deep_selection_with_priority(self, original_node_id, course_id, base_priority, requisite_priority):
         result = SINGLE
@@ -908,7 +976,8 @@ class DeliverableCourse(_NodeSuper):
         'credits': '_credits',
         'deliver name': '_course_description',
         'duplicate priority': '_duplicate_priority',
-        'track elective': '_is_track_elective'
+        'track elective': '_is_track_elective',
+        'may be taken concurrently': '_may_be_taken_concurrently'
     }
     KEY_ALIASES = {
         'n': 'name',
@@ -917,7 +986,8 @@ class DeliverableCourse(_NodeSuper):
         'c': 'credits',
         'dn': 'deliver name',
         'p': 'duplicate priority',
-        'te': 'track elective'
+        'te': 'track elective',
+        'mbtc': 'may be taken concurrently'
     }
     KEYS_LIST = ['name', 'instance id', 'instructions', 'credits', 'deliver name', 'duplicate priority']
     NON_NIL_KEYS = {'name', 'credits'}
@@ -928,6 +998,7 @@ class DeliverableCourse(_NodeSuper):
         self._course_description = course_description
         self._credits = credits
         self._explicit_id = None
+        self._may_be_taken_concurrently: Optional[str] = None
     
     def make_shallow_live_copy(self):
         copy = DeliverableCourse()
@@ -947,12 +1018,17 @@ class DeliverableCourse(_NodeSuper):
     def get_active_children_ids(self):
         return []
     
-    def get_aggregate(self):
+    def get_aggregate(self) -> list[SchedulableParameters]:
         '''This gets a list of SchedulableItem objects from the node and all of its children.'''
-        return [SchedulableParameters(self._course_description or self._printable_description or "Course")]
+        result: list[SchedulableParameters] = []
+        if self._course_description:
+            result.append(SchedulableParameters(course_number=self._course_description, course_name=self._printable_description or DEFAULT_COURSE_DESCRIPTION))
+        else:
+            result.append(SchedulableParameters(course_name=self._printable_description or DEFAULT_COURSE_DESCRIPTION))
+        return result
     
-    def get_as_schedulable_list(self):
-        return [SchedulableParameters(self._course_description or self._printable_description or "Course")]
+    def get_as_schedulable_list(self) -> list[SchedulableParameters]:
+        return self.get_aggregate()
 
     def get_course_id(self):
         '''Return the unique ID this course represents or None if it is not concrete.'''
@@ -1046,12 +1122,12 @@ class CourseProtocol(_NodeSuper):
         '''This gets a list of SchedulableItem objects from the node and all of its children.'''
         
         if not self.has_shallow_stub() and self.is_shallow_resolved():
-            return [SchedulableParameters(self._selected_course or self._printable_description)]
+            return [SchedulableParameters(course_number = self._selected_course or self._printable_description)]
         else:
-            return [SchedulableParameters(self._stub_description or self._printable_description, is_stub=True)]
+            return [SchedulableParameters(course_name = self._stub_description or self._printable_description, is_stub=True)]
 
     def get_as_schedulable_list(self):
-        return [SchedulableParameters(self._stub_description or self._printable_description, is_stub=True)]
+        return [SchedulableParameters(course_name = self._stub_description or self._printable_description, is_stub=True)]
 
     def get_course_id(self):
         '''Return the unique ID this course represents or None if it is not concrete.'''
@@ -1592,7 +1668,7 @@ class DeepCreditBasedNode(_GroupNode):
             while running_credits < self._requisite_credits and fail_safe > 0:
                 new_schedulable = self._stub_generator(self._generator_parameter, self._aux_generator_parameter)
                 result.append(new_schedulable)
-                running_credits += new_schedulable.get_stub_credit()
+                running_credits += new_schedulable.stub_hours
                 fail_safe -= 1
         return result
         
@@ -1624,3 +1700,5 @@ class DeepCreditBasedNode(_GroupNode):
             result = sum >= self._requisite_credits
         return result
     
+
+RequirementsTree = Union[ShallowCountBasedNode, DeepCountBasedNode, DeepCreditBasedNode, ExhaustiveNode, DeliverableCourse, CourseProtocol, CourseInserter]

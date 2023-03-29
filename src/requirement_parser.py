@@ -1,6 +1,12 @@
 # Thomas Merino and Austin Lee
-# 2/20/2023
+# 3/21/2023
 # CPSC 4176 Project
+
+# The following are imported for type annotations
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Optional
 
 from requirement_tree import *
 
@@ -13,11 +19,11 @@ class CNLogicParsingError(SyntaxError):
 class RequirementsParser:
 
     @staticmethod
-    def _make_node_from_string(node_type_string, parameter_sequence_string):
+    def _make_node_from_string(node_type_string: str, parameter_sequence_string: str) -> RequirementsTree:
         
         # Create the new node
 
-        new_node = None
+        new_node: Optional[RequirementsTree] = None
 
         # Intermediate node keys: 
         # shallow course    s
@@ -48,21 +54,22 @@ class RequirementsParser:
         
         # Set the key values for the new node
 
-        arguments_listing = split_assignments(parameter_sequence_string)
+        arguments_listing: list[str] = split_assignments(parameter_sequence_string)
         
         if len(arguments_listing) == 1 and arguments_listing[0] == '':
             arguments_listing = []
         
+        argument: str
         for argument in arguments_listing:
 
-            delimiter_index = argument.find(SETTING_DELIMITTER)
+            delimiter_index: int = argument.find(SETTING_DELIMITTER)
 
             if delimiter_index != -1:
 
-                key = argument[:delimiter_index].strip()
+                key: str = argument[:delimiter_index].strip()
                 
-                value = argument[delimiter_index+len(SETTING_DELIMITTER):].strip()
-                # NOTE: value == '' is completely valid and will result in being set to None
+                value: str = argument[delimiter_index+len(SETTING_DELIMITTER):].strip()
+                # NOTE: value == '' is completely valid and will result in the key's value being set to None
 
                 new_node.set_value_for_key(key, value)
 
@@ -72,23 +79,25 @@ class RequirementsParser:
         return new_node
         
     @staticmethod
-    def _pull_index(working_string, character):
-        index = working_string.find(character)
+    def _pull_index(working_string: str, character: str) -> int:
+        index: int = working_string.find(character)
         if index == -1:
             raise CNLogicParsingError(f'Did not find expected "{character}" in "{working_string}".')
         return index
 
     
     @staticmethod
-    def _parse_subnodes(working_string):
+    def _parse_subnodes(working_string: str) -> tuple[list[str], int]:
         '''This returns a list of node strings "[ ... ]" and the end index of that list. Parsing will stop when a hanging "]" is encountered.
         The end index will be the position before the last hanging "]" or the final index of the string.'''
 
-        depth = 0
-        working_start_index = 0
-        last_index = 0
-        results = []
+        depth: int = 0
+        working_start_index: int = 0
+        last_index: int = 0
+        results: list[str] = []
 
+        index: int
+        character: str
         for index, character in enumerate(working_string):
             
             if character == '[':
@@ -113,52 +122,57 @@ class RequirementsParser:
         if depth > 0:
             raise CNLogicParsingError(f'Reached the end of the line while looking for "]" in "{working_string}".')
 
-        # print(results)
         return results, last_index
 
     @staticmethod
-    def _make_node_from_course_selection_logic_string(string):
+    def _make_node_from_course_selection_logic_string(string: str, artificial_exhaustive: bool = False) -> RequirementsTree:
         
-        working_string = string.strip()
+        # if artificial_exhaustive is set to true, exhaustive nodes will be replaced by shallow count nodes with the right size
+
+        working_string: str = string.strip()
         
         working_string = working_string[RequirementsParser._pull_index(working_string, '[') + 1:]
 
-        trianlge_bracket_start = RequirementsParser._pull_index(working_string, '<')
-        node_type = working_string[:trianlge_bracket_start].strip()
+        trianlge_bracket_start: int = RequirementsParser._pull_index(working_string, '<')
+        node_type: str = working_string[:trianlge_bracket_start].strip()
         working_string = working_string[trianlge_bracket_start + 1:]
         
-        trianlge_bracket_end = RequirementsParser._pull_index(working_string, '>')
-        parameter_sequence = working_string[:trianlge_bracket_end]
+        trianlge_bracket_end: int = RequirementsParser._pull_index(working_string, '>')
+        parameter_sequence: str = working_string[:trianlge_bracket_end]
         working_string = working_string[trianlge_bracket_end + 1:]
 
-        new_node = RequirementsParser._make_node_from_string(node_type, parameter_sequence)
+        # Perform a check if the exhaustive node should be replaced by a shallow selection node (and calculate count if so)
+        if artificial_exhaustive and node_type == 'e':
+            node_type = 's'
+            subnode_count: int = 0
+            if '[' in working_string:
+                subnodes: list[str]
+                subnodes, _ = RequirementsParser._parse_subnodes(working_string)
+                subnode_count = len(subnodes)
+            parameter_sequence += f', c={subnode_count}'
+
+
+        new_node: RequirementsTree = RequirementsParser._make_node_from_string(node_type, parameter_sequence)
 
         if '[' in working_string:
+            subnodes: list[str]
             subnodes, _ = RequirementsParser._parse_subnodes(working_string)
 
+            construction_string: str
             for construction_string in subnodes:
-                new_node.add_child(RequirementsParser._make_node_from_course_selection_logic_string(construction_string))
+                new_node.add_child(RequirementsParser._make_node_from_course_selection_logic_string(construction_string,
+                    artificial_exhaustive=artificial_exhaustive))
             
-        # next_bracket_index = working_string.find('[')
-
-        # while next_bracket_index != -1:
-        #     end_bracket_index = CoursesNeededContainer._pull_index(working_string, ']')
-        #     construction_string = working_string[next_bracket_index : end_bracket_index + 1]
-        #     working_string = working_string[end_bracket_index + 1:]
-
-        #     new_node.add_child(CoursesNeededContainer._make_node_from_course_selection_logic_string(construction_string))
-            
-        #     next_bracket_index = working_string.find('[')
         
         return new_node
             
         
     
     @staticmethod
-    def make_from_course_selection_logic_string(logic_string):
+    def make_from_course_selection_logic_string(logic_string: str, artificial_exhaustive: bool = False) -> RequirementsParser.RequirementsParseReport:
 
-        certain_courses = []
-        string = logic_string.strip()
+        certain_courses: list[str] = []
+        string: str = logic_string.strip()
 
         if string and string[0] == '(':
             end_index = RequirementsParser._pull_index(string, ')')
@@ -167,13 +181,33 @@ class RequirementsParser:
             certain_courses = [course.strip() for course in set(courses)]
         
         encapsulated_string = f'[e<name=Requirements>{string}]'
-        decision_tree = RequirementsParser._make_node_from_course_selection_logic_string(encapsulated_string)
+        
+        decision_tree = RequirementsParser._make_node_from_course_selection_logic_string(encapsulated_string, artificial_exhaustive)
         
         return RequirementsParser.RequirementsParseReport(certain_courses, decision_tree)
 
+    def make_unified_from_course_selection_logic_string(logic_string: str, artificial_exhaustive: bool = False) -> RequirementsTree:
+
+        parse_report = RequirementsParser.make_from_course_selection_logic_string(logic_string, artificial_exhaustive)
+        result: RequirementsTree = parse_report.decision_tree
+        
+        # TODO: perform this using a good practice
+        result._duplicate_priority = DEFAULT_PRIORITY
+
+        # Add all of the certain courses (convert from a string to a deliverable as well)
+        if len(parse_report.certain_courses) != 0:
+            certain_courses_list: ListingNode = ListingNode(printable_description='Required Course')
+            result.add_child(certain_courses_list)
+            result.reorder_child(-1, 0)
+            course_string: str
+            for course_string in parse_report.certain_courses:
+                if not certain_courses_list.get_child_by_description(course_string):
+                    certain_courses_list.add_child(DeliverableCourse(course_string))
+
+        return result
 
     class RequirementsParseReport:
 
-        def __init__(self, certain_courses, decision_tree):
-            self.certain_courses = certain_courses
-            self.decision_tree = decision_tree
+        def __init__(self, certain_courses: list[str], decision_tree: RequirementsTree):
+            self.certain_courses: list[str] = certain_courses
+            self.decision_tree: RequirementsTree = decision_tree
