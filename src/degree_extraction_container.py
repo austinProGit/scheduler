@@ -10,12 +10,12 @@ class DegreeExtractionContainer:
 
     # certain_courses is a list of strings
     # courses_needed_constuction_string is a string with the requirements logic string format
-    # degree_plan_name is a string
+    # degree_plan_name is a list of strings
     # student_number is a string
     # student_name is a string
-    def __init__(self, taken_courses, courses_needed_constuction_string, degree_plan_name=None, student_number=None, student_name=None):
+    def __init__(self, curr_taken_courses, courses_needed_constuction_string, degree_plan_name=None, student_number=None, student_name=None):
 
-        self._taken_courses = taken_courses
+        self._taken_courses = curr_taken_courses
         self._courses_needed_constuction_string = courses_needed_constuction_string
 
         self._degree_plan_name = degree_plan_name
