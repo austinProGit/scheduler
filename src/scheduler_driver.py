@@ -756,6 +756,17 @@ class DummyCourseInfoContainer:
         return 1
 
 
+# Approach:
+# Keep a list of courses for each semester in itself a list
+# each list stores a list of course indices
+# each evaluation only schedules those that can be scheduled (every other will not be pushed)
+# course not being scheduled at all are dead (strong rule)
+
+# hyper parameter will be strong rule: how many extra course indices in a given semester allowed (either kill entire schedule (strong) or truncate (weak))
+
+# Caching will become very important:
+# this will be used to speed up determining which courses can be taken
+
 
 ScheduleFitenessFunction = Callable[[ScheduleInfoContainer], float]
 
@@ -772,12 +783,17 @@ class DummyGeneticOptimizer:
         #       This is a dynamic schema that ensures better quality results.
         #   2. to find the validatity of the produced schedule.
 
-        def __init__(self):
-            self.selections: list[float]
+
+        def __init__(self, cloned: Optional[DummyGeneticOptimizer.Gene]):
+            self.selections: list[int] = [] if cloned is None else cloned.selections[:]
+
+        def __str__(self) -> str:
+            return str(self.selections)
 
         def make_schedule_info_container(self, optimizer: DummyGeneticOptimizer) -> DummyScheduleInfoContainer:
             raw_list: list[list[DummySchedulable]] = []
 
+            
 
             #return DummyScheduleInfoContainer.make_from_schedulables_list(raw_list, starting_semester = optimizer.semester_start, starting_year =, confidence_level: float | None = None))
 
@@ -785,226 +801,149 @@ class DummyGeneticOptimizer:
             parameters_container: SchedulerParameterContainer, fiteness_function: ScheduleFitenessFunction,
             semester_start: SemesterType, year: int) -> None:
         
-        self._course_info_container: DummyCourseInfoContainer = course_info_container
+        self.course_info_container: DummyCourseInfoContainer = course_info_container
 
         self.semester_start: SemesterType = semester_start
         self.year_start: int = year
-        
 
         # The following will vary by student
         self.parameters_container: SchedulerParameterContainer = parameters_container
 
         # The following are derived from a degree extraction container
         self._courses_needed_container: Optional[CoursesNeededContainer] = None
-        self._taken_course: list[DummyCourseIdentifier] = []
-        self._schedulables: list[DummySchedulable] = []
+        self.taken_course: list[DummyCourseIdentifier] = []
+        self.schedulables: list[DummySchedulable] = []
 
         self._fiteness_function = fiteness_function
+        '''The fitness function for evolving the gene sequences.'''
+
+        self.setup_genetics(population_size=1, course_count=0, mutation_rate=0.25)
+
 
     
     '''A trainer that manages a population (gene sequence strings) and the evolution of that population.'''
-    def setup_genetics(self, populationSize: int, course_count: int, mutationRate: float = 0.25) -> None:
+    def setup_genetics(self, population_size: int, course_count: int, mutation_rate: float = 0.25,
+            fitness_function: Optional[ScheduleFitenessFunction] = None) -> None:
         
         # ------------------------ Populations Properties ------------------------ #
 
-        self.populationSize: int = populationSize
+        self._population_size: int = population_size
         '''The number of gene sequences in the population.'''
 
-        self.populationGeneSequences: list[str] = []
+        self._population_gene_sequences: list[DummyGeneticOptimizer.Gene] = []
         '''The list of population gene sequences in no particular order.'''
 
-        self.course_count: int = course_count
-        '''The number '''
+        self._course_count: int = course_count
+        '''The number of courses to schedule'''
 
-        self.mutationRate: float = mutationRate
+        self._mutation_rate: float = mutation_rate
         '''The chance (0 to 1) that a mutation will occur on a single bit for a new gene sequence.'''
         
         # ------------------------ Training Properties ------------------------ #
 
-        self.trainingIterationsLeft: int = 0
+        self._training_iterations_left: int = 0
         '''the hard/maximum number of iterations left for training.'''
 
-        self.valueThreshold: Optional[float] = None
-        '''The threshold for the value that when met terminates training.'''
-
-        self.valueCheckingSetSize: Optional[float] = None 
-        '''The number of top n-many genes (when sorting the genes by fitness) to check
-        when applying the valueThreshold check.'''
-
-        self.fitnessThreshold: Optional[float] = None
+        self._fitness_threshold: Optional[float] = None
         '''The threshold for the fitness that when met terminates training.'''
         
         # ------------------------ Cache Properties ------------------------ #
         
-        self.fitnessCacheQueue: list[str] = []
+        self._fitness_cache_queue: list[str] = []
         '''A simple cache queue that is used to determine which cached fitness values
         should be removed from the cache (does not sort by access, only by addition).'''
 
-        self.fitnessCache: dict[str, float] = {}
+        self._fitness_cache: dict[str, float] = {}
         '''A cache of fitness values given a gene sequence (cleared when the fitness
         function is updated).'''
 
-        self.cacheSize: int = 0
+        self._cache_size: int = 0
         '''The active size of the fitness value cache.'''
 
-        self.maxCacheSize: int = CACHE_SIZE
+        self._max_cache_size: int = CACHE_SIZE
         '''The maximum size of the fitness value cache.'''
 
         # ------------------------ Fitness Function ------------------------ #
 
-        self._fitnessFunction: FitenessFunction = fitnessFunction
-        '''The fitness function for evolving the gene sequences.'''
+        if fitness_function is not None:
+            self._fitness_function: FitenessFunction = fitness_function
+            
 
 
     # ------------------------ Fitness Function Property ------------------------ #
 
-    def _get_fitnessFunction(self) -> FitenessFunction:
+    def _get_fitness_function(self) -> FitenessFunction:
         '''Getter for fitness function.'''
-        return self._fitnessFunction
+        return self._fitness_function
     
-    def _set_fitnessFunction(self, value: FitenessFunction):
+    def _set_fitness_function(self, value: FitenessFunction):
         '''Setter for fitness function.'''
-        self._fitnessFunction = value
-        self.fitnessCacheQueue = []
-        self.fitnessCache = {}
-        self.cacheSize = 0
+        self._fitness_function = value
+        self._fitness_cache_queue = []
+        self._fitness_cache = {}
+        self._cache_size = 0
     
-    fitnessFunction = property(_get_fitnessFunction, _set_fitnessFunction)
+    _fitness_function = property(_get_fitness_function, _set_fitness_function)
 
     # ------------------------ Setup/configuration ------------------------ #
 
-    def setUpRandomPopulation(self) -> None:
-        '''Set up the population using random gene sequences.'''
-        self.populationGeneSequences = []
-        self.fillRandomPopulation()
+    '''Fill the remaining space in the population with random gene sequences.'''
+    def fill_population_with_model(self, possible_gene_sequence: list[DummyGeneticOptimizer.Gene]) -> None:
 
-    def fillRandomPopulation(self) -> None:
-        '''Fill the remaining space in the population with random gene sequences.'''
-        choices: list[str] = ['0', '1']
-        while len(self.populationGeneSequences) < self.populationSize:
-            newGeneSequence: str = ''.join(choice(choices) for _ in range(self.bitLength))
-            self.populationGeneSequences.append(newGeneSequence)
+        while len(self._population_gene_sequences) < self._population_size:
+            new_gene_sequence: DummyGeneticOptimizer.Gene = DummyGeneticOptimizer.Gene(choice(possible_gene_sequence))
+            self._population_gene_sequences.append(new_gene_sequence)
 
-    def setUpSchemaPopulation(self, fillCap: Optional[int] = None) -> None:
-        '''Set up the population using schema-based gene sequences. If fillCap is passed,
-        only fillCap-many genes will be schema-based and the rest will be random.'''
-        
-        self.populationGeneSequences = []
-        prototype: str = self.generatePrototype()
-        prototypeCount = self.populationSize
 
-        if fillCap is not None and fillCap < self.populationSize:
-            prototypeCount = fillCap
-
-        for _ in range(prototypeCount):
-            self.populationGeneSequences.append(prototype)
-
-        # Fill the rest with random
-        self.fillRandomPopulation()
-            
-
-    def setToTrackSession(self, maximumIterations: int, valueThreshold: Union[float, None, str] = None, \
-            fitnessThreshold: Optional[float] = None, valueCheckSize: Optional[int] = None) -> None:
+    def set_to_track_session(self, maximum_iterations: int, fitness_threshold: Optional[float] = None) -> None:
         '''Set up the trainer to start performing evolution.'''
-
-        self.trainingIterationsLeft = maximumIterations
-
-        # Calculate or set the value threshold
-        if isinstance(valueThreshold, str):
-            if valueThreshold == 'guess':
-                self.valueThreshold = self.generateValueApproximateThreshold()
-            else:
-                raise ValueError('Illegal value threshold calculation method.')
-        else:
-            self.valueThreshold = valueThreshold
-        
-        self.fitnessThreshold = fitnessThreshold
-        self.valueCheckingSetSize = valueCheckSize
+        self._training_iterations_left = maximum_iterations
+        self._fitness_threshold = fitness_threshold
     
     # ------------------------ Gene Sequence Evaluation ------------------------ #
 
-    def evaluateGeneSequenceWeight(self, geneSequence: str) -> float:
-        '''Calculate the passed gene sequence's weight.'''
-        weightSum: float = 0
-        for bitIndex, bitValue in enumerate(geneSequence):
-            if bitValue != '0':
-                valuable: Valuable = self.store[bitIndex]
-                weightSum += valuable.weight
-        return weightSum
-
-    def evaluateGeneSequenceValue(self, geneSequence: str) -> float:
-        '''Calculate the passed gene sequence's value.'''
-        valueSum: float = 0
-        for bitIndex, bitValue in enumerate(geneSequence):
-            if bitValue != '0':
-                valuable: Valuable = self.store[bitIndex]
-                valueSum += valuable.value
-        return valueSum
-    
-    def evaluateGeneSequenceFitness(self, geneSequence: str) -> float:
+    def evaluate_gene_sequence_fitness(self, gene_sequence: DummyGeneticOptimizer.Gene) -> float:
         '''Calculate the passed gene sequence's fitness.'''
         
-        memo: str = geneSequence
+        memo: str = str(gene_sequence)
         fitness: float = -inf
         
         # Check if the memo (gene) is already cached
-        if memo not in self.fitnessCache:
+        if memo not in self._fitness_cache:
+
             # The sequence is not cached
+            schedule: DummyScheduleInfoContainer = gene_sequence.make_schedule_info_container(self)
+            fitness: float = self._fitness_function(schedule)
 
-            valuables: set[Valuable] = set()
-            weightSum: float = 0
-
-            for bitIndex, bitValue in enumerate(geneSequence):
-                if bitValue != '0':
-                    valuable: Valuable = self.store[bitIndex]
-                    valuables.add(valuable)
-                    weightSum += valuable.weight
-
-                    if weightSum > self.maximumWeight:
-                        break
-
-            if weightSum <= self.maximumWeight:
-                fitness = self.fitnessFunction(valuables)
-            
             # Memoization management
-            
-            self.fitnessCacheQueue.append(memo)
-            self.fitnessCache[memo] = fitness
-            self.cacheSize += 1
+            self._fitness_cache_queue.append(memo)
+            self._fitness_cache[memo] = fitness
+            self._cache_size += 1
 
-            if self.cacheSize > self.maxCacheSize:
-                cachedEntityToRemove = self.fitnessCacheQueue.pop(0)
-                del self.fitnessCache[cachedEntityToRemove]
-                self.cacheSize -= 1
+            if self._cache_size > self._max_cache_size:
+                cachedEntityToRemove = self._fitness_cache_queue.pop(0)
+                del self._fitness_cache[cachedEntityToRemove]
+                self._cache_size -= 1
         else:
             # The sequence is cached
-            fitness = self.fitnessCache[memo]
+            fitness = self._fitness_cache[memo]
             
         return fitness
 
 
-    def bestGenes(self, count: int, silencePrint: bool = False) -> list[str]:
-        '''Get a list of the (count)-many best gene sequences in order (using the
-        current fitness function).'''
+    def best_genes(self, count: int) -> list[DummyGeneticOptimizer.Gene]:
+        '''Get a list of the (count)-many best gene sequences in order (using the current fitness function).'''
 
-        bestGenes: list[(float, str)] = []
-        highestFitness: float = -inf
-        fitnessSum: float = 0
+        best_genes: list[(float, DummyGeneticOptimizer.Gene)] = []
 
-        gene: str
-        for gene in self.populationGeneSequences:
-            fitness: float = self.evaluateGeneSequenceFitness(gene)
-            bestGenes.append((fitness, gene))
-            highestFitness = max(highestFitness, fitness)
-            if fitness != -inf:
-                fitnessSum += fitness
+        gene: DummyGeneticOptimizer.Gene
+        for gene in self._population_gene_sequences:
+            fitness: float = self.evaluate_gene_sequence_fitness(gene)
+            best_genes.append((fitness, gene))
         
-        bestGenes.sort(key=lambda tuple: tuple[0], reverse=True)
+        best_genes.sort(key=lambda tuple: tuple[0], reverse=True)
 
-        if SHOULD_PRINT_FITNESS and not silencePrint:
-            print(f'Highest: {highestFitness:.2f},    Average: {fitnessSum/self.populationSize:.2f}')
-
-        return [entry for _, entry in bestGenes[:count]]
+        return [entry for _, entry in best_genes[:count]]
 
     # ------------------------ Breeding ------------------------ #
 
@@ -1022,6 +961,13 @@ class DummyGeneticOptimizer:
         '''Get a mutated version of the passed gene sequence. This applies one bit flips
         for a random bit.'''
 
+        # Mutate has different parts:
+        #   by shuffling courses within a semester (so some are taken over others)
+        #   by changing completely a single class
+        #   by swapping the positions of course bewteen semesters
+
+        # TODO: Implement!!
+
         flippedIndex: int = randint(0, self.bitLength - 1)
         newBit: str = '1' if gene[flippedIndex] == '0' else '0'
         newGene: str = gene[:flippedIndex] + newBit + gene[flippedIndex+1:]
@@ -1031,10 +977,10 @@ class DummyGeneticOptimizer:
         '''Get a child (gene sequence) from two parent (oder does not matter). This applies
         crossover and may flip any number of bits (less likely to be more).'''
         child = self.crossoverGeneSequences(geneSequence1, geneSequence2)
-        should_mutate: bool = random() <= self.mutationRate
+        should_mutate: bool = random() <= self._mutation_rate
         while should_mutate:
             child = self.mutateGenes(child)
-            should_mutate = random() <= self.mutationRate
+            should_mutate = random() <= self._mutation_rate
         return child
 
     # ------------------------ Iteration training/evolution ------------------------ #
@@ -1043,8 +989,8 @@ class DummyGeneticOptimizer:
         '''Helper method for iteration method that updates the iteration count and determines if 
         any threshold has been met.'''
 
-        self.trainingIterationsLeft -= 1
-        isFinishedTraining: bool = self.trainingIterationsLeft <= 0
+        self._training_iterations_left -= 1
+        isFinishedTraining: bool = self._training_iterations_left <= 0
 
         # Make the set/list of genes to perform a value check over 
         valueCheckingSet: list[str] = bestGeneSequences if self.valueCheckingSetSize is None \
@@ -1060,8 +1006,8 @@ class DummyGeneticOptimizer:
                 print('Reached the value threshold')
         
         # Check fitness
-        if self.fitnessThreshold is not None and \
-                self.evaluateGeneSequenceFitness(bestGeneSequences[0]) >= self.fitnessThreshold:
+        if self._fitness_threshold is not None and \
+                self.evaluateGeneSequenceFitness(bestGeneSequences[0]) >= self._fitness_threshold:
             isFinishedTraining = True
             if SHOULD_PRINT_THRESHOLD_MEET:
                 print('Reached the fitness threshold')
@@ -1079,10 +1025,10 @@ class DummyGeneticOptimizer:
         numberOfParentPairs: int = reductionSize//2
         newPopulation: list[str] = []
 
-        for index in range(min(bestPerformerMaintain, self.populationSize)):
+        for index in range(min(bestPerformerMaintain, self._population_size)):
             newPopulation.append(bestGeneSequences[index])
 
-        childrenPerPair: int = (self.populationSize - len(newPopulation))//numberOfParentPairs
+        childrenPerPair: int = (self._population_size - len(newPopulation))//numberOfParentPairs
         shuffle(bestGeneSequences)
 
         for index in range(numberOfParentPairs):
@@ -1092,50 +1038,17 @@ class DummyGeneticOptimizer:
             for _ in range(childrenPerPair):
                 newPopulation.append(self.makeChildFrom(geneSequence1, geneSequence2))
         
-        for index in range(self.populationSize - len(newPopulation)):
+        for index in range(self._population_size - len(newPopulation)):
             geneSequence1 = bestGeneSequences[2 * index]
             geneSequence2 = bestGeneSequences[2 * index + 1]
             newPopulation.append(self.makeChildFrom(geneSequence1, geneSequence2))
 
-        self.populationGeneSequences = newPopulation
+        self._population_gene_sequences = newPopulation
 
         return False
     
-    # TODO: make the schedulers interface uniform (maybe remove this)
-    # def get_schedulables(self) -> list[Schedulable]:
-    #     return self._schedulables
 
-    def get_parameter_container(self) -> Optional[SchedulerParameterContainer]:
-        return self._parameters_container
 
-    def get_course_info(self) -> Optional[CourseInfoContainer]:
-        return self._course_info_container
-        
-    def get_schedule_evaluator(self) -> Optional[ExpertSystem]:
-        return self.schedule_evaluator
-        
-    def get_courses_needed_container(self) -> Optional[DummyCourseInfoContainer]:
-        return self._courses_needed_container
-    
-    def get_hours_per_semester(self, semesterType: SemesterType = FALL) -> int:
-        # TODO: this uses just hours for the Fall (maybe fixed)
-        return self._parameters_container.get_hours_for(semesterType)
-    
-    def configure_parameters(self, parameters_containter: SchedulerParameterContainer) -> None:
-        self._parameters_container = parameters_containter
-
-    def configure_degree_extraction(self, degree_extraction: DegreeExtractionContainer) -> None:
-        self._degree_extraction = degree_extraction
-        self._courses_needed_container = degree_extraction.make_courses_needed_container()
-        self._taken_course = []
-        taken_course_string: str
-        for taken_course_string in degree_extraction.make_taken_courses_list():
-            # TODO: verify the name and number are checked
-            self._taken_course.append(DummyCourseIdentifier(taken_course_string))
-    
-    def configure_course_info(self, container: DummyCourseInfoContainer) -> None:
-        self._course_info_container = container
-        
     # TODO: make the schedulers interface uniform (maybe remove this)
     def prepare_schedulables(self) -> bool:
         pass
@@ -1525,7 +1438,7 @@ class DummyConstuctiveScheduler:
 
         
 
-    def generate_schedule(self, prequisite_ignored_courses: list[DummyCourseIdentifier]) -> DummyScheduleInfoContainer:
+    def generate_schedule(self, prequisite_ignored_courses: list[DummyCourseIdentifier], optimizer: Optional[DummyGeneticOptimizer]) -> DummyScheduleInfoContainer:
         """Primary method to schedule a path to graduation
            Inputs: None, but requires course_info and courses_needed setup prior to running
            Returns: list of lists, inner list is one semester of courses, outer list is full schedule"""
@@ -1535,6 +1448,11 @@ class DummyConstuctiveScheduler:
         
         # Create a list of lists using the above schedulables
         result_list = self._constructive_schedule_as_list(schedulables_dictionary)
+
+        # Perform optimizations here (if an optimizer was passes in)
+        if optimizer is not None:
+
+            optimizer
         
         # Calculate the confidence factor for the new schedule
         dynamic_knowledge = DynamicKnowledge()
