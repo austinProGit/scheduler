@@ -7,19 +7,19 @@ from recursive_descent_parser import *
 import re
 import pandas as pd
 from driver_fs_functions import *
-#from alias_module import get_latest_id
 from dataframe_io import *
 from course_info_container import *
+import datetime
 import pickle
 
 
-# Webcrawls one page to retrieve 115 department names of CSU.
+# Webcrawls one page to retrieve 116 department names of CSU.
 def get_department_dict():
     url = "https://catalog.columbusstate.edu/course-descriptions/"
     html = urlopen(url).read()
     soup = BeautifulSoup(html, features="html.parser")
     text = soup.text
-    depts = re.findall(r"([A-Z]{3}[A-Z]?)\s-\s.", text) # May need to change ' ' to \s...
+    depts = re.findall(r"([A-Z]{3}[A-Z]?)\s-\s.", text)
     dept_dict = {}
     for dept in depts:
         dept_dict[dept] = None
@@ -30,7 +30,7 @@ def get_department_dict():
     return dept_dict
 
 
-# Webcrawls many pages (as of Feb 2023, 115 pages) to retrieve all course IDs (as of Feb 2023, 2783 course IDs) 
+# Webcrawls many pages (as of Mar 2023, 116 pages) to retrieve all course IDs (as of Mar 2023, 2854 course IDs) 
 # and creates a master dictionary, which we pickle for reuse.  Takes around 35 seconds to perform function; may need to 
 # optimize with threading.
 def get_course_dict():
@@ -67,7 +67,7 @@ def get_pickle_file(filename):
 
 
 def update_course_info(dept=None):
-    #dept_dict = get_department_dict() #commented out for faster processing
+    #dept_dict = get_department_dict() #comment out for faster processing
     #course_dict = get_course_dict() #comment out for faster processing
     df_dict = {}
     dept_dict = get_pickle_file("department_dictionary.pickle") #Quick way
@@ -85,7 +85,7 @@ def update_course_info(dept=None):
             df = parse_catalog(depts)
             df_dict[depts] = df
     else:
-        print("Must specify department, department list, or all.")
+        print("Must specify department, department list, or no param for all departments.")
         return None
 
     file0 = get_source_path()
@@ -106,15 +106,16 @@ def parse_catalog(dept):
     all_course_blocks = soup.find_all("div", class_="courseblock")
 
     for index in range(len(all_course_blocks)):
-        course_body = all_course_blocks[index].find_all('p', class_='courseblockextra noindent')
         courseID = all_course_blocks[index].find("span", class_="text col-3 detail-code margin--tiny text--semibold text--huge").text
+        #print(courseID)
         name = all_course_blocks[index].find("span", class_="text col-3 detail-title margin--tiny text--bold text--huge").text
         hours = all_course_blocks[index].find("span", class_="text detail-coursehours text--bold text--huge").text
-
+        
         # We get the coreqs first so we can delete them out of the prereqs.
         coreqs = get_coreqs(all_course_blocks[index])
-        prereqs = get_prereqs(all_course_blocks[index], coreqs)
-
+        concurrent_courses = get_concurrent_courses(all_course_blocks[index])
+        supplementary_prereqs = get_supplementary_prereqs(all_course_blocks[index], coreqs)
+        prereqs = get_prereqs(all_course_blocks[index], coreqs, concurrent_courses, supplementary_prereqs)
 
         df.loc[len(df.index)] = [courseID, name, hours, "", prereqs, coreqs, "", "", "", ""]
 
@@ -122,6 +123,169 @@ def parse_catalog(dept):
     df = avail_placement_helper(df, avail_dict)
     print(f"Updating {dept} complete.")
     return df
+
+
+def get_supplementary_prereqs(course_block, coreqs):
+    supplementary_prereqs = ""
+    first_sentence_pattern = r"^.*?(?<=\.)"
+    course_body = course_block.find_all("p", class_="courseblockextra noindent")
+    if no_supplementary_prereqs(course_body): return ""
+    for index in range(len(course_body)):
+        section = course_body[index].text
+        if re.search(r"Prerequisites?:", section):
+            section = re.search(first_sentence_pattern, section)
+
+            # One case has typo: "Prerequisite: Prerequisite" and returns None
+            if section == None: return ""
+            section = section.group(0)
+            section = section.replace("\xa0", " ")
+            section = clean_supp_prereqs(section, coreqs)
+            if no_req_after_cleaning(section): return ""
+            supplementary_prereqs = section
+    return supplementary_prereqs
+
+
+def clean_supp_prereqs(section, coreqs):
+    section = remove_coreq_string_and_other(section)
+    if one_of_the_following_logic_in_section(section): 
+        section = supp_logic_method(section, coreqs)
+        return section
+    elif any_two_courses_logic_in_section(section): 
+        section = any_two_courses_logic_method(section, coreqs)
+        return section
+    elif comma_and_list_logic_in_section(section): 
+        section = comma_and_list_logic_method(section, coreqs)
+        return section
+    elif any_three_of_the_following_logic_in_section(section): 
+        section = any_three_of_the_following_logic_method(section, coreqs)
+        return section
+    else: 
+        section = supp_logic_method(section, coreqs)
+        return section
+
+
+def remove_coreq_string_and_other(section):
+    co_pattern = r"Co-?requisites?:.*"
+    grade_pattern = r"with a\s*grade of [A-Z] or better"
+    match1 = re.search(co_pattern, section)
+    match2 = re.search(grade_pattern, section)
+    if match1: section = section.replace(match1.group(0), "")
+    if match2: section = section.replace(match2.group(0), "")
+    return section
+
+
+def any_three_of_the_following_logic_in_section(section):
+    pattern = r"Any three of the following"
+    match1 = re.search(pattern, section)
+    if match1: return True
+    else: return False
+
+
+# Occurences of this logic is already handled, mapped, and validated in the main prereq section. For now we recognize and skip until
+# future implementation.
+def any_three_of_the_following_logic_method(section, coreqs):   
+    return ""
+
+
+def comma_and_list_logic_in_section(section):
+    pattern = r"Prerequisites?: [A-Z]{3}[A-Z]?\s\d{4}[A-Z]?,"
+    no_or_pattern = r"^(?!.*\bor\b).*$"
+    match1 = re.search(pattern, section)
+    match2 = re.search(no_or_pattern, section)
+    if match1 and match2: return True
+    else: return False
+
+
+def comma_and_list_logic_method(section, coreqs):
+    section = supp_logic_method(section, coreqs, and_logic=True)
+    return section
+
+
+def any_two_courses_logic_in_section(section):
+    pattern = r"Any two courses from|two of the following"
+    match1 = re.search(pattern, section)
+    if match1: return True
+    else: return False
+
+
+# Occurences of this logic is already handled, mapped, and validated in the main prereq section. For now we recognize and skip until
+# future implementation.
+def any_two_courses_logic_method(section, coreqs):   
+    return ""
+
+
+def one_of_the_following_logic_in_section(section):
+    pattern = r"One of the following:|any of the following courses"
+    match1 = re.search(pattern, section)
+    if match1: return True
+    else: return False
+
+
+# This method can be reused for numerous situations by adding optional parameters
+def supp_logic_method(section, coreqs=None, and_logic=False):
+    dept_pattern = r"([A-Z]{3}[A-Z]?)\s\d{4}[A-Z]?"
+    digit_pattern = r"^\d{4}[A-Z]?"
+    tokens = create_tokenized_logic_for_one_of_the_following_method(section)
+    dept = ""
+
+    for i, token in enumerate(tokens):
+        if re.search(dept_pattern, token):
+            dept = re.search(dept_pattern, token)
+            dept = dept.group(1)
+        elif re.search(digit_pattern, token):
+            tokens[i] = f"{dept} {token}"
+        elif token == ",": 
+            if and_logic:
+                tokens[i] = "and"
+            else:
+                tokens[i] = "or"
+        elif token == ";": 
+            if and_logic:
+                tokens[i] = "and"
+            else:
+                tokens[i] = "or"
+        elif token == "&": 
+            tokens[i] = "and"
+        elif token == "/": 
+            tokens[i] = "or"
+
+    section = " ".join(tokens) 
+    section = validate_courses(section, coreqs)
+    return section
+
+
+def create_tokenized_logic_for_one_of_the_following_method(section):
+    tokens = None
+    regex_pattern = r"/|&|,|;|\(|\)|and|or|[A-Z]{3}[A-Z]?\s\d{4}[A-Z]?|\d{4}[A-Z]?"
+    tokens = re.findall(regex_pattern, section) 
+    return tokens
+
+
+def no_supplementary_prereqs(course_body):
+    no = True
+    first_sentence_pattern = r"^.*?(?<=\.)"
+    for index in range(len(course_body)):
+        section = course_body[index].text
+        section = section.replace("\xa0", " ")
+        section = re.search(first_sentence_pattern, section)
+        if section != None:
+            section = section.group(0)
+            if re.search(r"Prerequisites?:", section) and re.search(r"[A-Z]{3}[A-Z]?\s\d{4}[A-Z]?", section):
+                no = False
+    return no
+
+
+def get_concurrent_courses(course_block):
+    concurrent_courses = []
+    concurrent_pattern = r"([A-Z]{3}[A-Z]?\s\d{4}[A-Z]?)\s\(may be taken concurrently\)"
+    course_body = course_block.find_all("p", class_="courseblockextra noindent")
+    for index in range(len(course_body)):
+        course_body[index] = course_body[index].text
+        course_body[index] = course_body[index].replace("\xa0", " ")
+    for index in range(len(course_body)):
+        courses = re.findall(concurrent_pattern, course_body[index])
+        concurrent_courses.extend(courses)
+    return concurrent_courses
 
 
 def avail_placement_helper(df, avail_dict):
@@ -148,12 +312,13 @@ def avail_translator(number):
 
 def availability_crawl(dept):
     avail_dict = {}
+    year = datetime.datetime.now().year
     course_pattern = r"([A-Z]{3}[A-Z]?\d{4}[A-Z]?)"
     for page in range(3):
         if page == 0: i = 2
         elif page == 1: i = 5
         else: i = 8
-        url1 = "https://columbusstate.gabest.usg.edu/B300/hwskcsu.courses?term_in=20230"+str(i)+"&message_in=&subject="+str(dept)+"&levl=AL"
+        url1 = "https://columbusstate.gabest.usg.edu/B300/hwskcsu.courses?term_in="+str(year)+str(0)+str(i)+"&message_in=&subject="+str(dept)+"&levl=AL"
         html1 = urlopen(url1).read()
         soup1 = BeautifulSoup(html1, features="html.parser")
         all_course_blocks = soup1.find_all("td", class_="courses")
@@ -185,17 +350,24 @@ def split_letter_digit(string):
     return result
 
 
-def get_prereqs(course_block, coreqs):
+def get_prereqs(course_block, coreqs, concurrent_courses, supplementary_prereqs):
     prereqs = ""
     course_body = course_block.find_all("p", class_="courseblockextra noindent")
-    if no_prereqs(course_body): return ""
+    if no_prereqs(course_body) and supplementary_prereqs == "": return ""
+    if no_prereqs(course_body) and supplementary_prereqs != "": return only_supp_prereqs(supplementary_prereqs, concurrent_courses)
+
     for index in range(len(course_body)):
         section = course_body[index].text
         if re.search(r"Prerequisite\(s\)", section):
-            section = clean_prereqs_section(section, coreqs)
+            section = clean_prereqs_section(section, coreqs, supplementary_prereqs)
             if no_req_after_cleaning(section): return ""
-            prereqs = build_tree_string(section)
+            prereqs = build_tree_string(section, concurrent_courses)
     return prereqs
+
+
+def only_supp_prereqs(supplementary_prereqs, concurrent_courses):
+    supplementary_prereqs = build_tree_string(supplementary_prereqs, concurrent_courses)
+    return supplementary_prereqs
 
 
 def get_coreqs(course_block):
@@ -207,10 +379,13 @@ def get_coreqs(course_block):
     if no_coreqs(course_body): return ""
     for index in range(len(course_body)):
         section = course_body[index]
-        if re.search(r"Co-?requisite:\s[A-Z]{3}[A-Z]?\s\d{4}[A-Z]?|Corequisite:\sConcurrent\senrollment\sin\s[A-Z]{3}[A-Z]?\s\d{4}[A-Z]?", section):
-            coreqsA = re.findall(r"Co-?requisite:\s([A-Z]{3}[A-Z]?\s\d{4}[A-Z]?)", section)
-            coreqsB = re.findall(r"Corequisite:\sConcurrent\senrollment\sin\s([A-Z]{3}[A-Z]?\s\d{4}[A-Z]?)", section)
-            tree = RecursiveDescentParser(coreqsA) if coreqsA != [] else RecursiveDescentParser(coreqsB)
+        section = re.search(r"Co-?requisites?:\s*[^\.]+\.", section)
+        if section:
+            section = section.group(0)
+            section = supp_logic_method(section)
+            if no_req_after_cleaning(section): return ""
+            tokens = create_tokenized_logic(section)
+            tree = RecursiveDescentParser(tokens)
             tree = tree.expression()
             coreqs = stringify_subtree(tree)
 
@@ -222,9 +397,7 @@ def no_prereqs(course_body):
     for index in range(len(course_body)):
         section = course_body[index].text
         match1 = re.search(r"Prerequisite\(s\)", section)
-        # Need to handle this in later implementation. Where prereqs are in another section or are in both.  
-        #match2 = re.search(r"Prerequisite:\s[A-Z]{3}[A-Z]?\s\d{4}[A-Z]?", section)
-        if match1:no = False # or match2: no = False
+        if match1: no = False
     return no
 
 
@@ -232,9 +405,11 @@ def no_coreqs(course_body):
     no = True
     for index in range(len(course_body)):
         section = course_body[index]
-        match1 = re.search(r"Co-?requisite:\s[A-Z]{3}[A-Z]?\s\d{4}[A-Z]?", section)
-        match2 = re.search(r"Corequisite:\sConcurrent\senrollment\sin", section)
-        if match1 or match2: no = False
+        match1 = re.search(r"Co-?requisites?:\s*[^\.]+\.", section)
+        if match1:
+            match2 = re.search(r"[A-Z]{3}[A-Z]?\s\d{4}[A-Z]?", match1.group(0))
+            if match2:
+                no = False
     return no
 
 
@@ -245,35 +420,127 @@ def no_req_after_cleaning(section):
 
 
 # Cleaning up text for easier formatting.
-def clean_prereqs_section(section, coreqs):
+def clean_prereqs_section(section, coreqs, supplementary_prereqs):
     concurrently = re.findall(r"( \(may be taken concurrently\))", section)
     letter = re.findall(r" with a minimum grade of ([A-D])", section)
     if concurrently != []: section = section.replace(concurrently[0], "")
     if letter != []: section = section.replace(" with a minimum grade of " + letter[0], "")
     section = section.replace("Prerequisite(s): ", "")
     section = section.replace("\xa0", " ")
-    # There is much more cleaning to do in the future when we integrate other prereq sections of the website
+    if supplementary_prereqs != "": section = combine_main_prereqs_with_supp_prereqs(section, supplementary_prereqs)
     section = validate_courses(section, coreqs)
     return section
 
 
-def validate_courses(section, coreqs):
+def combine_main_prereqs_with_supp_prereqs(section, supplementary_prereqs):
+    pattern = r"[A-Z]{3}[A-Z]?\s\d{4}[A-Z]?"
+    main_courses = re.findall(pattern, section)
+    supplementary_prereqs = create_tokenized_logic(supplementary_prereqs)
+    if main_courses != []:
+        for course in main_courses:
+            for supp_course in reversed(supplementary_prereqs):
+                if course == supp_course: supplementary_prereqs.pop()
+        while supplementary_prereqs != [] and re.search(pattern, supplementary_prereqs[0]) == None:
+            supplementary_prereqs.pop(0)
+    supplementary_prereqs = " ".join(supplementary_prereqs)   
+    match1 = re.search(pattern, supplementary_prereqs)
+    if match1 == None: return section
+    else:
+        section = f"{section} and {supplementary_prereqs}"
+        return section
+
+
+def validate_courses(section, coreqs=None):
     courses_with_words = verify_and_create_list_logic(section)
-    courses_with_words = delete_coreq_in_prereq(courses_with_words, coreqs)
-    courses_with_words = delete_extra_ands_ors(courses_with_words)
-    # Join list together to form string
+    # Uncomment to delete coreqs from prereqs
+    #if coreqs: courses_with_words = delete_coreq_in_prereq(courses_with_words, coreqs)
+    courses_with_words = edit_tokens(courses_with_words)
     section = " ".join(courses_with_words)
-    section = section.replace("( ", "(")
-    section = section.replace(" )", ")")
-    # If only one course in parentheses then remove parentheses.
-    section = re.sub(r'\((\s*[A-Z]+\s*\d+[A-Z]?\s*)\)', r'\1', section)
-    # If 'or' or 'and' at start or end remove them.
-    section = re.sub(r'^\(?\s?or\s?|^\(?\s?and\s?', "", section)
-    section = re.sub(r'or\s*$|and\s*$', "", section)
     return section
 
 
-# Verifies if course in master dictionary and also creates tokenized logic in the form of a list.
+def edit_tokens(tokens, repeat=True):
+    tokens = tokens
+    tokens = delete_extra_parens(tokens)
+    tokens = delete_empty_parens(tokens)
+    tokens = delete_parens_with_one_course_inside(tokens)
+    tokens = delete_false_paren_expression(tokens)
+    stack = delete_repeated_values_keep_left_association(tokens)
+
+    # For good measure we edit tokens again. This one step recursion should cover any future updates of CSU website.
+    if repeat: stack = edit_tokens(stack, repeat=False)
+    return stack
+
+
+def delete_extra_parens(tokens):
+    paren_count = 0
+    for token in tokens:
+        if token == "(": paren_count += 1
+        elif token == ")": paren_count -= 1
+    if paren_count > 0:
+        for i in range(paren_count):
+            tokens.remove("(")
+    elif paren_count < 0:
+        absolute = abs(paren_count)
+        for i in range(absolute):
+            tokens.remove(")")
+    return tokens
+
+
+def delete_empty_parens(tokens):
+    for index,token in reversed(list(enumerate(tokens))):
+        if index+1 < len(tokens) and token == "(" and tokens[index+1] == ")":
+            tokens.pop(index+1)
+            tokens.pop(index)
+    return tokens
+
+
+def delete_parens_with_one_course_inside(tokens):
+    for index,token in reversed(list(enumerate(tokens))):
+        if index+2 < len(tokens) and token == "(" and re.search(r"[A-Z]{3}[A-Z]?\s\d{4}[A-Z]?", tokens[index+1]) and tokens[index+2] == ")":
+            tokens.pop(index+2)
+            tokens.pop(index)
+    return tokens
+
+
+# Delete expressions such as: '(' 'and' ')', '(' 'or' ')'
+def delete_false_paren_expression(tokens):
+    for index,token in reversed(list(enumerate(tokens))):
+        if index+2 < len(tokens) and token == "(" and re.search(r"and|or", tokens[index+1]) and tokens[index+2] == ")":
+            tokens.pop(index+2)
+            tokens.pop(index+1)
+            tokens.pop(index)
+    return tokens
+
+
+# Deletes repeated values leaving left association integrity. Also, corrects for incorrect format and edits accordingly.
+def delete_repeated_values_keep_left_association(tokens):
+    stack = []
+    for token in tokens:
+        if token == ")":
+            if stack[-1] == "and" or stack[-1] == "or":
+                stack.pop()
+            stack.append(token)
+        elif token == "(":
+            stack.append(token)
+        elif token == "and" or token == "or":
+            while True:
+                if stack == []: break
+                elif stack[-1] == "and" or stack[-1] == "or":
+                    stack.pop()
+                else: break
+            if stack != [] and stack[-1] != "(":
+                stack.append(token)
+        else:
+                stack.append(token)
+
+    # If 'and' or 'or' at start or end, delete.
+    if stack != [] and (stack[0] == "and" or stack[0] == "or"): stack.pop(0)
+    if stack != [] and (stack[-1] == "and" or stack[-1] == "or"): stack.pop()
+    return stack
+
+
+# Verifies if course in master dictionary and also creates tokenized logic list.
 def verify_and_create_list_logic(section):
     course_dict = get_pickle_file("course_dictionary.pickle") #Quick way
     regex_pattern = r"\(|\)|and|or|[A-Z]{3}[A-Z]?\s\d{4}[A-Z]?"
@@ -287,29 +554,14 @@ def verify_and_create_list_logic(section):
     return courses_with_words
 
 
+# Need to refactor, check list of coreqs to delete. As of now we will not delete any coreqs form prereqs.
 def delete_coreq_in_prereq(courses_with_words, coreqs):
     if coreqs != "":
         pattern = r"([A-Z]{3}[A-Z]?\s\d{4}[A-Z]?)"
-        coreq = re.findall(pattern, coreqs)
-        if coreq[0] in courses_with_words:
-            courses_with_words.remove(coreq[0])
-    return courses_with_words
-
-
-# Here we delete extra occurences of 'or' or 'and' and other strings; indexing in reverse order
-def delete_extra_ands_ors(courses_with_words):
-    previous_item = None
-    for i in range(len(courses_with_words)-1, -1, -1):
-        current_item = courses_with_words[i]
-        if current_item == previous_item:
-            courses_with_words.pop(i)
-        if (current_item == "and" and previous_item == "or") or (current_item == "or" and previous_item == "and"):
-            courses_with_words.pop(i)
-        if (current_item == "and" or current_item == "or") and (previous_item == ")"):
-            courses_with_words.pop(i)
-        if (current_item == "(") and (previous_item == "and" or previous_item == "or"):
-            courses_with_words.pop(i+1)
-        previous_item = current_item
+        coreqs = re.findall(pattern, coreqs)
+        for req in coreqs:
+            if req in courses_with_words:
+                courses_with_words.remove(req)
     return courses_with_words
 
 
@@ -322,18 +574,13 @@ def delete_duplicates(course_list):
     return new_list
 
 
-def build_tree_string(section):
+def build_tree_string(section, concurrent_courses=None):
     tree_string = ""
-    #print(section)
     tokens = create_tokenized_logic(section)
-    parser = RecursiveDescentEditor(tokens)
-    parser.operator()
-    tokens = parser.new_tokens
     tree = RecursiveDescentParser(tokens)
     tree = tree.expression()
+    if concurrent_courses: append_deliverable_concurrent_flag(tree, concurrent_courses)
     tree_string = stringify_subtree(tree)
-    #print(tokens)
-    #print(tree_string)
     return tree_string
 
 
@@ -343,5 +590,5 @@ def create_tokenized_logic(section):
     tokens = re.findall(regex_pattern, section)
     return tokens
 
-#lst = ["ACCT", "CPSC", "CYBR"]
-#update_course_info()
+#lst = ["BIOL", "CHEM", "CPSC", "CYBR"]
+# update_course_info()
