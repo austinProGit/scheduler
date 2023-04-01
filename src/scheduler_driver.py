@@ -193,33 +193,36 @@ class DummySchedulable:
             self._corequisite_tree = tree
 
         return tree
-
+    
     def sync_prerequisites_taking(self, course_identifier: DummyCourseIdentifier) -> None:
-        course_number = course_identifier.course_number
-        prequisites = self.get_prequisite_tree()
-        prequisites.sync_deep_selection(course_number)
+        course_number: Optional[str] = course_identifier.course_number
+        if course_number:
+            prequisites: RequirementsTree = self.get_prequisite_tree()
+            prequisites.sync_deep_selection(course_number)
 
     def sync_corerequisites_taking(self, course_identifier: DummyCourseIdentifier) -> None:
-        course_number = course_identifier.course_number
-        corequisites = self.get_corequisite_tree()
-        corequisites.sync_deep_selection(course_number)
+        course_number: Optional[str] = course_identifier.course_number
+        if course_number:
+            corequisites: RequirementsTree = self.get_corequisite_tree()
+            corequisites.sync_deep_selection(course_number)
 
     def sync_all_taking(self, course_identifier: DummyCourseIdentifier) -> None:
-        course_number = course_identifier.course_number
-        prequisites = self.get_prequisite_tree()
-        prequisites.sync_deep_selection(course_number)
-        corequisites = self.get_corequisite_tree()
-        corequisites.sync_deep_selection(course_number)
+        course_number: Optional[str] = course_identifier.course_number
+        if course_number:
+            prequisites: RequirementsTree = self.get_prequisite_tree()
+            prequisites.sync_deep_selection(course_number)
+            corequisites: RequirementsTree = self.get_corequisite_tree()
+            corequisites.sync_deep_selection(course_number)
 
     def can_be_taken_for_prequisites(self) -> bool:
         # TODO: use flag to check if the trees have been modified since the last check (to avoid deep_select_all_satified_children recalls)
-        prequisites = self.get_prequisite_tree()
+        prequisites: RequirementsTree = self.get_prequisite_tree()
         prequisites.deep_select_all_satified_children() # Make all parents who can be satisfied selected
         return prequisites.is_deep_resolved()
 
     def can_be_taken_for_corequisites(self) -> bool:
         # TODO: use flag to check if the trees have been modified since the last check (to avoid deep_select_all_satified_children recalls)
-        corequisites = self.get_corequisite_tree()
+        corequisites: RequirementsTree = self.get_corequisite_tree()
         corequisites.deep_select_all_satified_children() # Make all parents who can be satisfied selected
         return corequisites.is_deep_resolved()
 
@@ -227,11 +230,11 @@ class DummySchedulable:
         return self.can_be_taken_for_prequisites() and self.can_be_taken_for_corequisites()
 
     def reset_prerequisites_selection(self) -> None:
-        corequisites = self.get_corequisite_tree()
+        corequisites: RequirementsTree = self.get_corequisite_tree()
         corequisites.reset_deep_selection()
 
     def reset_corerequisites_selection(self) -> None:
-        corequisites = self.get_corequisite_tree()
+        corequisites: RequirementsTree = self.get_corequisite_tree()
         corequisites.reset_deep_selection()
 
     def reset_all_selection(self) -> None:
@@ -760,12 +763,32 @@ class DummyCourseInfoContainer:
 # Keep a list of courses for each semester in itself a list
 # each list stores a list of course indices
 # each evaluation only schedules those that can be scheduled (every other will not be pushed)
-# course not being scheduled at all are dead (strong rule)
+# if a schedule misses scheduling a course (not being scheduled at all), it is dead/zero fitness (strong rule)
 
 # hyper parameter will be strong rule: how many extra course indices in a given semester allowed (either kill entire schedule (strong) or truncate (weak))
 
+
 # Caching will become very important:
 # this will be used to speed up determining which courses can be taken
+
+# TODO: there needs to be fitness influence from the number of semesters taken
+
+# Approach:
+# Steps to initialization:
+#   create a blank object
+#   load the provided list of list of courses
+#   for each semester, create a new gene semester
+#       for each course, add it into the gene semester and register all schedulables with each other (taking)
+#   
+
+
+
+# Steps to judge a semester (fitness)
+
+
+
+# Steps to mutate a course:
+
 
 
 ScheduleFitenessFunction = Callable[[ScheduleInfoContainer], float]
@@ -814,54 +837,53 @@ class DummyGeneticOptimizer:
         self.taken_course: list[DummyCourseIdentifier] = []
         self.schedulables: list[DummySchedulable] = []
 
+        # The fitness function for evolving the gene sequences
         self._fiteness_function = fiteness_function
-        '''The fitness function for evolving the gene sequences.'''
 
+        # Setup genetic algorithm variables
         self.setup_genetics(population_size=1, course_count=0, mutation_rate=0.25)
 
 
     
-    '''A trainer that manages a population (gene sequence strings) and the evolution of that population.'''
-    def setup_genetics(self, population_size: int, course_count: int, mutation_rate: float = 0.25,
+    def setup_genetics(self, population_size: int, course_count: int, mutation_rate: float = 0.25,\
             fitness_function: Optional[ScheduleFitenessFunction] = None) -> None:
+        '''Setup the gene algorithm relevant instance variables.'''
         
         # ------------------------ Populations Properties ------------------------ #
 
+        # The number of gene sequences in the population
         self._population_size: int = population_size
-        '''The number of gene sequences in the population.'''
 
+        # The list of population gene sequences in no particular order
         self._population_gene_sequences: list[DummyGeneticOptimizer.Gene] = []
-        '''The list of population gene sequences in no particular order.'''
 
+        # The number of courses to schedule
         self._course_count: int = course_count
-        '''The number of courses to schedule'''
 
+        # The chance (0 to 1) that a mutation will occur on a single bit for a new gene sequence
         self._mutation_rate: float = mutation_rate
-        '''The chance (0 to 1) that a mutation will occur on a single bit for a new gene sequence.'''
         
         # ------------------------ Training Properties ------------------------ #
 
+        # The hard/maximum number of iterations left for training
         self._training_iterations_left: int = 0
-        '''the hard/maximum number of iterations left for training.'''
 
+        # The threshold for the fitness that when met terminates training
         self._fitness_threshold: Optional[float] = None
-        '''The threshold for the fitness that when met terminates training.'''
         
         # ------------------------ Cache Properties ------------------------ #
-        
+
+        # A simple cache queue that is used to determine which cached fitness values should be removed from the cache (does not sort by access, only by addition)
         self._fitness_cache_queue: list[str] = []
-        '''A simple cache queue that is used to determine which cached fitness values
-        should be removed from the cache (does not sort by access, only by addition).'''
 
+        # A cache of fitness values given a gene sequence (cleared when the fitness function is updated)
         self._fitness_cache: dict[str, float] = {}
-        '''A cache of fitness values given a gene sequence (cleared when the fitness
-        function is updated).'''
 
+        # The active size of the fitness value cache
         self._cache_size: int = 0
-        '''The active size of the fitness value cache.'''
 
+        # The maximum size of the fitness value cache
         self._max_cache_size: int = CACHE_SIZE
-        '''The maximum size of the fitness value cache.'''
 
         # ------------------------ Fitness Function ------------------------ #
 
@@ -1438,7 +1460,7 @@ class DummyConstuctiveScheduler:
 
         
 
-    def generate_schedule(self, prequisite_ignored_courses: list[DummyCourseIdentifier], optimizer: Optional[DummyGeneticOptimizer]) -> DummyScheduleInfoContainer:
+    def generate_schedule(self, prequisite_ignored_courses: list[DummyCourseIdentifier], optimizer: Optional[DummyGeneticOptimizer] = None) -> DummyScheduleInfoContainer:
         """Primary method to schedule a path to graduation
            Inputs: None, but requires course_info and courses_needed setup prior to running
            Returns: list of lists, inner list is one semester of courses, outer list is full schedule"""
@@ -1457,7 +1479,7 @@ class DummyConstuctiveScheduler:
         # Calculate the confidence factor for the new schedule
         dynamic_knowledge = DynamicKnowledge()
         dynamic_knowledge.set_schedule([[l.course_identifier.course_number or l.course_identifier.name for l in r] for r in result_list])
-        confidence_factor = self.schedule_evaluator.calculate_confidence(dynamic_knowledge, course_info)
+        confidence_factor = self.schedule_evaluator.calculate_confidence(dynamic_knowledge, self._course_info_container)
 
         return DummyScheduleInfoContainer.make_from_schedulables_list(
             raw_list = result_list,
