@@ -1,5 +1,5 @@
 # Thomas Merino and Austin Lee
-# 3/6/2023
+# 2/4/2023
 # CPSC 4176 Project
 
 # The following are imported for type annotations
@@ -253,7 +253,7 @@ class _NodeSuper:
 
         result = KEY_NOT_FOUND
         if key in self.KEYS_LIST:
-            if value == '':
+            if value == '' or value == 'null':
                 if key in self.NON_NIL_KEYS:
                     result = ILLEGAL_NIL
                 else:
@@ -291,6 +291,10 @@ class _NodeSuper:
         return True
     
     def is_delete_protected(self):
+        return False
+
+    def is_available_concurrent(self) -> bool:
+        '''Whether the node may be taken concurrently (in the context of selection for prerequisite requirement trees).'''
         return False
 
     ## ------------------------------ Descriptions getting ------------------------------ ##
@@ -666,7 +670,9 @@ class _NodeSuper:
         
         return highest_priority
 
+    @final
     def sync_deep_selection(self, course_id: str) -> int:
+        # TODO: the return value does not make sense (possible return whether modifications were made)
 
         child: RequirementsTree
         for child in self.get_all_children_list():
@@ -678,6 +684,20 @@ class _NodeSuper:
         
         return ADDITIONAL_EFFECTS
 
+
+    def sync_deep_concurrent_selection(self, course_id: str) -> int:
+        # TODO: the return value does not make sense (possible return whether modifications were made)
+
+        child: RequirementsTree
+        for child in self.get_all_children_list():
+            if child.is_available_concurrent() and child.get_course_id() == course_id:
+                if not self.is_selecting_node_id(child._node_id):
+                    self.select_child(child)
+                
+            child.sync_deep_concurrent_selection(course_id)
+        
+        return ADDITIONAL_EFFECTS
+        
     def sync_deep_selection_with_priority(self, original_node_id, course_id, base_priority, requisite_priority):
         result = SINGLE
         current_priority = self._duplicate_priority or base_priority
@@ -710,20 +730,22 @@ class _NodeSuper:
         
         return result
 
-    def sync_deep_deselection(self, original_node_id, course_id):
 
-        result = SINGLE
+    def sync_deep_deselection(self, course_id: str, original_node_id: Optional[int] = None) -> int:
 
+        result: int = SINGLE
+
+        child: RequirementsTree
         for child in self.get_all_children_list():
             if child.get_course_id() == course_id and self.is_selecting_node_id(child._node_id):
-                deselection_result = RESULT & self.deselect_child(child)
+                deselection_result: int = RESULT & self.deselect_child(child)
                 if deselection_result == CHANGED:
                     if child._node_id != original_node_id:
                         result = ADDITIONAL_EFFECTS
                 else:
                     result = UNSTRUCTURED
                 
-            child_result = child.sync_deep_deselection(original_node_id, course_id)
+            child_result: int = child.sync_deep_deselection(course_id, original_node_id)
 
             if child_result == UNSTRUCTURED:
                 result = UNSTRUCTURED
@@ -1000,6 +1022,11 @@ class DeliverableCourse(_NodeSuper):
         self._explicit_id = None
         self._may_be_taken_concurrently: Optional[str] = None
     
+    def set_value_for_key(self, key, value):
+        super().set_value_for_key(key, value)
+        if key == 'n' and self._course_description is None:
+            super().set_value_for_key('dn', value)
+
     def make_shallow_live_copy(self):
         copy = DeliverableCourse()
         self.transfer_base_properties(copy)
@@ -1011,6 +1038,10 @@ class DeliverableCourse(_NodeSuper):
     
     def can_be_stub(self):
         return False
+
+    def is_available_concurrent(self) -> bool:
+        '''Whether the node may be taken concurrently (in the context of selection for prerequisite requirement trees).'''
+        return self._may_be_taken_concurrently is not None and self._may_be_taken_concurrently != 'no'
 
     def get_shallow_description(self):
         return f'{self._printable_description or self._course_description or "Course"} - {self.get_shallow_credits()}'

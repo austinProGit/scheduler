@@ -1,5 +1,5 @@
 # Thomas Merino and Austin Lee
-# 3/21/2023
+# 4/2/2023
 # CPSC 4176 Project
 
 # The following are imported for type annotations
@@ -58,7 +58,7 @@ class RequirementsParser:
         
         if len(arguments_listing) == 1 and arguments_listing[0] == '':
             arguments_listing = []
-        
+            
         argument: str
         for argument in arguments_listing:
 
@@ -70,7 +70,7 @@ class RequirementsParser:
                 
                 value: str = argument[delimiter_index+len(SETTING_DELIMITTER):].strip()
                 # NOTE: value == '' is completely valid and will result in the key's value being set to None
-
+                
                 new_node.set_value_for_key(key, value)
 
             else:
@@ -179,6 +179,13 @@ class RequirementsParser:
             courses = string[1 : end_index].split(',')
             string = string[end_index + 1:]
             certain_courses = [course.strip() for course in set(courses)]
+
+            # Check if the certain courses will be added into the rest of the requirements so list nodes are not present
+            if artificial_exhaustive:
+                string += ''.join(f'[d <n={course_number}, dn={course_number}>]' for course_number in certain_courses)
+                certain_courses = []
+                print(string)
+
         
         encapsulated_string = f'[e<name=Requirements>{string}]'
         

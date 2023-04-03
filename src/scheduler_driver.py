@@ -1,5 +1,5 @@
 # Thomas Merino
-# 3/24/2023
+# 4/2/2023
 # CPSC 4176 Project
 
 
@@ -7,10 +7,11 @@
 # course identifier)
 
 
-# TODO: coreqs need to grouped into a single schedulable
 # TODO: schedule evaluator needs to be added (dummied) with the new coreq and concurr prereqs approach taken into account
 
-# TODO: (IMPORTANT) List are not are not treated as they should be (artificial_exhaustive-style)
+# TODO: (IMPORTANT) at the moment, coreq.s in constructive scheduler do not work fully:
+#               We just look for "simple coreq.s", which means 1 coreq in which every dependant course's other requirements are ignored.
+#               It is assumed the requirements for the course and it's coreq. are the same
 
 from __future__ import annotations
 from typing import TYPE_CHECKING, Callable
@@ -77,7 +78,6 @@ PathValidationReport.Error:
 CourseInfoContainer:
 ConstructiveScheduler:
 GeneticScheduler:
-
 
 
 ============== Here are the methods ==============
@@ -194,25 +194,36 @@ class DummySchedulable:
 
         return tree
     
-    def sync_prerequisites_taking(self, course_identifier: DummyCourseIdentifier) -> None:
+    def sync_course_taken(self, course_identifier: DummyCourseIdentifier) -> None:
         course_number: Optional[str] = course_identifier.course_number
         if course_number:
+            corequisites: RequirementsTree = self.get_corequisite_tree()
+            corequisites.sync_deep_deselection(course_number)
+
             prequisites: RequirementsTree = self.get_prequisite_tree()
             prequisites.sync_deep_selection(course_number)
 
-    def sync_corerequisites_taking(self, course_identifier: DummyCourseIdentifier) -> None:
+    def sync_course_taking(self, course_identifier: DummyCourseIdentifier) -> None:
         course_number: Optional[str] = course_identifier.course_number
         if course_number:
             corequisites: RequirementsTree = self.get_corequisite_tree()
             corequisites.sync_deep_selection(course_number)
 
-    def sync_all_taking(self, course_identifier: DummyCourseIdentifier) -> None:
+            prequisites: RequirementsTree = self.get_prequisite_tree()
+            prequisites.sync_deep_deselection(course_number)
+            prequisites.sync_deep_concurrent_selection(course_number)
+
+    def sync_course_not_taken(self, course_identifier: DummyCourseIdentifier) -> None:
+        # TODO: check if this is even a useful method
+        # NOTE: this will set all courses matching the identifier as not taken (not undo one instance in the case of multiple instances to satisfy)
         course_number: Optional[str] = course_identifier.course_number
         if course_number:
-            prequisites: RequirementsTree = self.get_prequisite_tree()
-            prequisites.sync_deep_selection(course_number)
             corequisites: RequirementsTree = self.get_corequisite_tree()
-            corequisites.sync_deep_selection(course_number)
+            corequisites.sync_deep_deselection(course_number)
+
+            prequisites: RequirementsTree = self.get_prequisite_tree()
+            prequisites.sync_deep_deselection(course_number)
+            
 
     def can_be_taken_for_prequisites(self) -> bool:
         # TODO: use flag to check if the trees have been modified since the last check (to avoid deep_select_all_satified_children recalls)
@@ -429,14 +440,13 @@ def dummy_rigorous_validate_schedule(schedule: DummyScheduleInfoContainer,
                 # Make each course recognize the coreq. relationship (bidirectional)
                 taking_course: DummySchedulable
                 for taking_course in currently_taking_courses:
-                    course.sync_corerequisites_taking(taking_course.course_identifier)
-                    taking_course.sync_corerequisites_taking(course.course_identifier)
+                    course.sync_course_taking(taking_course.course_identifier)
+                    taking_course.sync_course_taking(course.course_identifier)
                 
                 # Make each course recognize the prereq.s
                 taken_course_identifier: DummyCourseIdentifier
                 for taken_course_identifier in running_taken_courses:
-                    course.sync_prerequisites_taking(taken_course_identifier)
-                    course.sync_corerequisites_taking(taken_course_identifier)
+                    course.sync_course_taken(taken_course_identifier)
 
                 # Append the course the to the list of currentlyt taking courses
                 currently_taking_courses.append(course)
@@ -541,14 +551,15 @@ class DummyCourseInfoContainer:
         # "CPSC 1301": ("Computer Science", 3, set(FALL, SPRING, SUMMER), set(),
         #     "[s <n=Prerequsites, c=1>[d <n=MATH 1234>][d <n=MATH 4321>]]",
         #     ""),
-        self.dataset = {
-            "CPSC 1105": ("Introduction to Computing Principles and Technology", 3, set([FALL, SPRING, SUMMER]), set(), "", ""),
-            "CPSC 1301K": ("Computer Science I", 3, set([FALL, SPRING, SUMMER]), set(), "", ""),
-            "CPSC 1302": ("Computer Science II", 3, set([FALL, SPRING, SUMMER]), set(), """[e <n=Requires All:>
+        """[e <n=Requires All:>
 	[d <n=CPSC 1301K>]
 	[d <n=MATH 1113>]
 ]
-""", ""),
+"""
+        self.dataset = {
+            "CPSC 1105": ("Introduction to Computing Principles and Technology", 3, set([FALL, SPRING, SUMMER]), set(), "", ""),
+            "CPSC 1301K": ("Computer Science I", 3, set([FALL, SPRING, SUMMER]), set(), "", ""),
+            "CPSC 1302": ("Computer Science II", 3, set([FALL, SPRING, SUMMER]), set(), """(CPSC 1301K, MATH 1113)""", ""),
             "CPSC 1555": ("Selected Topics in Computer Science", 3, set([]), set(), "", ""),
             "CPSC 2105": ("Computer Organization", 3, set([FALL, SPRING]), set(), """[e <n=Requires All:>
 	[s <c=1, n=Requires 1:>
@@ -791,7 +802,7 @@ class DummyCourseInfoContainer:
 
 
 
-ScheduleFitenessFunction = Callable[[ScheduleInfoContainer], float]
+ScheduleFitenessFunction = Callable[[ScheduleInfoContainer, DummyCourseInfoContainer], float]
 
 class DummyGeneticOptimizer:
 
@@ -815,8 +826,6 @@ class DummyGeneticOptimizer:
 
         def make_schedule_info_container(self, optimizer: DummyGeneticOptimizer) -> DummyScheduleInfoContainer:
             raw_list: list[list[DummySchedulable]] = []
-
-            
 
             #return DummyScheduleInfoContainer.make_from_schedulables_list(raw_list, starting_semester = optimizer.semester_start, starting_year =, confidence_level: float | None = None))
 
@@ -969,7 +978,7 @@ class DummyGeneticOptimizer:
 
     # ------------------------ Breeding ------------------------ #
 
-    def crossoverGeneSequences(self, gene1: str, gene2: str) -> str:
+    def crossover_gene_sequences(self, gene1: str, gene2: str) -> str:
         '''Get a single child from the passed parents, crossing over the genes randomly.
         The order of the parents does not matter.'''
 
@@ -979,7 +988,7 @@ class DummyGeneticOptimizer:
         firstGene, secondGene = (gene1, gene2) if randint(0, 1) else (gene2, gene1)
         return firstGene[:crossIndex] + secondGene[crossIndex:]
 
-    def mutateGenes(self, gene: str) -> str:
+    def mutate_genes(self, gene: str) -> str:
         '''Get a mutated version of the passed gene sequence. This applies one bit flips
         for a random bit.'''
 
@@ -995,77 +1004,62 @@ class DummyGeneticOptimizer:
         newGene: str = gene[:flippedIndex] + newBit + gene[flippedIndex+1:]
         return newGene
 
-    def makeChildFrom(self, geneSequence1: str, geneSequence2: str) -> str:
+    def make_child_from(self, geneSequence1: str, geneSequence2: str) -> str:
         '''Get a child (gene sequence) from two parent (oder does not matter). This applies
         crossover and may flip any number of bits (less likely to be more).'''
-        child = self.crossoverGeneSequences(geneSequence1, geneSequence2)
+        child = self.crossover_gene_sequences(geneSequence1, geneSequence2)
         should_mutate: bool = random() <= self._mutation_rate
         while should_mutate:
-            child = self.mutateGenes(child)
+            child = self.mutate_genes(child)
             should_mutate = random() <= self._mutation_rate
         return child
 
     # ------------------------ Iteration training/evolution ------------------------ #
 
-    def _reachedThreshold(self, bestGeneSequences: list[str]) -> bool:
+    def _reached_threshold(self, bestGeneSequences: list[str]) -> bool:
         '''Helper method for iteration method that updates the iteration count and determines if 
         any threshold has been met.'''
 
         self._training_iterations_left -= 1
         isFinishedTraining: bool = self._training_iterations_left <= 0
-
-        # Make the set/list of genes to perform a value check over 
-        valueCheckingSet: list[str] = bestGeneSequences if self.valueCheckingSetSize is None \
-            else bestGeneSequences[:self.valueCheckingSetSize]
-
-        # Check value
-        if self.valueThreshold is not None and \
-                any(self.evaluateGeneSequenceValue(geneSequence) >= self.valueThreshold \
-                for geneSequence in valueCheckingSet \
-                if self.evaluateGeneSequenceWeight(geneSequence) <= self.maximumWeight):
-            isFinishedTraining = True
-            if SHOULD_PRINT_THRESHOLD_MEET:
-                print('Reached the value threshold')
         
         # Check fitness
         if self._fitness_threshold is not None and \
-                self.evaluateGeneSequenceFitness(bestGeneSequences[0]) >= self._fitness_threshold:
+                self.evaluate_gene_sequence_fitness(bestGeneSequences[0]) >= self._fitness_threshold:
             isFinishedTraining = True
-            if SHOULD_PRINT_THRESHOLD_MEET:
-                print('Reached the fitness threshold')
 
         return isFinishedTraining
 
 
-    def runIteration(self, reductionSize: int, bestPerformerMaintain: int = 0) -> bool:
+    def run_iteration(self, reduction_size: int, best_performer_maintain: int = 0) -> bool:
         '''Perform a single iteration/evolution over'''
-        bestGeneSequences: list[str] = self.bestGenes(reductionSize)
+        best_gene_sequences: list[DummyGeneticOptimizer.Gene] = self.best_genes(reduction_size)
 
-        if self._reachedThreshold(bestGeneSequences):
+        if self._reached_threshold(best_gene_sequences):
             return True
         
-        numberOfParentPairs: int = reductionSize//2
-        newPopulation: list[str] = []
+        number_of_parent_pairs: int = reduction_size//2
+        new_population: list[DummyGeneticOptimizer.Gene] = []
 
-        for index in range(min(bestPerformerMaintain, self._population_size)):
-            newPopulation.append(bestGeneSequences[index])
+        for index in range(min(best_performer_maintain, self._population_size)):
+            new_population.append(best_gene_sequences[index])
 
-        childrenPerPair: int = (self._population_size - len(newPopulation))//numberOfParentPairs
-        shuffle(bestGeneSequences)
+        children_per_pair: int = (self._population_size - len(new_population))//number_of_parent_pairs
+        shuffle(best_gene_sequences)
 
-        for index in range(numberOfParentPairs):
-            geneSequence1 = bestGeneSequences[2 * index]
-            geneSequence2 = bestGeneSequences[2 * index + 1]
+        for index in range(number_of_parent_pairs):
+            gene_sequence_1 = best_gene_sequences[2 * index]
+            gene_sequence_2 = best_gene_sequences[2 * index + 1]
 
-            for _ in range(childrenPerPair):
-                newPopulation.append(self.makeChildFrom(geneSequence1, geneSequence2))
+            for _ in range(children_per_pair):
+                new_population.append(self.make_child_from(gene_sequence_1, gene_sequence_2))
         
-        for index in range(self._population_size - len(newPopulation)):
-            geneSequence1 = bestGeneSequences[2 * index]
-            geneSequence2 = bestGeneSequences[2 * index + 1]
-            newPopulation.append(self.makeChildFrom(geneSequence1, geneSequence2))
+        for index in range(self._population_size - len(new_population)):
+            gene_sequence_1 = best_gene_sequences[2 * index]
+            gene_sequence_2 = best_gene_sequences[2 * index + 1]
+            new_population.append(self.make_child_from(gene_sequence_1, gene_sequence_2))
 
-        self._population_gene_sequences = newPopulation
+        self._population_gene_sequences = new_population
 
         return False
     
@@ -1222,7 +1216,7 @@ class DummyConstuctiveScheduler:
             insort(self._data[hours], schedulable)
             self._set.add(schedulable)
         
-        def remove(self, key: int, index: int):
+        def remove(self, key: int, index: int) -> None:
             if key in self._data:
                 listing: list[DummyConstuctiveScheduler.Schedulable] = self._data[key]
                 if index < len(listing):
@@ -1231,9 +1225,18 @@ class DummyConstuctiveScheduler:
                 if not listing:
                     self._keys.remove(key)
                     del self._data[key]
-                    
 
+        def remove_schedulable(self, schedulable: DummyConstuctiveScheduler.Schedulable) -> None:
+            key: int = schedulable.schedulable.hours
+            if key in self._data:
+                listing: list[DummyConstuctiveScheduler.Schedulable] = self._data[key]
+                if schedulable in listing:
+                    listing.remove(schedulable)
+                    if not listing:
+                        self._keys.remove(key)
+                        del self._data[key]
 
+    
 
     Rule = Callable[[Schedulable, "list[Schedulable]", DummyCourseInfoContainer], float]
     
@@ -1372,9 +1375,10 @@ class DummyConstuctiveScheduler:
 
             schedulables_dictionary.add(schedulable)
 
+            # Register all taken courses with the current schedule
             taken_course: DummyCourseIdentifier
             for taken_course in taken_courses:
-                schedulable.schedulable.sync_all_taking(taken_course)
+                schedulable.schedulable.sync_course_taken(taken_course)
             
         # TODO: this is debugging
         for schedulable_class_hours, schedulable_class in schedulables_dictionary._data.items():
@@ -1384,8 +1388,24 @@ class DummyConstuctiveScheduler:
 
         return schedulables_dictionary
 
+    def _generate_simple_corequisite_pairs(self) -> dict[str, DummyConstuctiveScheduler.Schedulable]:
+
+        result: dict[str, DummyConstuctiveScheduler.Schedulable] = {}
+        courses_needed: list[DummyConstuctiveScheduler.Schedulable] = self._schedulables
+
+        schedulable: DummyConstuctiveScheduler.Schedulable
+        for schedulable in courses_needed:
+            corequisite_tree: RequirementsTree = schedulable.schedulable.get_corequisite_tree()
+            if corequisite_tree.get_all_deep_count() == 1:
+                delivable: SchedulableParameters = corequisite_tree.get_all_aggragate()[0]
+                if delivable.course_number:
+                    result[delivable.course_number] = schedulable
+
+        print('Here is it, boss...', result) # TODO: remove this print
+        return result
     
-    def _constructive_schedule_as_list(self, schedulables_dictionary: DummyConstuctiveScheduler.SortingDict) -> list[list[DummySchedulable]]:
+    def _constructive_schedule_as_list(self, schedulables_dictionary: DummyConstuctiveScheduler.SortingDict,
+            simple_corequisite_pairs: dict[str, DummyConstuctiveScheduler.Schedulable]) -> list[list[DummySchedulable]]:
         '''Create a path/schedule as a list of list of schedulables. NOTE: the passes schedulables collection will be mutated.'''
 
         # This scheduling method work constructively, adding new courses to a working semester.
@@ -1413,20 +1433,42 @@ class DummyConstuctiveScheduler:
 
         course_index: int = 0
         working_semester_list: list[DummyConstuctiveScheduler.Schedulable] = []
-
+        
         # While course are still left to be scheduled
         while schedulables_dictionary.has_course():
             if hours_available >= hours_key:
                 course: Optional[DummyConstuctiveScheduler.Schedulable] = \
                     schedulables_dictionary.get_schedulable(hours_key, course_index)
                 if course is not None:
-                    if working_semester_type in course.schedulable.availability and course.schedulable.can_be_taken():
-                        working_semester_list.append(course)
-                        hours_available -= hours_key
-                        schedulables_dictionary.remove(hours_key, course_index)
-                        remaining_course: DummyConstuctiveScheduler.Schedulable
-                        for remaining_course in schedulables_dictionary.all():
-                            remaining_course.schedulable.sync_all_taking(course.schedulable.course_identifier)
+                    
+                    if working_semester_type in course.schedulable.availability:
+                        if course.schedulable.can_be_taken():
+                            working_semester_list.append(course)
+                            hours_available -= hours_key
+                            schedulables_dictionary.remove(hours_key, course_index)
+                            remaining_course: DummyConstuctiveScheduler.Schedulable
+                            for remaining_course in schedulables_dictionary.all():
+                                remaining_course.schedulable.sync_course_taking(course.schedulable.course_identifier)
+                        else:
+                            course_number: str = course.schedulable.course_identifier.course_number
+                            if course_number in simple_corequisite_pairs:
+                                # There is an associated simple coreq. (see if it will work)
+                                additional_schedulable: DummyConstuctiveScheduler.Schedulable = simple_corequisite_pairs[course_number]
+                                if working_semester_type in additional_schedulable.schedulable.availability and \
+                                        hours_available >= hours_key + additional_schedulable.schedulable.hours:
+                                    working_semester_list.append(course)
+                                    working_semester_list.append(additional_schedulable)
+                                    hours_available -= hours_key + additional_schedulable.schedulable.hours
+                                    schedulables_dictionary.remove(hours_key, course_index)
+                                    schedulables_dictionary.remove_schedulable(additional_schedulable)
+                                    remaining_course: DummyConstuctiveScheduler.Schedulable
+                                    for remaining_course in schedulables_dictionary.all():
+                                        remaining_course.schedulable.sync_course_taking(course.schedulable.course_identifier)
+                                        remaining_course.schedulable.sync_course_taking(additional_schedulable.schedulable.course_identifier)
+                                else:
+                                    course_index += 1
+                            else:
+                                course_index += 1
                     else:
                         course_index += 1
                 else:
@@ -1437,6 +1479,14 @@ class DummyConstuctiveScheduler:
                 course_index = 0
 
             if hours_key is None:
+
+                # Rotate all courses to recognize the course as "taken" instead of "taking"
+                working_course: DummyConstuctiveScheduler.Schedulable
+                for working_course in working_semester_list:
+                    remaining_course: DummyConstuctiveScheduler.Schedulable
+                    for remaining_course in schedulables_dictionary.all():
+                        remaining_course.schedulable.sync_course_taken(working_course.schedulable.course_identifier) 
+
                 result_list.append([schedulable.schedulable for schedulable in working_semester_list])
                 working_semester_list = []
 
@@ -1468,8 +1518,10 @@ class DummyConstuctiveScheduler:
         # Create a dictionary that indexed by a composite of the credits hours and the fitness index (0 is the most fit, 1 the second most fit, etc.)
         schedulables_dictionary: DummyConstuctiveScheduler.SortingDict = self._create_weighted_schedulables(prequisite_ignored_courses)
         
+        simple_corequisite_pairs: dict[str, DummyConstuctiveScheduler.Schedulable] = self._generate_simple_corequisite_pairs()
+
         # Create a list of lists using the above schedulables
-        result_list = self._constructive_schedule_as_list(schedulables_dictionary)
+        result_list = self._constructive_schedule_as_list(schedulables_dictionary, simple_corequisite_pairs)
 
         # Perform optimizations here (if an optimizer was passes in)
         if optimizer is not None:
@@ -1517,7 +1569,7 @@ if __name__ == '__main__':
         identifiers = {id : DummyCourseIdentifier(id) for id in course_set_a}
 
         schedulables = DummySchedulable.create_schedulables(list(identifiers.values()), course_info_container)
-
+        
         # for s in schedulables:
         #     print(40*'-')
         #     s.sync_prerequisites_taking(identifiers['CPSC 1301K'])
@@ -1540,6 +1592,8 @@ if __name__ == '__main__':
         ], course_info_container, starting_semester=FALL, starting_year=2023)
         
         print(test_path_a)
+
+
 
         report: DummyPathValidationReport = dummy_rigorous_validate_schedule(
             test_path_a,
@@ -1682,8 +1736,6 @@ CACHE_SIZE: int = 1000
 '''The max size of the cache for caching calculated fitness values'''
 
 class Trainer:
-
-
     
     '''A trainer that manages a population (gene sequence strings) and the evolution of that population.'''
     def __init__(self, populationSize: int, maximumWeight: float, store: list[Valuable] = [], \
