@@ -13,6 +13,67 @@ import datetime
 import pickle
 
 
+# Webcrawls one page to retrieve Baccalaureate Degrees/Majors. (80 degrees as of April 2023) 
+def get_baccalaureate_degrees():
+    print("Retrieving Baccalaureate Degrees dictionary from https://catalog.columbusstate.edu/academic-degrees-programs/degrees-baccalaureate/")
+
+    url = "https://catalog.columbusstate.edu/academic-degrees-programs/degrees-baccalaureate/"
+    html = urlopen(url).read()
+    soup = BeautifulSoup(html, features="html.parser")
+    degrees = soup.find("div", class_="page_content")
+    degrees = degrees.text
+    degrees = degrees.replace("\xa0", " ")
+    degree_pattern = r"[A-Z][a-z]+\s.+"
+    degrees = re.findall(degree_pattern, degrees)
+    degree_string = "\n"
+
+    for degree in degrees:
+        degree_string += f"{degree}\n"
+
+    major_dict = get_majors_and_tracks(degree_string)
+    file1 = get_source_path()
+    file1 = get_source_relative_path(file1, "output_files/baccalaureate_degrees_dictionary.pickle")
+    with open(file1, "wb") as f:
+        pickle.dump(major_dict, f)
+
+    print(f"Baccalaureate Degrees dictionary complete.\n")
+
+
+# Author: Austin Lee
+# Utilized method to tailor majors and tracks
+def get_majors_and_tracks(degree_string):
+    majors_dict = {}
+    unfiltered_majors_list = degree_string.strip().split('\n')
+    filtered_majors_list = []
+    
+    for item in unfiltered_majors_list:
+        degree_type_search_obj = None
+        degree_type_search_obj = re.search(r'\([a-zA-Z]+\)', item)
+        if degree_type_search_obj:
+            item = item.replace(degree_type_search_obj.group(), '')
+        filtered_majors_list.append(item)
+    
+    for item in filtered_majors_list:
+        if ' - ' in item:
+            key, value = item.split(' - ', 1)
+            key = key[:key.find(' (')]
+            if key in majors_dict:
+                if value not in majors_dict[key]:
+                    majors_dict[key].append(value)
+            else:
+                majors_dict[key] = [value]
+        else:
+            key = item.strip()
+            value = 'NONE'
+            if key in majors_dict:
+                if value not in majors_dict[key]:
+                    majors_dict[key].insert(0, value)
+            else:
+                majors_dict[key] = [value]
+
+    return majors_dict
+
+
 # Webcrawls one page to retrieve 116 department names of CSU.
 def get_department_dict():
     url = "https://catalog.columbusstate.edu/course-descriptions/"
@@ -47,7 +108,7 @@ def get_course_dict():
         courses = soup.find_all("span", class_="text col-3 detail-code margin--tiny text--semibold text--huge")
         for course in courses:
             refined_courses[course.text] = None
-        print("Course dictionary from " + str(dept) + " complete.")
+        print(f"Course dictionary from {dept} complete.")
     file1 = get_source_path()
     file1 = get_source_relative_path(file1, "output_files/course_dictionary.pickle")
     with open(file1, "wb") as f:
@@ -66,9 +127,19 @@ def get_pickle_file(filename):
     return obj
 
 
+# This method is for Austin's degree works parser. He can copy and paste to his module.
+def get_baccalaureate_degrees_pickle_file():
+    file1 = get_source_path()
+    file1 = get_source_relative_path(file1, "output_files/baccalaureate_degrees_dictionary.pickle")
+    with open(file1, "rb") as f:
+        obj = pickle.load(f)
+    return obj
+
+
 def update_course_info(dept=None):
     #dept_dict = get_department_dict() #comment out for faster processing
     #course_dict = get_course_dict() #comment out for faster processing
+    #major_dict = get_baccalaureate_degrees() #comment out for faster processing
     df_dict = {}
     dept_dict = get_pickle_file("department_dictionary.pickle") #Quick way
     course_dict = get_pickle_file("course_dictionary.pickle") #Quick way
@@ -110,10 +181,9 @@ def parse_catalog(dept):
         #print(courseID)
         name = all_course_blocks[index].find("span", class_="text col-3 detail-title margin--tiny text--bold text--huge").text
         hours = all_course_blocks[index].find("span", class_="text detail-coursehours text--bold text--huge").text
-        
-        # We get the coreqs first so we can delete them out of the prereqs.
-        coreqs = get_coreqs(all_course_blocks[index])
+ 
         concurrent_courses = get_concurrent_courses(all_course_blocks[index])
+        coreqs = get_coreqs(all_course_blocks[index], concurrent_courses)
         supplementary_prereqs = get_supplementary_prereqs(all_course_blocks[index], coreqs)
         prereqs = get_prereqs(all_course_blocks[index], coreqs, concurrent_courses, supplementary_prereqs)
 
@@ -130,6 +200,7 @@ def get_supplementary_prereqs(course_block, coreqs):
     first_sentence_pattern = r"^.*?(?<=\.)"
     course_body = course_block.find_all("p", class_="courseblockextra noindent")
     if no_supplementary_prereqs(course_body): return ""
+
     for index in range(len(course_body)):
         section = course_body[index].text
         if re.search(r"Prerequisites?:", section):
@@ -181,8 +252,8 @@ def any_three_of_the_following_logic_in_section(section):
     else: return False
 
 
-# Occurences of this logic is already handled, mapped, and validated in the main prereq section. For now we recognize and skip until
-# future implementation.
+# Occurences of this logic is already handled, mapped, and validated per singular format (Requires 1) in the main prereq section. 
+# For now we recognize and skip until future implementation.
 def any_three_of_the_following_logic_method(section, coreqs):   
     return ""
 
@@ -208,8 +279,8 @@ def any_two_courses_logic_in_section(section):
     else: return False
 
 
-# Occurences of this logic is already handled, mapped, and validated in the main prereq section. For now we recognize and skip until
-# future implementation.
+# Occurences of this logic is already handled, mapped, and validated per singular format (Requires 1) in the main prereq section. 
+# For now we recognize and skip until future implementation.
 def any_two_courses_logic_method(section, coreqs):   
     return ""
 
@@ -370,7 +441,7 @@ def only_supp_prereqs(supplementary_prereqs, concurrent_courses):
     return supplementary_prereqs
 
 
-def get_coreqs(course_block):
+def get_coreqs(course_block, concurrent_courses):
     coreqs = ""
     course_body = course_block.find_all("p", class_="courseblockextra noindent")
     for index in range(len(course_body)):
@@ -382,14 +453,21 @@ def get_coreqs(course_block):
         section = re.search(r"Co-?requisites?:\s*[^\.]+\.", section)
         if section:
             section = section.group(0)
+            section = delete_concurrent_courses_from_coreqs(section, concurrent_courses)
             section = supp_logic_method(section)
             if no_req_after_cleaning(section): return ""
             tokens = create_tokenized_logic(section)
             tree = RecursiveDescentParser(tokens)
             tree = tree.expression()
             coreqs = stringify_subtree(tree)
-
     return coreqs
+
+
+def delete_concurrent_courses_from_coreqs(section, concurrent_courses):
+    for course in concurrent_courses:
+        if course in section:
+            section = section.replace(course, "")
+    return section
 
 
 def no_prereqs(course_body):
@@ -436,14 +514,18 @@ def combine_main_prereqs_with_supp_prereqs(section, supplementary_prereqs):
     pattern = r"[A-Z]{3}[A-Z]?\s\d{4}[A-Z]?"
     main_courses = re.findall(pattern, section)
     supplementary_prereqs = create_tokenized_logic(supplementary_prereqs)
+
     if main_courses != []:
         for course in main_courses:
-            for supp_course in reversed(supplementary_prereqs):
-                if course == supp_course: supplementary_prereqs.pop()
+            if course in supplementary_prereqs:
+                supplementary_prereqs.remove(course)
+
         while supplementary_prereqs != [] and re.search(pattern, supplementary_prereqs[0]) == None:
             supplementary_prereqs.pop(0)
+
     supplementary_prereqs = " ".join(supplementary_prereqs)   
     match1 = re.search(pattern, supplementary_prereqs)
+
     if match1 == None: return section
     else:
         section = f"{section} and {supplementary_prereqs}"
@@ -452,8 +534,8 @@ def combine_main_prereqs_with_supp_prereqs(section, supplementary_prereqs):
 
 def validate_courses(section, coreqs=None):
     courses_with_words = verify_and_create_list_logic(section)
-    # Uncomment to delete coreqs from prereqs
-    #if coreqs: courses_with_words = delete_coreq_in_prereq(courses_with_words, coreqs)
+
+    #if coreqs: courses_with_words = delete_coreq_in_prereq(courses_with_words, coreqs)# Uncomment to delete coreqs from prereqs
     courses_with_words = edit_tokens(courses_with_words)
     section = " ".join(courses_with_words)
     return section
@@ -565,7 +647,6 @@ def delete_coreq_in_prereq(courses_with_words, coreqs):
     return courses_with_words
 
 
-# May not need this later
 def delete_duplicates(course_list):
     new_list = []
     for course in course_list:
@@ -590,5 +671,4 @@ def create_tokenized_logic(section):
     tokens = re.findall(regex_pattern, section)
     return tokens
 
-#lst = ["BIOL", "CHEM", "CPSC", "CYBR"]
-# update_course_info()
+#update_course_info()
