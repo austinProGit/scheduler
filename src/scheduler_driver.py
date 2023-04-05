@@ -3,25 +3,15 @@
 # CPSC 4176 Project
 
 
-# TODO: recommend to Lew caching the queried course from the info container (many requests utilizing the same
-# course identifier)
-
-
-# TODO: schedule evaluator needs to be added (dummied) with the new coreq and concurr prereqs approach taken into account
-
-
 # TODO: (IMPORTANT) at the moment, coreq.s in constructive scheduler do not work fully:
 #               We just look for "simple coreq.s", which means 1 coreq in which every dependant course's other requirements are ignored.
 #               It is assumed the requirements for the course and it's coreq. are the same
 
-# TODO: cache invalid places in the schedule (given a sorted semester (alphabetized for example for more equivalence))
-
 # TODO: coreq.s simples are bidirectional (take into account multiple options) and can support multiple options (one-dimensional "OR"s and simplify down to it if it is not possible)
 
 # TODO: change the behavior of maximum iterations allowed for schedule to be ("maximum contiguous empty semesters")
-# TODO: ensure the hours per semester are being enforced in the verifier
-# TODO: more evenly distribute the courses if relying solely on genetic alg.
-# TODO: make mutation entail swapping two courses between semesters
+
+# TODO: verify mutation entail swapping two courses between semesters
 
 
 from __future__ import annotations
@@ -56,7 +46,6 @@ from requirement_parser import RequirementsParser
 from bisect import insort
 from math import inf
 from random import choice, randint, shuffle, random
-from time import perf_counter
 
 
 """
@@ -430,8 +419,9 @@ class DummyScheduleInfoContainer:
 class DummyPathValidationReport:
     
     class Error:
-        def __init__(self, description: str) -> None:
-            self.description = description
+        def __init__(self, description: str, internal_advice: Optional[str] = None) -> None:
+            self.description: str = description
+            self._internal_advice: Optional[str] = internal_advice
 
         def __str__(self) -> str:
             return self.description
@@ -540,6 +530,11 @@ def dummy_rigorous_validate_schedule(schedule: DummyScheduleInfoContainer,
 
                 # Record the credits
                 credits_left -= course.hours
+                # Check if going over credit limit per semester
+                if credits_left < 0:
+                    # The semester went over the limit of credits
+                    error_description: str = f'Went over credit limit during {SEMESTER_DESCRIPTION_MAPPING[working_semester]} {working_year}'
+                    error_list.append(DummyPathValidationReport.Error(error_description))
 
             else:
                 # Repeating course found in the same semester (append an error report)
@@ -563,11 +558,6 @@ def dummy_rigorous_validate_schedule(schedule: DummyScheduleInfoContainer,
                 error_description: str = f'Availability for {course} not present in {SEMESTER_DESCRIPTION_MAPPING[working_semester]} {working_year}'
                 error_list.append(DummyPathValidationReport.Error(error_description))
         
-        # Check if going over credit limit per semester
-        if credits_left < 0:
-            # The semester went over the limit of credits
-            error_description: str = f'Went over credit limit during {SEMESTER_DESCRIPTION_MAPPING[working_semester]} {working_year}'
-            error_list.append(DummyPathValidationReport.Error(error_description))
 
         # Add the semester's courses to the list of courses taken
         for course in currently_taking_courses:
@@ -719,12 +709,12 @@ class DummyCourseInfoContainer:
 """, ""),
             "CPSC 4112": ("Game Programming II", 3, set([SPRING]), set(), """[e <n=Requires All:>
 	[d <n=CPSC 4111>]
-	[d <n=CPSC 4113>]
+	[d <n=CPSC 4113, mbtc=True>]
 ]
 """, ""),
             "CPSC 4113": ("Game Jam", 3, set([SPRING]), set(), """[e <n=Requires All:>
 	[d <n=CPSC 4111>]
-	[d <n=CPSC 4112>]
+	[d <n=CPSC 4112, mbtc=True>]
 ]
 """, ""),
             "CPSC 4115": ("Algorithms", 3, set([FALL]), set(), """[e <n=Requires All:>
@@ -1034,6 +1024,9 @@ class DummyGeneticOptimizer:
 
         # The chance (0 to 1) that a mutation will occur on a single bit for a new gene sequence
         self._mutation_rate: float = mutation_rate
+
+        # TODO: add parameter to initializer
+        self._make_swap_mutation_rate: float = 0.5
         
         # ------------------------ Training Properties ------------------------ #
 
@@ -1164,19 +1157,40 @@ class DummyGeneticOptimizer:
 
     def mutate_genes(self, gene: Gene) -> Gene:
         '''Get a mutated version of the passed gene sequence. This applies an (near-) atomic mutation.'''
-
-        # TODO: making a swap operation possible might be benefitial
         
-        semester_index = randint(0, len(gene.selections) - 1)
+        semester_last_index = len(gene.selections) - 1
+        semester_index = randint(0, semester_last_index)
         prototype_semester: list[str] = gene.selections[semester_index]
         while not prototype_semester:
-            semester_index = randint(0, len(gene.selections) - 1)
+            semester_index = randint(0, semester_last_index)
             prototype_semester: list[str] = gene.selections[semester_index]
         
         mutation_course_index = randint(0, len(prototype_semester) - 1)
-        offset: int = prototype_semester[mutation_course_index] + choice(MUTATION_SHIFTS)
+        old_delta = prototype_semester[mutation_course_index]
+        new_delta: int = old_delta + choice(MUTATION_SHIFTS)
         # The following max method call ensure semester are not scheduled for the past (cannot go before immediate semester)
-        gene.selections[semester_index][mutation_course_index] = max(-semester_index, offset)
+        new_delta = max(-semester_index, new_delta)
+        gene.selections[semester_index][mutation_course_index] = new_delta
+
+        if random() <= self._make_swap_mutation_rate:
+            # TODO: test the heck out of this!!:
+
+            destination_semester_index: int = semester_index + new_delta
+            # start_semester_index: int = semester_index + old_delta
+
+            searches_left: int = 5
+            while searches_left > 0:
+                searches_left -= 1
+
+                semester_to_index = randint(0, semester_last_index)
+                needed_swap_delta = destination_semester_index - semester_to_index
+                prototype_to_semester: list[str] = gene.selections[semester_to_index]
+                if needed_swap_delta in prototype_to_semester:
+                    to_replace_index = prototype_to_semester.index(needed_swap_delta)
+                    prototype_to_semester[to_replace_index] = semester_index - semester_to_index
+                    searches_left = 0
+
+
         return gene
 
     def make_child_from(self, geneSequence1: Gene, geneSequence2: Gene) -> Gene:
@@ -1211,7 +1225,7 @@ class DummyGeneticOptimizer:
         best_gene_sequences: list[DummyGeneticOptimizer.Gene] = self.best_genes(reduction_size)
 
         # TODO: REMOVE!
-        if self._training_iterations_left == -1:
+        if self._training_iterations_left == 1:
             print(30*'-')
             print('LOOK AT THE GENES!!:')
             for g in best_gene_sequences[:]:
@@ -1249,6 +1263,8 @@ class DummyGeneticOptimizer:
 
 ScheduleFitenessFunction = Callable[[ScheduleInfoContainer, DummyGeneticOptimizer], float]
 
+SCHEDULE_SIZE_MULTIPLIER: float = 0.2
+
 judge_path: ScheduleFitenessFunction
 def judge_path(schedule_info_container: ScheduleInfoContainer, dummy_genetic_optimizer: DummyGeneticOptimizer) -> float:
     # TODO: this is unfinished of course (implement)
@@ -1259,12 +1275,20 @@ def judge_path(schedule_info_container: ScheduleInfoContainer, dummy_genetic_opt
         prequisite_ignored_courses = dummy_genetic_optimizer.prequisite_ignored_courses,
         credit_hour_informer=dummy_genetic_optimizer.credit_hour_informer
     )
+
+    # TODO: CLEAN THIS UP (BAD CODE) AND ADD MORE VARIANCE TO EXPERT SYSTEM 
+    dynamic_knowledge = DynamicKnowledge()
+    s = [[l.course_identifier.course_number or l.course_identifier.name for l in r] for r in schedule_info_container._semesters]
+    dynamic_knowledge.set_schedule(s)
+    confidence_factor = ExpertSystem().calculate_confidence(dynamic_knowledge, dummy_genetic_optimizer.course_info_container)
+
+
     # print([str(s) for s in dummy_genetic_optimizer.taken_course])
     # print([str(s) for s in dummy_genetic_optimizer.prequisite_ignored_courses])
     # print(schedule_info_container)
     # print([str(e) for e in validation_report.error_list])
     # print(validation_report.is_valid())
-    return (1000 if validation_report.is_valid() else -len(validation_report.error_list))# - schedule_info_container.semester_count()
+    return (1000 if validation_report.is_valid() else -len(validation_report.error_list)) + confidence_factor - SCHEDULE_SIZE_MULTIPLIER*schedule_info_container.semester_count()
 
 
 
@@ -1730,7 +1754,7 @@ class DummyConstuctiveScheduler:
         # result_list[0][1] = result_list[1][0]
         # result_list[1][0] = t
 
-        # # Big-ass Scramble:
+        # Big-ass Scramble:
         # li = len(result_list) - 1
         # for _ in range(30):
         #     l = result_list[randint(0, li)]
@@ -1750,17 +1774,17 @@ class DummyConstuctiveScheduler:
         if optimizer is not None:
 
             # TODO: these values are not configurable yet
-            population_size: int = 100#100
+            population_size: int = 160#100
             mutation_rate: float = 0.6
             fitness_function: ScheduleFitenessFunction = judge_path
-            maximum_iterations: int = 25
+            maximum_iterations: int = 60
             fitness_threshold: Optional[float] = None
             reduction_size: int = population_size//4
             best_performer_maintain: Optional[int] = 5
 
 
             trainer: DummyGeneticOptimizer = DummyGeneticOptimizer(
-                course_info_container=self.configure_course_info,
+                course_info_container=self._course_info_container,
                 degree_extraction=self._degree_extraction,
                 parameters_container=self._parameters_container,
                 fiteness_function=fitness_function,
@@ -1773,7 +1797,7 @@ class DummyConstuctiveScheduler:
                 population_size=population_size,
                 course_count=len(self._schedulables),
                 mutation_rate=mutation_rate,
-                fitness_function=judge_path
+                fitness_function=fitness_function
             )
 
             trainer.set_ignored_prerequisites(prequisite_ignored_courses)
@@ -1910,17 +1934,28 @@ if __name__ == '__main__':
         #  ''')
 
 
+        # degree_extraction: DegreeExtractionContainer = DegreeExtractionContainer(taken_courses=['MATH 2125', 'MATH 1113', 'MATH 5125U'],\
+        #     courses_needed_constuction_string='''
+        # (CPSC 1105, CPSC 2105, CPSC 2115, CPSC 1555, CPSC 2108, CPSC 2555,
+        # CPSC 2125, CPSC 3105, CPSC 3111, CPSC 1302, CPSC 3116, CPSC 3118,
+        # CPSC 3121, CPSC 3125, CPSC 3131, CPSC 3137, CPSC 3156, CPSC 3156,
+        # CPSC 3165, CPSC 3175, CPSC 3415, CPSC 3555, CPSC 4000, CPSC 4111,
+        # CPSC 4121, CPSC 4122, CPSC 4125, CPSC 1301K, CPSC 4126, CPSC 4130,
+        # CPSC 4115, CPSC 4130, CPSC 4135, CPSC 4138, CPSC 4145, CPSC 4148,
+        # ) [p <n=COURSE A>][p <n=COURSE B>][p <n=COURSE C>]
+        # ''')
+
+
         degree_extraction: DegreeExtractionContainer = DegreeExtractionContainer(taken_courses=['MATH 2125', 'MATH 1113', 'MATH 5125U'],\
             courses_needed_constuction_string='''
-        (CPSC 1105, CPSC 2105, CPSC 2115, CPSC 1555, CPSC 2108, CPSC 2555,
-        CPSC 2125, CPSC 3105, CPSC 3111, CPSC 1302, CPSC 3116, CPSC 3118,
-        CPSC 3121, CPSC 3125, CPSC 3131, CPSC 3137, CPSC 3156, CPSC 3156,
-        CPSC 3165, CPSC 3175, CPSC 3415, CPSC 3555, CPSC 4000, CPSC 4111,
-        CPSC 4121, CPSC 4122, CPSC 4125, CPSC 1301K, CPSC 4126, CPSC 4130,
-        CPSC 4115, CPSC 4130, CPSC 4135, CPSC 4138, CPSC 4145, CPSC 4148
+        (CPSC 1105, CPSC 2105, CPSC 2115, CPSC 1555,
+        CPSC 2125, CPSC 3105, CPSC 3111, CPSC 1302, CPSC 4111,
+        CPSC 1301K, CPSC 4112, CPSC 4113
         ) [p <n=COURSE A>][p <n=COURSE B>][p <n=COURSE C>]
-        
         ''')
+
+
+
 
         prequisite_ignored_courses: list[DummyCourseIdentifier] = [
             DummyCourseIdentifier('MATH 1113')
@@ -1947,194 +1982,3 @@ if __name__ == '__main__':
         print(CACHE['TEST_CACHE_T']/(CACHE['TEST_CACHE_F']+CACHE['TEST_CACHE_T']))
 
         
-
-
-
-# ------------------------------------------------------------------------------------------------------------------ #
-
-# ------------------------------------------------------------------------------------------------------------------ #
-
-# ------------------------------------------------------------------------------------------------------------------ #
-
-# ------------------------------------------------------------------------------------------------------------------ #
-
-# ------------------------------------------------------------------------------------------------------------------ #
-
-# ------------------------------------------------------------------------------------------------------------------ #
-
-# ------------------------------------------------------------------------------------------------------------------ #
-
-# ------------------------------------------------------------------------------------------------------------------ #
-
-# ------------------------------------------------------------------------------------------------------------------ #
-
-# ------------------------------------------------------------------------------------------------------------------ #
-
-# ------------------------------------------------------------------------------------------------------------------ #
-
-# ------------------------------------------------------------------------------------------------------------------ #
-
-# ------------------------------------------------------------------------------------------------------------------ #
-
-# ------------------------------------------------------------------------------------------------------------------ #
-
-# ------------------------------------------------------------------------------------------------------------------ #
-
-# ------------------------------------------------------------------------------------------------------------------ #
-
-# ------------------------------------------------------------------------------------------------------------------ #
-
-# ------------------------------------------------------------------------------------------------------------------ #
-
-# ------------------------------------------------------------------------------------------------------------------ #
-
-# ------------------------------------------------------------------------------------------------------------------ #
-
-# ------------------------------------------------------------------------------------------------------------------ #
-
-# ------------------------------------------------------------------------------------------------------------------ #
-
-# ------------------------------------------------------------------------------------------------------------------ #
-
-# ------------------------------------------------------------------------------------------------------------------ #
-
-# REFERNCE FROM OTHER ASSIGNMENT (aided by Ryan Zimmerman):
-
-# Two Guys and a Duck (Thomas Merino and Ryan Zimmerman)
-# 3/11/23
-# Assignment 4 - CPSC 4185 - R. Abid - Spring, 2023
-
-
-# ---------------------------------- Fitness Functions ---------------------------------- #
-
-"""
-ratioOfSums: ScheduleFitenessFunction
-def ratioOfSums(valuables: list[DummySchedulable]) -> float:
-    '''The ratio between the some of the values and the sum of the weights (0 is empty list passed).'''
-    if valuables:
-        weightsSum: float = sum(valuable.weight for valuable in valuables)
-        valuesSum: float = sum(valuable.value for valuable in valuables)
-        return valuesSum / weightsSum
-    else:
-        return 0 
-
-sumOfRatios: FitenessFunction
-def sumOfRatios(valuables: set[Valuable]) -> float:
-    '''The sum of the ratios between the values and the weights (0 is empty list passed).'''
-    result = 0
-    for valuable in valuables:
-        result += valuable.value / valuable.weight
-    return result
-
-
-sumsDifference: FitenessFunction
-def sumsDifference(valuables: set[Valuable]) -> float:
-    '''The sum of the values minus the sum of the weights (0 is empty list passed).'''
-    if valuables:
-        return sum(valuable.value - valuable.weight for valuable in valuables)
-    else:
-        return 0
-
-# The sum of the values (0 is empty list passed).
-justValue: FitenessFunction = lambda valuables: \
-    sum(valuable.value for valuable in valuables) if valuables else 0
-
-
-# ---------------------------------- Analysis ---------------------------------- #
-
-def performanceTest(maximumWeight: float, store: list[Valuable]) -> None:
-
-    # *ADJUST THIS TO ADJUST THE BEHAVIOR OF WHAT APPEARS IN MAIN*
-    # More test parameters:
-    populationSize: int = 100
-    mutationRate: float = 0.25
-    fitnessFunction: fitnessFunction = justValue
-    initialSchemaPopulationFillCap: int = 0
-    maximumIterations: int = 10
-    # Use 'guess' to approximate the value threshold (just beyond what the schema gives)
-    valueThrehold: Union[str, None, int] = None
-    fitnessThreshold: Optional[float] = None
-    reductionSize: int = populationSize//2
-    bestPerformerMaintain: Optional[int] = 10
-
-    # Testing:
-    startTime = perf_counter()
-
-    trainer = Trainer(populationSize=populationSize, maximumWeight=maximumWeight,\
-        mutationRate=mutationRate, store=store, fitnessFunction=fitnessFunction)
-    trainer.setUpSchemaPopulation(fillCap=initialSchemaPopulationFillCap)
-    trainer.setToTrackSession(maximumIterations, valueThreshold=valueThrehold, \
-        fitnessThreshold=fitnessThreshold)
-    
-    while not trainer.runIteration(reductionSize=reductionSize, \
-        bestPerformerMaintain=bestPerformerMaintain): pass
-
-    endTime = perf_counter()
-    trainingTimeDelta = endTime - startTime
-
-    # Return the trainer and the time to train
-    return trainer, trainingTimeDelta
-
-
-# ---------------------------------- Main ---------------------------------- #
-
-if __name__ == '__main__' and False:
-
-    # Get the arguments passed in via the terminal
-    commandArguments = sys.argv[1:]
-
-    if len(commandArguments) > 0 and commandArguments[0] == 'test':
-        # trainer, trainingTime = performanceTest(10, assignmentStore1)
-        # trainer, trainingTime = performanceTest(165, assignmentStore2)
-        trainer, trainingTime = performanceTest(750, assignmentStore3)
-
-        trainer.fitnessFunction = justValue
-        geneSequences = trainer.bestGenes(10, silencePrint=True)
-        print('Top 10 value-gene pairings:', [(trainer.evaluateGeneSequenceFitness(gene), gene) for gene in geneSequences])
-        print(f'Training time: {trainingTime:.4f}')
-
-    else:
-
-        # Attempt to open a file and read the contents (for input)
-        fileInputs: list[str] = []
-        if len(commandArguments) > 0 and commandArguments[0] != '-t':
-            with open(commandArguments[0], 'r') as f:
-                fileInputs = f.readlines()
-
-        # Get the input from the file (if available) or from the user
-        def pullInput() -> str:
-            result = None
-            if fileInputs:
-                result = fileInputs.pop(0)
-            else:
-                result = input()
-            return result
-
-        # Get the user-entered max weight and number of valuables
-        userParmeters: list[str] = pullInput().split(' ')
-        filter(lambda entry: entry != '', userParmeters)
-        maxWeight: float = int(userParmeters[0])
-        numberOfValuables: float = int(userParmeters[1])
-
-        # Creata a list of the user-configured valuables
-        usersStore: list[Valuable] = []
-
-        for _ in range(numberOfValuables):
-            # Add a valuable
-            valuableParmeters: list[str] = pullInput().split(' ')
-            filter(lambda entry: entry != '', valuableParmeters)
-            usersStore.append(Valuable(value=int(valuableParmeters[1]), weight=int(valuableParmeters[0])))
-
-        # Perform the training
-        trainer, trainingTime = performanceTest(maxWeight, usersStore)
-
-        # Get and print the best results by total value (new fitness function)
-        trainer.fitnessFunction = justValue
-        bestGeneSequence: str = trainer.bestGenes(1, silencePrint=True)[0]
-        print(' '.join(bestGeneSequence))
-        print(trainer.evaluateGeneSequenceFitness(bestGeneSequence), \
-            trainer.evaluateGeneSequenceWeight(bestGeneSequence))
-        print(f'Training time: {trainingTime:.4f}')
-
-"""
-
