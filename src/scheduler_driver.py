@@ -9,9 +9,13 @@
 
 # TODO: coreq.s simples are bidirectional (take into account multiple options) and can support multiple options (one-dimensional "OR"s and simplify down to it if it is not possible)
 
-# TODO: change the behavior of maximum iterations allowed for schedule to be ("maximum contiguous empty semesters")
+# TODO: change the behavior of maximum iterations allowed for schedule to be ("maximum contiguous empty semesters") <- for constructive/greedy
 
 # TODO: verify mutation entail swapping two courses between semesters
+
+
+# TODO: for the sake of making the genetic algorithm converge, there is an error produced for EACH courses going over the limit of credits for a semester
+# the same is the case with not recording courses as taken if the prequisites are not present
 
 
 from __future__ import annotations
@@ -381,6 +385,7 @@ class DummyScheduleInfoContainer:
                 running_year += 1
         while not semesters[-1]:
             semesters.pop()
+            
         
         return DummyScheduleInfoContainer(semesters=semesters, confidence_level=confidence_level)
 
@@ -561,7 +566,14 @@ def dummy_rigorous_validate_schedule(schedule: DummyScheduleInfoContainer,
 
         # Add the semester's courses to the list of courses taken
         for course in currently_taking_courses:
-            running_taken_courses.append(course.course_identifier)
+
+            # TODO: this check may be temp: >>>
+            if course.can_be_taken():
+                # <<<
+
+                running_taken_courses.append(course.course_identifier)
+                
+                
         
     return DummyPathValidationReport(error_list, VALIDATION_REPORT_PARSED)
 
@@ -1702,7 +1714,7 @@ class DummyConstuctiveScheduler:
                     remaining_course: DummyConstuctiveScheduler.Schedulable
                     for remaining_course in schedulables_dictionary.all():
                         remaining_course.schedulable.sync_course_taken(working_course.schedulable.course_identifier) 
-
+                print(SEMESTER_DESCRIPTION_MAPPING[working_semester_type], working_year, [str(schedulable.schedulable) for schedulable in working_semester_list])
                 result_list.append([schedulable.schedulable for schedulable in working_semester_list])
                 working_semester_list = []
 
@@ -1719,14 +1731,14 @@ class DummyConstuctiveScheduler:
                 if hard_iteration_limit <= 0:
                     # TODO: TEST REMOVE BY OVERRIDE OF EXCEPTION
                     #raise RuntimeError("Semester generating limit met")
+                    while not result_list[-1]:
+                        result_list.pop()
                     residue: list[DummySchedulable] = [schedulable.schedulable for schedulable in schedulables_dictionary.all()]
                     result_list.append(residue)
-                    result_list = list(filter(lambda x: x != [], result_list))
+                    #result_list = list(filter(lambda x: x != [], result_list))
                     print("result_list at fault state", result_list)
                     return result_list
 
-
-            
         if working_semester_list:
             result_list.append([schedulable.schedulable for schedulable in working_semester_list])
         
@@ -1755,29 +1767,29 @@ class DummyConstuctiveScheduler:
         # result_list[1][0] = t
 
         # Big-ass Scramble:
-        # li = len(result_list) - 1
-        # for _ in range(30):
-        #     l = result_list[randint(0, li)]
-        #     if l:
-        #         t = l.pop(randint(0, len(l) - 1))
-        #         result_list[randint(0, li)].append(t)
-        # # Show prescramble
-        # print(DummyScheduleInfoContainer.make_from_schedulables_list(
-        #     raw_list = result_list,
-        #     starting_semester = self.semester_start,
-        #     starting_year = self.year_start,
-        #     confidence_level = 0
-        # ))
+        li = len(result_list) - 1
+        for _ in range(5):
+            l = result_list[randint(0, li)]
+            if l:
+                t = l.pop(randint(0, len(l) - 1))
+                result_list[randint(0, li)].append(t)
+        # Show prescramble
+        print(DummyScheduleInfoContainer.make_from_schedulables_list(
+            raw_list = result_list,
+            starting_semester = self.semester_start,
+            starting_year = self.year_start,
+            confidence_level = 0
+        ))
         # TODO: END TEST!
 
         # Perform optimizations here (if an optimizer was passes in)
         if optimizer is not None:
 
             # TODO: these values are not configurable yet
-            population_size: int = 160#100
+            population_size: int = 120#100
             mutation_rate: float = 0.6
             fitness_function: ScheduleFitenessFunction = judge_path
-            maximum_iterations: int = 60
+            maximum_iterations: int = 10
             fitness_threshold: Optional[float] = None
             reduction_size: int = population_size//4
             best_performer_maintain: Optional[int] = 5
@@ -1881,8 +1893,11 @@ if __name__ == '__main__':
             ['CPSC 1301K'],
             ['CPSC 1302', 'CPSC 1555'],
             ['CPSC 2108'],
+            ['CPSC 3175'],
+            ['CPSC 2555', 'CPSC 3118'],
             [],
-            ['CPSC 2555'],
+            ['CPSC 4111'],
+            ['CPSC 4112', 'CPSC 4113']
         ], course_info_container, starting_semester=FALL, starting_year=2023)
         
         print(test_path_a)
@@ -1934,25 +1949,25 @@ if __name__ == '__main__':
         #  ''')
 
 
-        # degree_extraction: DegreeExtractionContainer = DegreeExtractionContainer(taken_courses=['MATH 2125', 'MATH 1113', 'MATH 5125U'],\
-        #     courses_needed_constuction_string='''
-        # (CPSC 1105, CPSC 2105, CPSC 2115, CPSC 1555, CPSC 2108, CPSC 2555,
-        # CPSC 2125, CPSC 3105, CPSC 3111, CPSC 1302, CPSC 3116, CPSC 3118,
-        # CPSC 3121, CPSC 3125, CPSC 3131, CPSC 3137, CPSC 3156, CPSC 3156,
-        # CPSC 3165, CPSC 3175, CPSC 3415, CPSC 3555, CPSC 4000, CPSC 4111,
-        # CPSC 4121, CPSC 4122, CPSC 4125, CPSC 1301K, CPSC 4126, CPSC 4130,
-        # CPSC 4115, CPSC 4130, CPSC 4135, CPSC 4138, CPSC 4145, CPSC 4148,
-        # ) [p <n=COURSE A>][p <n=COURSE B>][p <n=COURSE C>]
-        # ''')
-
-
         degree_extraction: DegreeExtractionContainer = DegreeExtractionContainer(taken_courses=['MATH 2125', 'MATH 1113', 'MATH 5125U'],\
             courses_needed_constuction_string='''
-        (CPSC 1105, CPSC 2105, CPSC 2115, CPSC 1555,
-        CPSC 2125, CPSC 3105, CPSC 3111, CPSC 1302, CPSC 4111,
-        CPSC 1301K, CPSC 4112, CPSC 4113
+        (CPSC 1105, CPSC 2105, CPSC 2115, CPSC 1555, CPSC 2108, CPSC 2555,
+        CPSC 2125, CPSC 3105, CPSC 3111, CPSC 1302, CPSC 3116, CPSC 3118,
+        CPSC 3121, CPSC 3125, CPSC 3131, CPSC 3137, CPSC 3156, CPSC 3156,
+        CPSC 3165, CPSC 3175, CPSC 3415, CPSC 3555, CPSC 4000, CPSC 4111,
+        CPSC 4121, CPSC 4122, CPSC 4125, CPSC 1301K, CPSC 4126, CPSC 4130,
+        CPSC 4115, CPSC 4130, CPSC 4135, CPSC 4138, CPSC 4145, CPSC 4148,  CPSC 4112,  CPSC 4113
         ) [p <n=COURSE A>][p <n=COURSE B>][p <n=COURSE C>]
         ''')
+
+
+        # degree_extraction: DegreeExtractionContainer = DegreeExtractionContainer(taken_courses=['MATH 2125', 'MATH 1113', 'MATH 5125U'],\
+        #     courses_needed_constuction_string='''
+        # (CPSC 1105, CPSC 2105, CPSC 2115, CPSC 1555, CPSC 2108, CPSC 3118, CPSC 3175,
+        # CPSC 2125, CPSC 3105, CPSC 3111, CPSC 1302, CPSC 4111,
+        # CPSC 1301K, CPSC 4112, CPSC 4113
+        # ) [p <n=COURSE A>][p <n=COURSE B>][p <n=COURSE C>]
+        # ''')
 
 
 

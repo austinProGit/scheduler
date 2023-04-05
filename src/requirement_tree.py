@@ -1011,7 +1011,7 @@ class DeliverableCourse(_NodeSuper):
         'te': 'track elective',
         'mbtc': 'may be taken concurrently'
     }
-    KEYS_LIST = ['name', 'instance id', 'instructions', 'credits', 'deliver name', 'duplicate priority']
+    KEYS_LIST = ['name', 'instance id', 'instructions', 'credits', 'deliver name', 'duplicate priority', 'track elective', 'may be taken concurrently']
     NON_NIL_KEYS = {'name', 'credits'}
     INTEGER_KEYS = {'credits', 'duplicate priority'}
 
