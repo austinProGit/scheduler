@@ -184,7 +184,6 @@ class RequirementsParser:
             if artificial_exhaustive:
                 string += ''.join(f'[d <n={course_number}, dn={course_number}>]' for course_number in certain_courses)
                 certain_courses = []
-                print(string)
 
         
         encapsulated_string = f'[e<name=Requirements>{string}]'
