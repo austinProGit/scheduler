@@ -1,5 +1,5 @@
 # Thomas Merino
-# 3/6/23
+# 4/2/23
 # CPSC 4175 Group Project
 
 # TODO: add final semester rule
@@ -83,8 +83,19 @@ from batch_validation import batch_validation
 from configuration_manager import *
 from driver_fs_functions import *
 from cli_interface import MainMenuInterface, GraphicalUserMenuInterface, ErrorMenu
-from scheduler import Scheduler
-from scheduling_parameters_container import ConstructiveSchedulingParametersContainers
+
+# NEW <<$
+from scheduler_driver import DummyConstuctiveScheduler as Scheduler, DummyCourseIdentifier
+# $>> <<!
+#from scheduler import Scheduler
+# !>>
+
+# NEW <<$
+from scheduler_driver import DummyConstructiveSchedulingParametersContainers as ConstructiveSchedulingParametersContainers
+# $>> <<!
+#from scheduling_parameters_container import ConstructiveSchedulingParametersContainers
+# !>>
+
 from course_info_container import *
 # TODO: make courses needed parser work in dis file!
 # from courses_needed_parser import get_courses_needed
@@ -503,6 +514,10 @@ class SmartPlannerController:
                 degree_extraction: DegreeExtractionContainer = generate_degree_extraction_container(filepath) # Get the needed courses from the file
                 self._scheduler.configure_degree_extraction(degree_extraction) # Load the course container / degree extraction into the scheduler
 
+                # NEW <<$
+                self._scheduler.get_courses_needed_container().stub_all_unresolved_nodes()
+                # $>>
+
                 # TODO: this is temp (VERY BAD, VERY NO GOOD) ->
                 if self._scheduler._courses_needed_container is not None:
                     for node in self._scheduler._courses_needed_container._decision_tree.get_all_children_list():
@@ -751,7 +766,15 @@ class SmartPlannerController:
         desired_destination = self.get_destination()
         
         try:
-            container = self._scheduler.generate_schedule()
+
+            # NEW <<$
+            self._scheduler.prepare_schedulables()
+            self._scheduler._taken_course.append(DummyCourseIdentifier('CPSC 2108'))
+            container = self._scheduler.generate_schedule(prequisite_ignored_courses=[])
+            # $>> <<!
+            #container = self._scheduler.generate_schedule()
+            # <<!
+
             confidence_factor = container.get_confidence_level()
             semesters_listing = container.get_schedule()
             

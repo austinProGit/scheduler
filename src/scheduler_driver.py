@@ -167,14 +167,21 @@ class DummySchedulable:
             if identifier.is_stub():
                 raise NotImplementedError
             else:
+
+                # TODO: REMOVE THIS - it is to support old interfaces (course info protocol)
+                FUNC_identifier = identifier if isinstance(course_info_container, DummyCourseInfoContainer) else identifier.course_number
+                FUNC_availabilities = course_info_container.get_availability(FUNC_identifier)
+                if isinstance(FUNC_availabilities, list):
+                    FUNC_availabilities = set(map(lambda x: {'Fa':FALL, 'Sp':SPRING, 'Su':SUMMER, '--':None}[x], FUNC_availabilities))
+
                 result.append(
                     DummySchedulable(
                         identifier,
-                        course_info_container.get_prereqs(identifier),
-                        course_info_container.get_coreqs(identifier),
-                        course_info_container.get_hours(identifier),
-                        course_info_container.get_availability(identifier),
-                        course_info_container.get_recommended(identifier)
+                        course_info_container.get_prereqs(FUNC_identifier) or " ",
+                        course_info_container.get_coreqs(FUNC_identifier) or " ",
+                        course_info_container.get_hours(FUNC_identifier),
+                        FUNC_availabilities,
+                        course_info_container.get_recommended(FUNC_identifier)
                     )
                 )
                 
@@ -208,6 +215,9 @@ class DummySchedulable:
     def __str__(self):
         return str(self.course_identifier)
     
+    def get_printable_name(self):
+        return str(self)
+
     def get_prequisite_tree(self) -> RequirementsTree:
 
         tree: Optional[RequirementsTree] = self._prequisite_tree
@@ -320,9 +330,9 @@ class DummySemesterDescription:
     def __iter__(self) -> Iterator[DummySchedulable]:
         return self.courses.__iter__()
     
-    # def __getitem__(self, index) -> str:
+    def __getitem__(self, index) -> str:
         # TODO: this is used to support legacy formatters
-        # return self.courses[index].get_printable_name()
+        return self.courses[index].get_printable_name()
 
     def __len__(self) -> int:
         return len(self.courses)
@@ -424,9 +434,8 @@ class DummyScheduleInfoContainer:
 class DummyPathValidationReport:
     
     class Error:
-        def __init__(self, description: str, internal_advice: Optional[str] = None) -> None:
+        def __init__(self, description: str) -> None:
             self.description: str = description
-            self._internal_advice: Optional[str] = internal_advice
 
         def __str__(self) -> str:
             return self.description
@@ -1237,7 +1246,7 @@ class DummyGeneticOptimizer:
         best_gene_sequences: list[DummyGeneticOptimizer.Gene] = self.best_genes(reduction_size)
 
         # TODO: REMOVE!
-        if self._training_iterations_left == 1:
+        if self._training_iterations_left == -1:
             print(30*'-')
             print('LOOK AT THE GENES!!:')
             for g in best_gene_sequences[:]:
@@ -1323,9 +1332,29 @@ lower_number_rule: DummyConstuctiveScheduler.Rule
 def lower_number_rule(course: DummyConstuctiveScheduler.Schedulable,
         courses_needed: list[DummyConstuctiveScheduler.Schedulable],
         course_info_container: DummyCourseInfoContainer) -> float:
-    course_number: str = course.schedulable.course_identifier.course_number or ' \0'
-    first_number: str = course_number[course_number.find(' ') + 1]
+    
+    # <<!
+    # TODO: REMOVE THIS - it is to support old interfaces (course info protocol)
+    # print(type(course))
+    # print(type(course.schedulable.course_identifier))
+    course_number = course
+    if isinstance(course_number, DummyConstuctiveScheduler.Schedulable):
+        course_number = course_number.schedulable
+    if isinstance(course_number, DummySchedulable):
+        course_number = course_number.course_identifier
+    if isinstance(course_number, DummyCourseIdentifier):
+        course_number = course_number.course_number
+    if course_number is None:
+        course_number = '\0'
+    first_number = course_number[course_number.find(' ') + 1]
     return NUMBER_COORDINATION[first_number] if first_number in NUMBER_COORDINATION else LOW_FITNESS
+    # !>>
+
+    # <<$
+    #course_number: str = course.schedulable.course_identifier.course_number or ' \0'
+    # first_number: str = course_number[course_number.find(' ') + 1]
+    # return NUMBER_COORDINATION[first_number] if first_number in NUMBER_COORDINATION else LOW_FITNESS
+    # $>>
 
 
 
@@ -1346,8 +1375,23 @@ def local_gatekeeper_rule(course: DummyConstuctiveScheduler.Schedulable,
     # fitness = HIGH_FITNESS - (HIGH_FITNESS - LOW_FITNESS) / (weight + 1)
     # return fitness
     # TODO: this is a test!
-    return MID_FITNESS if course.schedulable.course_identifier.course_number not in TEST_GATEWAY_HARDSET_DICT \
-        else TEST_GATEWAY_HARDSET_DICT[course.schedulable.course_identifier.course_number]
+
+    
+    # <<!
+    # TODO: REMOVE THIS - it is to support old interfaces (course info protocol)
+    course_number = course
+    if isinstance(course_number, DummyConstuctiveScheduler.Schedulable):
+        course_number = course_number.schedulable
+    if isinstance(course_number, DummySchedulable):
+        course_number = course_number.course_identifier
+    if isinstance(course_number, DummyCourseIdentifier):
+        course_number = course_number.course_number
+    if course_number is None:
+        course_number = '\0'
+    # !>>
+
+    return MID_FITNESS if course_number not in TEST_GATEWAY_HARDSET_DICT \
+        else TEST_GATEWAY_HARDSET_DICT[course_number]
     course_id: str = course.schedulable.course_identifier.course_number
     count = 5
     other_course: DummyConstuctiveScheduler
@@ -1547,18 +1591,25 @@ class DummyConstuctiveScheduler:
 
                 course_number: str = schedulable_parameters_item.course_number
 
-                if course_number is None and course_info_container.validate_course(schedulable_parameters_item.course_name):
+                if course_number is None and self._course_info_container.validate_course(schedulable_parameters_item.course_name):
                     course_number = schedulable_parameters_item.course_name
 
                 course_identifier: DummyCourseIdentifier = \
                     DummyCourseIdentifier(course_number, schedulable_parameters_item.course_name)
+
+                # TODO: REMOVE THIS - it is to support old interfaces (course info protocol)
+                FUNC_course_identifier = course_identifier if isinstance(self._course_info_container, DummyCourseInfoContainer) else course_identifier.course_number
+                FUNC_availabilities = self._course_info_container.get_availability(FUNC_course_identifier)
+                if isinstance(FUNC_availabilities, list):
+                    FUNC_availabilities = set(map(lambda x: {'Fa':FALL, 'Sp':SPRING, 'Su':SUMMER, '--':None}[x], FUNC_availabilities))
+
                 schedulable: DummySchedulable = DummySchedulable(
                     course_identifier = course_identifier,
-                    prerequisite_string = self._course_info_container.get_prereqs(course_identifier),
-                    corequisite_string = self._course_info_container.get_coreqs(course_identifier),
-                    hours = self._course_info_container.get_hours(course_identifier),
-                    availability = self._course_info_container.get_availability(course_identifier),
-                    recommended = self._course_info_container.get_recommended(course_identifier)
+                    prerequisite_string = self._course_info_container.get_prereqs(FUNC_course_identifier) or " ",
+                    corequisite_string = self._course_info_container.get_coreqs(FUNC_course_identifier) or " ",
+                    hours = self._course_info_container.get_hours(FUNC_course_identifier),
+                    availability = FUNC_availabilities,
+                    recommended = self._course_info_container.get_recommended(FUNC_course_identifier)
                 )
                 self._schedulables.append(DummyConstuctiveScheduler.Schedulable(schedulable))
 
@@ -1658,7 +1709,6 @@ class DummyConstuctiveScheduler:
         # The current number of hours to try to use for scheduling (this is part of the dictionary key for schedulable look up)
         hours_key: int = schedulables_dictionary.get_top_key()
 
-
         course_index: int = 0
         working_semester_list: list[DummyConstuctiveScheduler.Schedulable] = []
         
@@ -1714,7 +1764,8 @@ class DummyConstuctiveScheduler:
                     remaining_course: DummyConstuctiveScheduler.Schedulable
                     for remaining_course in schedulables_dictionary.all():
                         remaining_course.schedulable.sync_course_taken(working_course.schedulable.course_identifier) 
-                print(SEMESTER_DESCRIPTION_MAPPING[working_semester_type], working_year, [str(schedulable.schedulable) for schedulable in working_semester_list])
+                # TODO: REMOVE THIS!
+                # print(SEMESTER_DESCRIPTION_MAPPING[working_semester_type], working_year, [str(schedulable.schedulable) for schedulable in working_semester_list])
                 result_list.append([schedulable.schedulable for schedulable in working_semester_list])
                 working_semester_list = []
 
@@ -1731,12 +1782,21 @@ class DummyConstuctiveScheduler:
                 if hard_iteration_limit <= 0:
                     # TODO: TEST REMOVE BY OVERRIDE OF EXCEPTION
                     #raise RuntimeError("Semester generating limit met")
+
+                    print("result_list at fault state", [[str(s) for s in l] for l in result_list])
+
+
                     while not result_list[-1]:
                         result_list.pop()
                     residue: list[DummySchedulable] = [schedulable.schedulable for schedulable in schedulables_dictionary.all()]
                     result_list.append(residue)
                     #result_list = list(filter(lambda x: x != [], result_list))
-                    print("result_list at fault state", result_list)
+                    
+                    
+                    for s in schedulables_dictionary.all():
+                        print(str(s))
+                        print(s.schedulable._prequisite_tree.get_deep_description()) 
+
                     return result_list
 
         if working_semester_list:
@@ -1756,30 +1816,30 @@ class DummyConstuctiveScheduler:
         schedulables_dictionary: DummyConstuctiveScheduler.SortingDict = self._create_weighted_schedulables(prequisite_ignored_courses)
         
         simple_corequisite_pairs: dict[str, DummyConstuctiveScheduler.Schedulable] = self._generate_simple_corequisite_pairs()
-
+        
         # Create a list of lists using the above schedulables
         result_list: list[list[DummySchedulable]] = self._constructive_schedule_as_list(schedulables_dictionary, simple_corequisite_pairs)
-
+        
         # TODO: TEST!!! REMOVE:
         # Little Scramble:
         # t = result_list[0][1]
         # result_list[0][1] = result_list[1][0]
         # result_list[1][0] = t
 
-        # Big-ass Scramble:
-        li = len(result_list) - 1
-        for _ in range(5):
-            l = result_list[randint(0, li)]
-            if l:
-                t = l.pop(randint(0, len(l) - 1))
-                result_list[randint(0, li)].append(t)
-        # Show prescramble
-        print(DummyScheduleInfoContainer.make_from_schedulables_list(
-            raw_list = result_list,
-            starting_semester = self.semester_start,
-            starting_year = self.year_start,
-            confidence_level = 0
-        ))
+        # Big Scramble:
+        # li = len(result_list) - 1
+        # for _ in range(5):
+        #     l = result_list[randint(0, li)]
+        #     if l:
+        #         t = l.pop(randint(0, len(l) - 1))
+        #         result_list[randint(0, li)].append(t)
+        # # Show prescramble
+        # print(DummyScheduleInfoContainer.make_from_schedulables_list(
+        #     raw_list = result_list,
+        #     starting_semester = self.semester_start,
+        #     starting_year = self.year_start,
+        #     confidence_level = 0
+        # ))
         # TODO: END TEST!
 
         # Perform optimizations here (if an optimizer was passes in)
@@ -1848,7 +1908,178 @@ class DummyConstuctiveScheduler:
     
 
 
+
+
+def dummy_validation_unit_test():
+
+    course_info_container: DummyCourseInfoContainer = DummyCourseInfoContainer()
+
+    # ==================================================================================================
+    # Expected valid - case 1
+    # ==================================================================================================
+
+    test_path_1: DummyScheduleInfoContainer = DummyScheduleInfoContainer.make_from_string_list([
+        ['CPSC 1301K', 'CPSC 2108'],
+        ['CPSC 1302', 'CPSC 1555'],
+        [],
+        ['CPSC 3175'],
+        ['CPSC 2555', 'CPSC 3118'],
+        [],
+        ['CPSC 4111'],
+        ['CPSC 4112', 'CPSC 4113']
+    ], course_info_container, starting_semester=FALL, starting_year=2023)
+    
+    report_1: DummyPathValidationReport = dummy_rigorous_validate_schedule(
+        test_path_1,
+        taken_courses=[DummyCourseIdentifier('MATH 2125'), DummyCourseIdentifier('MATH 1113')],
+        prequisite_ignored_courses=[],
+        credit_hour_informer=CreditHourInformer.make_unlimited_generator()
+    )
+
+    if not report_1.is_valid():
+        print('ERROR IN validation in case 1')
+    else:
+        print('Passed path validation case 1')
+
+    
+    # ==================================================================================================
+    # Expected valid - case 2
+    # ==================================================================================================
+
+    test_path_2: DummyScheduleInfoContainer = DummyScheduleInfoContainer.make_from_string_list([
+        ['CPSC 1302', 'CPSC 1555'],
+        ['CPSC 2108'],
+        ['CPSC 3175'],
+        ['CPSC 3118', 'CPSC 2555'],
+    ], course_info_container, starting_semester=SPRING, starting_year=2023)
+    
+    report_2: DummyPathValidationReport = dummy_rigorous_validate_schedule(
+        test_path_2,
+        taken_courses=[DummyCourseIdentifier('MATH 2125'), DummyCourseIdentifier('MATH 1113'), DummyCourseIdentifier('CPSC 1301K')],
+        prequisite_ignored_courses=[],
+        credit_hour_informer=CreditHourInformer.make_unlimited_generator()
+    )
+
+    if not report_2.is_valid():
+        print('ERROR IN validation in case 2')
+    else:
+        print('Passed path validation case 2')
+
+    
+    # ==================================================================================================
+    # Expected invalid - case 3
+    # ==================================================================================================
+
+    test_path_3: DummyScheduleInfoContainer = DummyScheduleInfoContainer.make_from_string_list([\
+        ['CPSC 1301K'],
+        ['CPSC 1302', 'CPSC 1555'],
+        [],
+        ['CPSC 2108'],
+        ['CPSC 3175'],
+        ['CPSC 2555', 'CPSC 3118'],
+        [],
+        ['CPSC 4111'],
+        ['CPSC 4112', 'CPSC 4113']
+    ], course_info_container, starting_semester=FALL, starting_year=2023)
+    
+    report_3: DummyPathValidationReport = dummy_rigorous_validate_schedule(
+        test_path_3,
+        taken_courses=[DummyCourseIdentifier('MATH 2125'), DummyCourseIdentifier('MATH 1113')],
+        prequisite_ignored_courses=[],
+        credit_hour_informer=CreditHourInformer.make_unlimited_generator()
+    )
+
+    if report_3.is_valid():
+        print('ERROR IN validation in case 3')
+    else:
+        print('Passed path validation case 3')
+
+    
+    # ==================================================================================================
+    # Expected invalid - case 4
+    # ==================================================================================================
+
+    test_path_4: DummyScheduleInfoContainer = DummyScheduleInfoContainer.make_from_string_list([
+        ['CPSC 1301K', 'CPSC 2108'],
+        ['CPSC 1302', 'CPSC 1555'],
+        [],
+        ['CPSC 3175'],
+        ['CPSC 2555', 'CPSC 3118'],
+        [],
+        ['CPSC 4111'],
+        ['CPSC 4112', 'CPSC 4113']
+    ], course_info_container, starting_semester=FALL, starting_year=2023)
+    
+    report_4: DummyPathValidationReport = dummy_rigorous_validate_schedule(
+        test_path_4,
+        taken_courses=[DummyCourseIdentifier('MATH 1113')],
+        prequisite_ignored_courses=[],
+        credit_hour_informer=CreditHourInformer.make_unlimited_generator()
+    )
+
+    if report_4.is_valid():
+        print('ERROR IN validation in case 4')
+    else:
+        print('Passed path validation case 4')
+
+    
+    # ==================================================================================================
+    # Expected invalid - case 5
+    # ==================================================================================================
+
+    test_path_5: DummyScheduleInfoContainer = DummyScheduleInfoContainer.make_from_string_list([
+        ['CPSC 1301K'],
+        ['CPSC 1302', 'CPSC 1555'],
+        [],
+        ['CPSC 1301K']
+    ], course_info_container, starting_semester=FALL, starting_year=2023)
+    
+    report_5: DummyPathValidationReport = dummy_rigorous_validate_schedule(
+        test_path_5,
+        taken_courses=[DummyCourseIdentifier('MATH 1113')],
+        prequisite_ignored_courses=[],
+        credit_hour_informer=CreditHourInformer.make_unlimited_generator()
+    )
+
+    if report_5.is_valid():
+        print('ERROR IN validation in case 5')
+    else:
+        print('Passed path validation case 5')
+
+    
+    # ==================================================================================================
+    # Expected valid - case 6
+    # ==================================================================================================
+
+    test_path_6: DummyScheduleInfoContainer = DummyScheduleInfoContainer.make_from_string_list([
+        ['CPSC 1301K', 'CPSC 1105', 'CPSC 2115', 'CPSC 2108', 'CPSC 3165'],
+        ['CPSC 1302', 'CPSC 3415'],
+        ['CPSC 2125', 'CPSC 2105', 'CPSC 2555', 'CPSC 1555'],
+        ['CPSC 3125', 'CPSC 3131', 'CPSC 3175', 'CPSC 3121', 'CPSC 3105'],
+        ['CPSC 3555'],
+        ['CPSC 3116', 'CPSC 3111', 'CPSC 3137', 'CPSC 4145', 'CPSC 4125'],
+        ['CPSC 3118', 'CPSC 3156', 'CPSC 4130', 'CPSC 4126', 'CPSC 4138']
+    ], course_info_container, starting_semester=SPRING, starting_year=2023)
+    
+    report_6: DummyPathValidationReport = dummy_rigorous_validate_schedule(
+        test_path_6,
+        taken_courses=[DummyCourseIdentifier('MATH 1113'), DummyCourseIdentifier('MATH 2125')],
+        prequisite_ignored_courses=[],
+        credit_hour_informer=CreditHourInformer.make_unlimited_generator()
+    )
+
+    if not report_6.is_valid():
+        print([str(r) for r in report_6.error_list])
+        print('ERROR IN validation in case 6')
+    else:
+        print('Passed path validation case 6')
+
+
+
+
 if __name__ == '__main__':
+        dummy_validation_unit_test()
+
         print('Test starting')
         print(80*'=')
         print(80*'=')
@@ -1873,7 +2104,6 @@ if __name__ == '__main__':
         ]
         
         identifiers = {id : DummyCourseIdentifier(id) for id in course_set_a}
-
         schedulables = DummySchedulable.create_schedulables(list(identifiers.values()), course_info_container)
         
         # for s in schedulables:
@@ -1900,7 +2130,7 @@ if __name__ == '__main__':
             ['CPSC 4112', 'CPSC 4113']
         ], course_info_container, starting_semester=FALL, starting_year=2023)
         
-        print(test_path_a)
+        # print(test_path_a)
 
         
 
@@ -1911,8 +2141,8 @@ if __name__ == '__main__':
             credit_hour_informer=CreditHourInformer.make_unlimited_generator()
 
         )
-        print('Errors:')
-        print(report.get_errors_printable())
+        # print('Errors:')
+        # print(report.get_errors_printable())
 
 
         ##################################################################
@@ -1956,7 +2186,7 @@ if __name__ == '__main__':
         CPSC 3121, CPSC 3125, CPSC 3131, CPSC 3137, CPSC 3156, CPSC 3156,
         CPSC 3165, CPSC 3175, CPSC 3415, CPSC 3555, CPSC 4000, CPSC 4111,
         CPSC 4121, CPSC 4122, CPSC 4125, CPSC 1301K, CPSC 4126, CPSC 4130,
-        CPSC 4115, CPSC 4130, CPSC 4135, CPSC 4138, CPSC 4145, CPSC 4148,  CPSC 4112,  CPSC 4113
+        CPSC 4115, CPSC 4130, CPSC 4135, CPSC 4138, CPSC 4145, CPSC 4148
         ) [p <n=COURSE A>][p <n=COURSE B>][p <n=COURSE C>]
         ''')
 
@@ -1970,13 +2200,11 @@ if __name__ == '__main__':
         # ''')
 
 
-
-
         prequisite_ignored_courses: list[DummyCourseIdentifier] = [
             DummyCourseIdentifier('MATH 1113')
         ]
             
-        print('SCHED')
+        #print('SCHED')
         scheduler.configure_degree_extraction(degree_extraction)
         scheduler.get_courses_needed_container().stub_all_unresolved_nodes()
         scheduler.prepare_schedulables()
