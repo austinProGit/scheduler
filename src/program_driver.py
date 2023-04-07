@@ -769,14 +769,14 @@ class SmartPlannerController:
 
             # NEW <<$
             self._scheduler.prepare_schedulables()
-            self._scheduler._taken_course.append(DummyCourseIdentifier('CPSC 2108'))
             container = self._scheduler.generate_schedule(prequisite_ignored_courses=[])
             # $>> <<!
             #container = self._scheduler.generate_schedule()
             # <<!
 
             confidence_factor = container.get_confidence_level()
-            semesters_listing = container.get_schedule()
+            # TODO: adding "[[]] + " for legacy (remove!)
+            semesters_listing = [[]] + container.get_schedule()
             
             #semesters_listing, confidence_factor = self._scheduler.generate_schedule()
             self.output('Path generated with confidence value of {0:.1f}%'.format(confidence_factor*100))

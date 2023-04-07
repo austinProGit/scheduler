@@ -1783,7 +1783,7 @@ class DummyConstuctiveScheduler:
                     # TODO: TEST REMOVE BY OVERRIDE OF EXCEPTION
                     #raise RuntimeError("Semester generating limit met")
 
-                    print("result_list at fault state", [[str(s) for s in l] for l in result_list])
+                    #print("result_list at fault state", [[str(s) for s in l] for l in result_list])
 
 
                     while not result_list[-1]:
@@ -1793,9 +1793,9 @@ class DummyConstuctiveScheduler:
                     #result_list = list(filter(lambda x: x != [], result_list))
                     
                     
-                    for s in schedulables_dictionary.all():
-                        print(str(s))
-                        print(s.schedulable._prequisite_tree.get_deep_description()) 
+                    # for s in schedulables_dictionary.all():
+                    #     print(str(s))
+                    #     print(s.schedulable._prequisite_tree.get_deep_description()) 
 
                     return result_list
 
