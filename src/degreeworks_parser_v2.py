@@ -6,6 +6,15 @@ from degree_extraction_container import DegreeExtractionContainer
 import re
 from pypdf import PdfReader
 
+# ========================================================================================================
+# TODO: integrate the web parser
+# TODO: complete test cases for all example inputs
+# TODO: implement custom error handling
+# TODO: code review with regex focus
+# TODO: create error report for the user
+# TODO: code cleanup/documentation
+# TODO: add GPA to container for the CBR
+
 # Hard coded major and track information
 unprocessed_majors_string = '''
 Accounting (BBA)
@@ -145,6 +154,7 @@ def get_student_number(document_string):
     return student_number
 
 # Gets a student's degree plan from a Degreeworks document
+# TODO: account for the case of no spaces around the hyphen
 def get_degree_plan_name(document_string):
     degree_plan_name = ''
     raw_major = None
@@ -633,7 +643,6 @@ def classify_and_handle_chunks(still_needed_chunks):
     #     print('This chunk is a ')
 
 # Note: 44 still needed chunks to process in input 1
-# 
 def generate_complex_deliverables_string(document_string):
     complex_deliverables_string = ''
     curr_taken_courses_removed_string = remove_all_curr_taken_courses(document_string)
