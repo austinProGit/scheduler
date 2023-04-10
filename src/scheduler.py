@@ -74,9 +74,9 @@ class Scheduler:
             for courseID in course_info_container.get_courseIDs():
 
                 # TODO: this was added before presentation for demonstration
-                requirements = course_info_container.get_prereqs(courseID) or ''
+                requirements = course_info_container.get_coreqs(courseID) or ''
                 tree = RequirementsParser.make_from_course_selection_logic_string(requirements)
-                coreqs = tree.decision_tree.get_all_aggragate()
+                coreqs = []#[i.course_number for i in tree.decision_tree.get_all_aggragate()]
 
                 for coreq in coreqs:
                     coreq_rules.append(CoreqRule(courseID, coreq, COREQ_ADDITIONAL_FITNESS))
@@ -189,7 +189,7 @@ class Scheduler:
             # TODO: this was added before presentation for demonstration
             requirements = course_info.get_prereqs(course_id) or ''
             tree = RequirementsParser.make_from_course_selection_logic_string(requirements)
-            prerequisites = tree.decision_tree.get_all_aggragate()
+            prerequisites = [i.course_number for i in tree.decision_tree.get_all_aggragate()]
             # if prerequisite course is in courses_needed, can't take course yet.
             for prerequisite in prerequisites:
                 if prerequisite in courses_needed:
