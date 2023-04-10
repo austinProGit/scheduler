@@ -54,8 +54,11 @@ def get_majors_and_tracks(degree_string):
         filtered_majors_list.append(item)
     
     for item in filtered_majors_list:
-        if ' - ' in item:
-            key, value = item.split(' - ', 1)
+        if '-' in item:
+            pattern = r"\s?-\s?"
+            found_hiphen = re.search(pattern, item)
+            found_hiphen = found_hiphen.group(0)
+            key, value = item.split(found_hiphen, 1)
             key = key[:key.find(' (')]
             if key in majors_dict:
                 if value not in majors_dict[key]:
@@ -137,9 +140,9 @@ def get_baccalaureate_degrees_pickle_file():
 
 
 def update_course_info(dept=None):
-    #dept_dict = get_department_dict() #comment out for faster processing
-    #course_dict = get_course_dict() #comment out for faster processing
-    #major_dict = get_baccalaureate_degrees() #comment out for faster processing
+    dept_dict = get_department_dict() #comment out for faster processing
+    course_dict = get_course_dict() #comment out for faster processing
+    major_dict = get_baccalaureate_degrees() #comment out for faster processing
     df_dict = {}
     dept_dict = get_pickle_file("department_dictionary.pickle") #Quick way
     course_dict = get_pickle_file("course_dictionary.pickle") #Quick way
@@ -672,3 +675,4 @@ def create_tokenized_logic(section):
     return tokens
 
 #update_course_info()
+print(get_baccalaureate_degrees_pickle_file())
