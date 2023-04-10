@@ -14,6 +14,7 @@ from pypdf import PdfReader
 # TODO: create error report for the user
 # TODO: code cleanup/documentation
 # TODO: add GPA to container for the CBR
+# TODO: add exceptions to the parser
 
 # Hard coded major and track information
 unprocessed_majors_string = '''
