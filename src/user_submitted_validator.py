@@ -26,7 +26,7 @@ def validate_user_submitted_path(container, schedule):
             # TODO: this was added before presentation for demonstration
             requirements = container.get_coreqs(course) or ''
             tree = RequirementsParser.make_from_course_selection_logic_string(requirements)
-            course_coreqs = tree.decision_tree.get_all_aggragate()
+            course_coreqs = []#[i.course_number for i in tree.decision_tree.get_all_aggragate()]
 
             for coreq in course_coreqs:
                 if coreq in processed_list:
@@ -47,8 +47,8 @@ def validate_user_submitted_path(container, schedule):
             # TODO: this was added before presentation for demonstration
             requirements = container.get_prereqs(course) or ''
             tree = RequirementsParser.make_from_course_selection_logic_string(requirements)
-            course_prereqs = tree.decision_tree.get_all_aggragate()
-
+            course_prereqs = [i.course_number for i in tree.decision_tree.get_all_aggragate()]
+            
             for prereq in course_prereqs:
                 if prereq in processed_list:
                     err_str = (f'{course} taken before/during {prereq}.')
