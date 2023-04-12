@@ -6,7 +6,8 @@ from program_generated_validator_tests import program_generated_validator_tests
 from course_info_container_tests import course_info_container_tests
 from user_submitted_validator_tests import user_submitted_validator_tests
 from cli_unit_testing import run_cli_unit_test
-from degreeworks_parser_tests import degreeworks_parser_tests
+# from degreeworks_parser_tests import degreeworks_parser_tests
+from degreeworks_parser_v2_tests import degreeworks_parser_v2_tests
 from traceback import print_exc
 
 def all_tests():
@@ -21,7 +22,7 @@ def all_tests():
     # add_test('container', course_info_container_tests)
     # add_test('user_submitted_validator', user_submitted_validator_tests)
     # add_test('cli', run_cli_unit_test)
-    add_test('degreeworks_parser', degreeworks_parser_tests)
+    add_test('degreeworks_parser_v2', degreeworks_parser_v2_tests)
 
     tests_passed = True
 
