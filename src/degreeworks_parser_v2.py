@@ -5,16 +5,20 @@ from degree_extraction_container import DegreeExtractionContainer
 
 import re
 from pypdf import PdfReader
+from driver_fs_functions import *
+import pickle
 
 # ========================================================================================================
-# TODO: integrate the web parser
-# TODO: complete test cases for all example inputs
-# TODO: implement custom error handling
-# TODO: code review with regex focus
+# TODO: 1) integrate the web parser
+# TODO: 5) complete test cases for all example inputs
+# TODO: 6) request more example inputs, including from other majors
+# TODO: implement custom error handling/ exceptions
+# TODO: 4) code review with regex focus
 # TODO: create error report for the user
-# TODO: code cleanup/documentation
-# TODO: add GPA to container for the CBR
-# TODO: add exceptions to the parser
+# TODO: 2) code cleanup/documentation
+# TODO: 3) add GPA to container for the CBR
+# TODO: add exhaustive node check
+# TODO: check for all other small features in the guidelines doc
 
 # Hard coded major and track information
 unprocessed_majors_string = '''
@@ -103,37 +107,44 @@ Theatre Education (BSEd) - Non-Certification Track
 # ========================================================================================================
 
 # Takes a string containing semi-structured major information and returns a dictionary of structured major/track information
-def get_majors_and_tracks(unprocessed_majors_string):
-    majors_dict = {}
-    unfiltered_majors_list = unprocessed_majors_string.strip().split('\n')
-    filtered_majors_list = []
+# def get_majors_and_tracks(unprocessed_majors_string):
+#     majors_dict = {}
+#     unfiltered_majors_list = unprocessed_majors_string.strip().split('\n')
+#     filtered_majors_list = []
     
-    for item in unfiltered_majors_list:
-        degree_type_search_obj = None
-        degree_type_search_obj = re.search(r'\([a-zA-Z]+\)', item)
-        if degree_type_search_obj:
-            item = item.replace(degree_type_search_obj.group(), '')
-        filtered_majors_list.append(item)
+#     for item in unfiltered_majors_list:
+#         degree_type_search_obj = None
+#         degree_type_search_obj = re.search(r'\([a-zA-Z]+\)', item)
+#         if degree_type_search_obj:
+#             item = item.replace(degree_type_search_obj.group(), '')
+#         filtered_majors_list.append(item)
     
-    for item in filtered_majors_list:
-        if ' - ' in item:
-            key, value = item.split(' - ', 1)
-            key = key[:key.find(' (')]
-            if key in majors_dict:
-                if value not in majors_dict[key]:
-                    majors_dict[key].append(value)
-            else:
-                majors_dict[key] = [value]
-        else:
-            key = item.strip()
-            value = 'NONE'
-            if key in majors_dict:
-                if value not in majors_dict[key]:
-                    majors_dict[key].insert(0, value)
-            else:
-                majors_dict[key] = [value]
+#     for item in filtered_majors_list:
+#         if ' - ' in item:
+#             key, value = item.split('-', 1)
+#             key = key[:key.find(' (')]
+#             if key in majors_dict:
+#                 if value not in majors_dict[key]:
+#                     majors_dict[key].append(value)
+#             else:
+#                 majors_dict[key] = [value]
+#         else:
+#             key = item.strip()
+#             value = 'NONE'
+#             if key in majors_dict:
+#                 if value not in majors_dict[key]:
+#                     majors_dict[key].insert(0, value)
+#             else:
+#                 majors_dict[key] = [value]
 
-    return majors_dict
+#     return majors_dict
+
+def get_baccalaureate_degrees_pickle_file():
+    file1 = get_source_path()
+    file1 = get_source_relative_path(file1, "output_files/baccalaureate_degrees_dictionary.pickle")
+    with open(file1, "rb") as f:
+        obj = pickle.load(f)
+    return obj
 
 # Gets a student's name from the Degreeworks document.
 def get_student_name(document_string):
@@ -151,7 +162,6 @@ def get_student_number(document_string):
     student_number_match_obj = re.search(r'\d{9}', working_string)
     if student_number_match_obj:
         student_number = student_number_match_obj.group()
-    # print(working_string)
     return student_number
 
 # Gets a student's degree plan from a Degreeworks document
@@ -169,7 +179,7 @@ def get_degree_plan_name(document_string):
     if working_string_match_obj:
         working_string = working_string_match_obj.group(1).strip()
     majors_raw_strings_list = []
-    majors_dict = get_majors_and_tracks(unprocessed_majors_string)
+    majors_dict = get_baccalaureate_degrees_pickle_file()
     major_dict = {}
     if ',' in working_string:
         majors_raw_strings_list = working_string.split(',')
@@ -199,6 +209,18 @@ def get_degree_plan_name(document_string):
 
     # print(degree_plan_name)
     return degree_plan_name
+
+def get_gpa(document_string):
+    gpa = None
+    gpa_chunk_match_obj = re.search(r'Overall\s?GPA\s?\d\.\d\d?', document_string)
+    if gpa_chunk_match_obj:
+        gpa_match_obj_str = re.search(r'\d\.\d\d?', gpa_chunk_match_obj.group()).group()
+        if gpa_match_obj_str:
+            try:
+                float(gpa_match_obj_str)
+            except:
+                gpa = gpa_match_obj_str
+    return gpa
 
 # Current/taken courses helper functions
 # ========================================================================================================
@@ -697,10 +719,11 @@ def generate_degree_extraction_container(file_name):
         student_name = get_student_name(document_string)
         student_number = get_student_number(document_string)
         degree_plan_name = get_degree_plan_name(document_string)
+        gpa = get_gpa(document_string)
         curr_taken_courses = find_curr_taken_courses(document_string)
         courses_needed_constuction_string = generate_courses_needed_construction_string(document_string)
 
-    return DegreeExtractionContainer(curr_taken_courses, courses_needed_constuction_string, degree_plan_name, student_number, student_name)
+    return DegreeExtractionContainer(curr_taken_courses, courses_needed_constuction_string, degree_plan_name, student_number, student_name, gpa)
 
 if __name__ == '__main__':
     container = generate_degree_extraction_container('./input_files/updated_degreeworks/S1.pdf')
@@ -709,3 +732,4 @@ if __name__ == '__main__':
     # print(f'degree plan: {container._degree_plan_name}')
     # print(container._taken_courses)
     # print(container._courses_needed_constuction_string)
+    # print(container)

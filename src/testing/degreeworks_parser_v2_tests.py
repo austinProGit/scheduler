@@ -207,7 +207,8 @@ def degreeworks_parser_v2_tests():
         ''',
         'Kinesiology - NONE, Computer Science - Systems',
         '909123456',
-        'AAA, BBB'
+        'AAA, BBB',
+        '1.85'
     )
 
     test_case_list = []
