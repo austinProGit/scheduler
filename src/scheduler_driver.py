@@ -1,7 +1,11 @@
 # Thomas Merino
-# 4/3/2023
+# 4/7/2023
 # CPSC 4176 Project
 
+
+
+# TODO: Add extra courses into the schedule if they cannot be scheduled
+# TODO: Send a notification if the schedule generated is not valid (list the issues).
 
 # TODO: (IMPORTANT) at the moment, coreq.s in constructive scheduler do not work fully:
 #               We just look for "simple coreq.s", which means 1 coreq in which every dependant course's other requirements are ignored.
@@ -129,6 +133,9 @@ FALL    SPRING  SUMMER
 
 
 """
+
+
+
 
 class DummyCourseIdentifier:
 
@@ -2178,6 +2185,19 @@ if __name__ == '__main__':
         # [e <n=The Things>[d <n=CPSC 1301K>][d <n=CPSC 1302>][d <n=CPSC 1555>][s <n=Take, c=1>[d <n=CPSC 2108>][d <n=CPSC 2555>]]]
         #  ''')
 
+        # degree_extraction: DegreeExtractionContainer = DegreeExtractionContainer(taken_courses=['MATH 2125', 'MATH 1113', 'MATH 5125U'],\
+        #     courses_needed_constuction_string='''
+        # (CPSC 1105, CPSC 2105, CPSC 2115, CPSC 1555, CPSC 2108, CPSC 3118, CPSC 3175,
+        # CPSC 2125, CPSC 3105, CPSC 3111, CPSC 1302, CPSC 4111,
+        # CPSC 1301K, CPSC 4112, CPSC 4113
+        # ) [p <n=COURSE A>][p <n=COURSE B>][p <n=COURSE C>]
+        # ''')
+
+
+
+        ##################################################################
+        ##################################################################
+
 
         degree_extraction: DegreeExtractionContainer = DegreeExtractionContainer(taken_courses=['MATH 2125', 'MATH 1113', 'MATH 5125U'],\
             courses_needed_constuction_string='''
@@ -2190,26 +2210,16 @@ if __name__ == '__main__':
         ) [p <n=COURSE A>][p <n=COURSE B>][p <n=COURSE C>]
         ''')
 
-
-        # degree_extraction: DegreeExtractionContainer = DegreeExtractionContainer(taken_courses=['MATH 2125', 'MATH 1113', 'MATH 5125U'],\
-        #     courses_needed_constuction_string='''
-        # (CPSC 1105, CPSC 2105, CPSC 2115, CPSC 1555, CPSC 2108, CPSC 3118, CPSC 3175,
-        # CPSC 2125, CPSC 3105, CPSC 3111, CPSC 1302, CPSC 4111,
-        # CPSC 1301K, CPSC 4112, CPSC 4113
-        # ) [p <n=COURSE A>][p <n=COURSE B>][p <n=COURSE C>]
-        # ''')
-
-
         prequisite_ignored_courses: list[DummyCourseIdentifier] = [
             DummyCourseIdentifier('MATH 1113')
         ]
             
-        #print('SCHED')
+        print('SCHEDULE:')
         scheduler.configure_degree_extraction(degree_extraction)
         scheduler.get_courses_needed_container().stub_all_unresolved_nodes()
         scheduler.prepare_schedulables()
         path: DummyScheduleInfoContainer = scheduler.generate_schedule(prequisite_ignored_courses=prequisite_ignored_courses)
-        print(path)
+
 
         generated_report: DummyPathValidationReport = dummy_rigorous_validate_schedule(
             path,
@@ -2220,8 +2230,8 @@ if __name__ == '__main__':
         print('Errors:')
         print(generated_report.get_errors_printable())
         print('Caching usage:')
-        print(CACHE['TEST_CACHE_T'])
-        print(CACHE['TEST_CACHE_F'])
+        print('reused', CACHE['TEST_CACHE_T'])
+        print('generated', CACHE['TEST_CACHE_F'])
         print(CACHE['TEST_CACHE_T']/(CACHE['TEST_CACHE_F']+CACHE['TEST_CACHE_T']))
 
         

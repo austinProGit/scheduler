@@ -7,6 +7,8 @@ import itertools
 from schedule_inspector import *
 
 
+# TODO: ensure we have a rule that punishes taking different level courses together (don't take CPSC 2000 and CPSC 4000 together). 
+
 # ---------------------------------------- Expert System ----------------------------------------
 
 

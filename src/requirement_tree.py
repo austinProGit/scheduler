@@ -45,53 +45,59 @@ from general_utilities import *
 
 
 # The following are for bit masking and selection update results
-MODIFICATION = 0x00F
-SELECTION = 0x001
-DESELECTION = 0x002
-TOGGLE = 0x002
 
-RESULT = 0x0F0
-CHANGED = 0x010
-UNCHANGED = 0x020
-CHILD_NOT_FOUND = 0x030
-ILLEGAL = 0x040
-NOT_SATISIFACTORY = 0x050
-DUPLICATE = 0x060
-GENERATION = 0x070
+TreeModGoal = int
+MODIFICATION: TreeModGoal = 0x00F
+SELECTION: TreeModGoal = 0x001
+DESELECTION: TreeModGoal = 0x002
+TOGGLE: TreeModGoal = 0x002
 
-COLLATERAL = 0xF00
-SINGLE = 0x000
-ADDITIONAL_EFFECTS = 0x100
-SUPERSEDED = 0x200
-UNSTRUCTURED = 0x300
+TreeModOutcome = int
+RESULT: TreeModOutcome = 0x0F0
+CHANGED: TreeModOutcome = 0x010
+UNCHANGED: TreeModOutcome = 0x020
+CHILD_NOT_FOUND: TreeModOutcome = 0x030
+ILLEGAL: TreeModOutcome = 0x040
+NOT_SATISIFACTORY: TreeModOutcome = 0x050
+DUPLICATE: TreeModOutcome = 0x060
+GENERATION: TreeModOutcome = 0x070
+
+TreeModEffect = int
+COLLATERAL: TreeModEffect = 0xF00
+SINGLE: TreeModEffect = 0x000
+ADDITIONAL_EFFECTS: TreeModEffect = 0x100
+SUPERSEDED: TreeModEffect = 0x200
+UNSTRUCTURED: TreeModEffect = 0x300
 
 
-SETTING_DELIMITTER = '='
-DEFAULT_PRIORITY = 100
+SETTING_DELIMITTER: str = '='
+DEFAULT_PRIORITY: int = 100
 
 # The following are used for ArgumentInputInterface for specifying input types
-SUCCESS = 0x01
-ILLEGAL_NIL = 0x02
-ILLEGAL_INTEGER = 0x03
-KEY_NOT_FOUND = 0x04
+TreeArgStatus = int
+SUCCESS: TreeArgStatus = 0x01
+ILLEGAL_NIL: TreeArgStatus = 0x02
+ILLEGAL_INTEGER: TreeArgStatus = 0x03
+KEY_NOT_FOUND: TreeArgStatus = 0x04
+
+TreePrintMode = int
+NO_CLEARING: TreePrintMode = 0x00
+NAVIGATION_CLEARING: TreePrintMode = 0x01
+CONSTANT_REFRESHING: TreePrintMode = 0x02
+
+TreeOutputType = int
+PRINT: TreeOutputType = 0x00
+ERROR: TreeOutputType = 0x01
+WARNING: TreeOutputType = 0x02
+POSSIBLE_LS: TreeOutputType = 0x03
+HARD_LS: TreeOutputType = 0x04
+POSSIBLE_SOFT_CLEAR: TreeOutputType = 0x05
+HARD_CLEAR: TreeOutputType = 0x06
 
 
-NO_CLEARING = 0x00
-NAVIGATION_CLEARING = 0x01
-CONSTANT_REFRESHING = 0x02
-
-PRINT = 0x00
-ERROR = 0x01
-WARNING = 0x02
-POSSIBLE_LS = 0x03
-HARD_LS = 0x04
-POSSIBLE_SOFT_CLEAR = 0x05
-HARD_CLEAR = 0x06
-
-
-DEFAULT_COURSE_DESCRIPTION = "Course XXXX"
-DEFAULT_STUB_AVAILABILITY = set([FALL, SPRING])
-DEFAULT_STUB_CREDITS = 3
+DEFAULT_COURSE_DESCRIPTION: str = "Course XXXX"
+DEFAULT_STUB_AVAILABILITY: set[SemesterType] = set([FALL, SPRING])
+DEFAULT_STUB_CREDITS: int = 3
 
 
 
@@ -114,19 +120,22 @@ class SchedulableParameters:
 
 
 
-def default_stub_generator(credits_string=None, name=None):
-    new_item = SchedulableParameters(course_name = name or DEFAULT_COURSE_DESCRIPTION, is_stub = True)
+def default_stub_generator(credits_string: Optional[str] = None, name: Optional[str] = None) -> SchedulableParameters:
+    new_item: SchedulableParameters = SchedulableParameters(course_name = name or DEFAULT_COURSE_DESCRIPTION, is_stub = True)
     new_item.stub_hours = int(credits_string) if (credits_string is not None and credits_string.isnumeric()) else 3
     return new_item
     
-def regex_course_protocol_generator(matching_description=r'.*', name=None):
+def regex_course_protocol_generator(matching_description: str = r'.*', name: Optional[str] = None) -> RequirementsTree:
     '''Course generator function that creates protocol nodes with the passed regex (defaults to ".*") and name (defaults to "New Course").'''
     return CourseProtocol(matching_description, name or 'New Course')
 
-def as_signed_integer(string):
+def as_signed_integer(string: str) -> Optional[int]:
     '''Returns a signed integer if the passed string can be converted or None if it cannot.'''
-    result = None
+    result: Optional[int] = None
+
+    # Check if the string is empty 
     if string:
+        # Determine if the string is negative or not (by minus character as first character)
         if string[0] == '-':
             right_side = string[1:]
             if right_side.isnumeric():
@@ -136,9 +145,9 @@ def as_signed_integer(string):
                 result = int(string)
     return result
 
-def print_format_number(number):
+def print_format_number(number) -> str:
     '''Format the passes number for displaying in the UI. This returns a string.'''
-    result = None
+    result: Optional[str] = None
     if number != inf:
         result = str(number)
     else:

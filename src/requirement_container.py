@@ -1,6 +1,14 @@
 # Thomas Merino and Austin Lee
 # 2/19/2023
 # CPSC 4176 Project
+
+# The following are imported for type annotations
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Optional, Iterator
+    from requirement_tree import RequirementsTree
+
     
 from requirement_tree import *
 import pickle
@@ -13,16 +21,16 @@ from requirement_interface import NeededCoursesInterface
 
 class RequirementsContainer:
     
-    def __init__(self, requirements_tree=None):
-        self._requirements_tree = requirements_tree or ExhaustiveNode()
+    def __init__(self, requirements_tree: Optional[RequirementsTree] = None) -> None:
+        self._requirements_tree: RequirementsTree = requirements_tree or ExhaustiveNode()
 
         # TODO: perform this using a good practice
-        self._decision_tree._duplicate_priority = DEFAULT_PRIORITY
+        self._decision_tree._duplicate_priority: int = DEFAULT_PRIORITY
     
-    def __iter__(self):
+    def __iter__(self) -> Iterator[str]:
         return self.get_courses_list().__iter__()
     
-    def pickle(self):
+    def pickle(self) -> bytes:
         return pickle.dumps(self)
     
     def get_courses_list(self):
