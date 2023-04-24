@@ -20,6 +20,11 @@ import pickle
 # TODO: add explicit typing
 # TODO: add the ability to identify where tests fail
 # TODO: functionality review with Thomas
+# TODO: cut off the colon at the end of the name of each node
+# TODO: get rid of the double space in the names
+# TODO: take 'still needed' out of the name
+# TODO: check for final closing bracket
+
 
 # Student information helper functions
 # ========================================================================================================
@@ -718,5 +723,5 @@ def generate_degree_extraction_container(file_name):
     return DegreeExtractionContainer(curr_taken_courses, courses_needed_constuction_string, degree_plan_name, student_number, student_name, gpa)
 
 if __name__ == '__main__':
-    container = generate_degree_extraction_container('./input_files/updated_degreeworks/S1.pdf')
+    container = generate_degree_extraction_container('./input_files/updated_degreeworks/S3.pdf')
     print(container)
