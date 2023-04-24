@@ -122,7 +122,6 @@ FALL    SPRING  SUMMER
 
 """
 
- 
 class CreditHourInformer:
 
     @staticmethod
