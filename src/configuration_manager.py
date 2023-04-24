@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Any
+    from io import TextIOWrapper
 
 import json
 from os import path
@@ -104,7 +105,7 @@ class SessionConfiguration():
 def load_configuration_session(config_filename=CONFIG_FILENAME):
     
     # Get the config file
-    config_filename = path.join(get_source_path(), config_filename)
+    config_filename: str = path.join(get_source_path(), config_filename)
     
     with open(config_filename, 'r') as configuration_file:
         try:
@@ -117,8 +118,6 @@ def load_configuration_session(config_filename=CONFIG_FILENAME):
                 return session_configuration
             else:
                 # Configuration is missing important data (raise a config error)
-                #self.output_error('Invalid config file contents. Please see instructions on how to reconfigure.')
-                # TODO: this feel like the list itself should be passed and not a formatted string
                 error_message = f'The following required parameter(s) are missing from the configuration file: {", ".join(missing_attributes)}.'
                 raise ConfigFileError(error_message)
                 
@@ -126,25 +125,29 @@ def load_configuration_session(config_filename=CONFIG_FILENAME):
             raise ConfigFileError('Invalid json encoding detected in configuration file.')
 
 
-def save_configuration_session(session_configuration, config_filename=CONFIG_FILENAME):
+def save_configuration_session(session_configuration: SessionConfiguration,
+        config_filename: Union[str, Path] = CONFIG_FILENAME) -> list[str]:
     
     # Get the config file
-    config_filename = path.join(get_source_path(), config_filename)
-    
+    config_filename: str = path.join(get_source_path(), config_filename)
+    missing_attributes: list[str] = []
+
+    configuration_file: TextIOWrapper
     with open(config_filename, 'w') as configuration_file:
         try:
+            # Get the missing attributes according to the class's method
             missing_attributes = session_configuration.get_missing_attributes()
             
             # Check if all lines exist and are not empty strings
             if not missing_attributes:
                 json.dump(session_configuration.get_encodable(), configuration_file)
             
-            # return all of the missing attributes
-            return missing_attributes
-            
         except json.JSONDecodeError as encoding_error:
             # TODO: make this better in the given context
             raise ConfigFileError('An issue was encountered while trying to encode json for configuration file.')
+    
+    # return all of the missing attributes (if any)
+    return missing_attributes
             
 
 

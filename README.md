@@ -8,7 +8,7 @@ A simple program to assist with scheduling a student's university courses.
 
 ## Downloads
 [smart-planner-setup-2.0.1.exe](https://github.com/austinProGit/scheduler/releases/download/v2.0.1/smart-planner-setup-2.0.1.exe) Platform: Windows  
-[SmartPlanner executable (zip)](https://github.com/austinProGit/scheduler/releases/download/v2.0.1/SmartPlanner.zip) Platform: macOS  
+[SmartPlanner-2.0.1 executable (zip)](https://github.com/austinProGit/scheduler/releases/download/v2.0.1/SmartPlanner-2.0.1.zip) Platform: macOS  
 [Source code (zip)](https://github.com/austinProGit/scheduler/archive/refs/tags/v2.0.1.zip)  
 [Source code (tar.gz)](https://github.com/austinProGit/scheduler/archive/refs/tags/v2.0.1.tar.gz)
 
@@ -19,7 +19,7 @@ A simple program to assist with scheduling a student's university courses.
 *Note: Antivirus software will warn against downloading and launching the installer since we are not a known publisher*
 
 ### Zip file (Recommended for macOS)
-* Download the [SmartPlanner](https://github.com/austinProGit/scheduler/releases/download/v2.0.1/SmartPlanner.zip) zip file
+* Download the [SmartPlanner](https://github.com/austinProGit/scheduler/releases/download/v2.0.1/SmartPlanner-2.0.1.zip) zip file
 * Unzip and click on the SmartPlanner executable to launch the program
 
 ### Using the command line
