@@ -4,54 +4,42 @@
 import openpyxl
 import shutil
 from datetime import date
+from driver_fs_functions import *
 from pathlib import Path
 
-def excel_formatter(input_path, output_file_name, sched, container):  # first param is source file path
+
+def excel_formatter(input_path, output_file_name, sched):  # first param is source file path
     num = 0
-    input_file_name = Path(input_path, 'Path To Graduation Y.xlsx')
+    input_file_name = get_source_relative_path(input_path, 'Path To Graduation Y.xlsx')
     for lst in sched:
         if len(lst) > 6:
-            input_file_name = Path(input_path, 'Path To Graduation Z.xlsx')
+            input_file_name = get_source_relative_path(input_path, 'Path To Graduation Z.xlsx')
             num = 4
             break
 
     shutil.copy2(input_file_name, output_file_name) # Copy file
     edit_excel = openpyxl.load_workbook(output_file_name)
     sheet = edit_excel.active
-    format(sheet, sched, container, num)
+    format(sheet, sched, num)
     edit_excel.save(output_file_name) # Save the file so we can copy to specified directory
  
 # ...............HELPER METHODS...............HELPER METHODS...............HELPER METHODS...............HELPER METHODS
     
-def format(sheet, sched, container, num):
+def format(sheet, sched, num):
     current_seas = [1, 4] # We can switch to actual date reference by using current_season()
     for i in range(len(sched)):
         if(i > 0): # Skip 1st iteration before we change semester to next
             current_seas = next_season(current_seas, num)
         for x in range(len(sched[i])):
-            if container.validate_course(sched[i][x]): # Use container to get values
-                course = sched[i][x]
-                avail = container.get_availability(course)
-                if avail != []:
-                    data = course + ' - ' + container.get_name(course) + ' (' + avail[0] + ' ' + avail[1] + ' ' + avail[2] + ')'
-                else:
-                    data = course + ' - ' + container.get_name(course) + ' (?? ?? ??)'
-                hours = container.get_hours(course)
-                co = current_seas[0]
-                ro = current_seas[1] + x
-                c = current_seas[0] + 1
-                r = current_seas[1] + x
-                sheet.cell(row=ro, column=co, value=data)
-                sheet.cell(row=r, column=c, value=hours)
-            else: # course not in container or class info
-                course1 = sched[i][x]
-                co1 = current_seas[0]
-                ro1 = current_seas[1] + x
-                c1 = current_seas[0] + 1
-                r1 = current_seas[1] + x
-                data1 = course1 + ' - Name Unavailable (?? ?? ??)'
-                sheet.cell(row=ro1, column=co1, value=data1)
-                sheet.cell(row=r1, column=c1, value=3)
+            course = sched[i][x]
+            data = f"{course.ID} - {course.name} ({course.avail[0]} {course.avail[1]} {course.avail[2]})"
+            co = current_seas[0]
+            ro = current_seas[1] + x
+            c = current_seas[0] + 1
+            r = current_seas[1] + x
+            sheet.cell(row=ro, column=co, value=data)
+            sheet.cell(row=r, column=c, value=course.hours)
+
 
 def current_season():
     start =[]
@@ -60,6 +48,7 @@ def current_season():
     if month >= 6 and month <= 7: start = [1, 4] # [column, row] Fall table
     if month >= 8 and month <= 12: start = [3, 4] # [column, row] Spring table
     return start
+
 
 def next_season(current_season, num):
     next_season = []
@@ -77,8 +66,38 @@ def next_season(current_season, num):
 # ***************END OF EXCEL_FORMATTER MODULE***************END OF EXCEL_FORMATTER MODULE********************
 #Internal testing below
 #container = CourseInfoContainer(load_course_info('scheduler/src/input_files/Course Info.xlsx'))
-#rando_list = [['CPSC 3121', 'CPSC 3165', 'CPSC 4000', 'CPSC 4135', 'POLS 1101', 'MATH 1113'],
-#              ['STAT 3127', 'CPSC 2108'], ['CPSC 3125', 'MATH 1113']]
 
-#excel_formatter('scheduler/src/input_files', 'C:/Users/mel91/Desktop/output_files/Path.xlsx', rando_list, container)
-#"C:\Users\mel91\Desktop\output_files"
+#from driver_fs_functions import *
+#from course_info_container import *
+
+#file0 = get_source_path()
+#file0 = get_source_relative_path(file0, 'input_files/Course Info.xlsx')
+#dfdict = load_course_info(file0)
+#container = CourseInfoContainer(dfdict)
+
+#course_identifier_CPSC_3121 = DummyCourseIdentifier(course_number="CPSC 3121")
+#course_identifier_CPSC_3165 = DummyCourseIdentifier(course_number="CPSC 3165")
+#course_identifier_CPSC_4000 = DummyCourseIdentifier(course_number="CPSC 4000")
+#course_identifier_CPSC_4135 = DummyCourseIdentifier(course_number="CPSC 4135")
+#course_identifier_MATH_1113 = DummyCourseIdentifier(course_number="MATH 1113")
+#course_identifier_STAT_3127 = DummyCourseIdentifier(course_number="STAT 3127")
+#course_identifier_CPSC_2108 = DummyCourseIdentifier(course_number="CPSC 2108")
+#course_identifier_CPSC_3125 = DummyCourseIdentifier(course_number="CPSC 3125")
+#course_identifier_CPSC_XXXX = DummyCourseIdentifier(course_number="CPSC XXXX", name="Elective", is_stub=True)
+#course_identifier_CPSC_3XX = DummyCourseIdentifier(course_number="CPSC 3@X", name="Elective", is_stub=True)
+
+#cr1 = container.get_course_record(course_identifier_CPSC_3121)
+#cr2 = container.get_course_record(course_identifier_CPSC_3165)
+#cr3 = container.get_course_record(course_identifier_CPSC_4000)
+#cr4 = container.get_course_record(course_identifier_CPSC_4135)
+#cr5 = container.get_course_record(course_identifier_MATH_1113)
+#cr6 = container.get_course_record(course_identifier_STAT_3127)
+#cr7 = container.get_course_record(course_identifier_CPSC_2108)
+#cr8 = container.get_course_record(course_identifier_CPSC_3125)
+#crX = container.get_course_record(course_identifier_CPSC_XXXX)
+#crY = container.get_course_record(course_identifier_CPSC_3XX)
+
+#course_obj_list =[[cr1, cr2, crX], [cr3, cr4, crY], [cr5, cr6, cr7, cr8]]
+
+#template_path = Path(get_source_path(), 'input_files')
+#excel_formatter(template_path, 'C:/Users/mel91/Desktop/output_files/Path.xlsx', course_obj_list)
