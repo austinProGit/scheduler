@@ -176,6 +176,7 @@ class DummySchedulable:
 
                 result.append(
                     DummySchedulable(
+                        # course_obj = course_info_container.get_course_record(identifier)
                         identifier,
                         course_info_container.get_prereqs(FUNC_identifier) or " ",
                         course_info_container.get_coreqs(FUNC_identifier) or " ",
