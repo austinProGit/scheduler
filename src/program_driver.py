@@ -85,13 +85,13 @@ from driver_fs_functions import *
 from cli_interface import MainMenuInterface, GraphicalUserMenuInterface, ErrorMenu
 
 # NEW <<$
-from scheduler_driver import DummyConstuctiveScheduler as Scheduler, DummyCourseIdentifier
+from scheduler_driver import ConstuctiveScheduler as Scheduler, CourseIdentifier
 # $>> <<!
 #from scheduler import Scheduler
 # !>>
 
 # NEW <<$
-from scheduler_driver import DummyConstructiveSchedulingParametersContainers as ConstructiveSchedulingParametersContainers
+from scheduler_driver import ConstructiveSchedulingParametersContainers as ConstructiveSchedulingParametersContainers
 # $>> <<!
 #from scheduling_parameters_container import ConstructiveSchedulingParametersContainers
 # !>>
