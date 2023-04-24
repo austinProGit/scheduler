@@ -675,4 +675,4 @@ def create_tokenized_logic(section):
     return tokens
 
 #update_course_info()
-print(get_baccalaureate_degrees_pickle_file())
+# print(get_baccalaureate_degrees_pickle_file())

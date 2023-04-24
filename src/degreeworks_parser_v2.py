@@ -2,25 +2,24 @@
 # CPSC 4176 Project
 
 from degree_extraction_container import DegreeExtractionContainer
-
 import re
 from pypdf import PdfReader
 from driver_fs_functions import *
 import pickle
 
 # ========================================================================================================
-# TODO: 1) integrate the web parser: done
-# TODO: 5) complete test cases for all example inputs: 
-# TODO: 6) request more example inputs, including from other majors
+# TODO: complete test cases for all example inputs
+# TODO: request more example inputs, including from other majors: done
 # TODO: implement custom error handling/ exceptions
-# TODO: 4) code review with regex focus: done
 # TODO: create error report for the user
-# TODO: 2) code cleanup/documentation: done
-# TODO: 3) add GPA to container for the CBR: done
 # TODO: add exhaustive node check
 # TODO: check for all other small features in the guidelines doc
 # TODO: account for the case of no spaces around the hyphen
-# TODO: add exceptions (sample input 3)
+# TODO: add exceptions (sample input 3): done
+# TODO: add the ability to recognize and handle inserter nodes: done
+# TODO: add explicit typing
+# TODO: add the ability to identify where tests fail
+# TODO: functionality review with Thomas
 
 # Student information helper functions
 # ========================================================================================================
@@ -75,16 +74,16 @@ def get_degree_plan_name(document_string):
     majors_raw_strings_list = []
     major_dict = {}
     majors_dict = get_baccalaureate_degrees_pickle_file()
-    
     if ',' in working_string:
         majors_raw_strings_list = working_string.split(',')
     else:
         majors_raw_strings_list.append(working_string)
-
     for i, major in enumerate(majors_raw_strings_list):
         if ' - ' in major:
-            raw_major = major[:major.find(' - ')].strip()
-            raw_track = major[major.find(' - ') + len(' - '):].strip()
+            # raw_major = major[:major.find(' - ')].strip()
+            raw_major = major[:re.search(r'\s?-\s?', major).start()].strip()
+            # raw_track = major[major.find(' - ') + len(' - '):].strip()
+            raw_track = major[re.search(r'\s?-\s?', major).end():].strip()
         else:
             raw_major = major
             raw_track = 'NONE'
@@ -405,24 +404,115 @@ def remove_after_last_course_block(still_needed_chunks):
 
     return still_needed_chunks_after_last_course_block_removed_list
 
-# From a given 'Still needed:' chunk, generates all course blocks and returns as a list.
+# From a given 'Still needed:' chunk, generates all course and exception blocks and returns as a dictionary
 def generate_course_blocks(chunk):
-    course_blocks = []
-    
-    comprehensive_letter_block_regex_pattern = r'(?:[A-Z]{4}|\s{1,2}@\s{1,2})'
-    comprehensive_number_block_regex_pattern = r'(?:\d{4}([@A-Z])?|\d@)'
-    comprehensive_general_block_regex_pattern = r'(?:[A-Z]{4}|\s{1,2}@\s{1,2})|(?:\d{4}([@A-Z])?|\d@)'
+    course_blocks_list = []
+    exception_blocks_list = []
+    # print('executing generate_course_blocks')
+    letter_block_regex_pattern = r'(?:[A-Z]{4}|\s{1,2}@\s{1,2})'
+    # number_block_regex_pattern = r'(?:\d{4}([@A-Z])?|\d@)'
+    number_block_regex_pattern = r'(?:\d{4}([@A-Z])?|\d@[A-Z]?)'
+    letter_block_number_block_and_except_regex_pattern = r'(?:[A-Z]{4}|\s{1,2}@\s{1,2})|(?:\d{4}([@A-Z])?|\d@[A-Z]?)|Except'
 
-    generalized_block_list = list(re.finditer(comprehensive_general_block_regex_pattern, chunk))
-    current_letter_block = generalized_block_list[0].group()
+    # Handle the case of unpredictable numbers of spaces:
 
-    for generalized_block in generalized_block_list:
-        if (match_obj := re.search(comprehensive_letter_block_regex_pattern, generalized_block.group())):
+    # tokenized list of all number blocks, letter blocks, and the keyword 'except' if it exists
+    letter_block_number_block_and_except_list = list(re.finditer(letter_block_number_block_and_except_regex_pattern, chunk))
+    # print('course_block_and_exception_list:')
+    # for item in letter_block_number_block_and_except_list:
+    #     print(f'{item}')
+
+    # Assume that the first item found in the list will always be a letter block
+    current_letter_block = letter_block_number_block_and_except_list[0].group()
+
+    # Boolean for checking if the current letter/number blocks should be considered exceptions
+    currently_processing_exceptions = False
+
+    for generalized_block in letter_block_number_block_and_except_list:
+
+        # check if the current item in the list is a letter block
+        if (match_obj := re.search(letter_block_regex_pattern, generalized_block.group())): 
             current_letter_block = generalized_block.group()
-        elif (match_obj := re.search(comprehensive_number_block_regex_pattern, generalized_block.group())):
-            course_blocks.append(f'{current_letter_block} {match_obj.group()}')
 
-    return course_blocks
+        # Check if the item in the list is a number block
+        elif (match_obj := re.search(number_block_regex_pattern, generalized_block.group())):
+
+            # If a number block is found in the list and the 'Except' keyword has been found, 
+            # consider the item an exception
+            if currently_processing_exceptions:
+                exception_blocks_list.append(f'{current_letter_block} {match_obj.group()}')
+
+            # Otherwise, consider the item a required course
+            else:
+                course_blocks_list.append(f'{current_letter_block} {match_obj.group()}')
+        
+        # Check to see if the token is 'Except'. If it is, all following items are exceptions.]
+        if(match_obj := re.search('Except', generalized_block.group())):
+            currently_processing_exceptions = True
+
+    # print('course_blocks')
+    for item_index, item in enumerate(exception_blocks_list):
+        cleaned_item = item.strip().replace('  ', ' ')
+        exception_blocks_list[item_index] = cleaned_item
+
+    for item_index, item in enumerate(course_blocks_list):
+        cleaned_item = item.strip().replace('  ', ' ')
+        course_blocks_list[item_index] = cleaned_item
+
+    course_blocks_and_exceptions_dict = {
+        "course_blocks": course_blocks_list,
+        "exception_blocks": exception_blocks_list
+    }
+
+    # print(f'course_blocks_and_exceptions_dict: {course_blocks_and_exceptions_dict}')
+
+    # print(f'course_blocks_and_exceptions_dict: {course_blocks_and_exceptions_dict}')
+    return course_blocks_and_exceptions_dict
+
+# Classifies and handles items from a dictionary containing lists of course blocks and exception blocks, 
+# returning a part of the complex deliverables string
+def classify_and_handle_course_blocks(course_blocks_and_exceptions_dict):
+    handled_course_blocks_string = ''
+    # check if its an inserter node
+    # check if its a protocol node
+    # check if its a simple deliverable node
+    exception_string = ''
+    if len(course_blocks_and_exceptions_dict['exception_blocks']) > 0:
+        exception_string += '^(?!'
+        if len(course_blocks_and_exceptions_dict['exception_blocks']) == 1:
+            exception_string += course_blocks_and_exceptions_dict['exception_blocks'][0]
+        else:
+            exception_string += ('|').join(course_blocks_and_exceptions_dict['exception_blocks'])
+                # print(exception)
+        exception_string += ')'
+    for course_block in course_blocks_and_exceptions_dict["course_blocks"]:
+        # print(f'course block: {course_block}')
+        # split_test = course_block.split()
+        # print(f'split test: {split_test[1]}')
+
+        if (letter_block := course_block.split()[0]) and (number_block := course_block.split()[1]):
+            # check for inserter node
+            # print(f'letter_block: {letter_block}\tnumber_block: {number_block}')
+            if re.match(r'\d@', number_block):
+                # print(f'inserter node detected on number block: {number_block}')
+                if letter_block == '@':
+                    # print(f'letter block: {letter_block}')
+                    handled_course_blocks_string += f'[i <n=Insert {course_block}, ga={course_block} Course, gp={exception_string}[A-Z]{{4}} {number_block[0]}\d{{3}}[A-Z]?>]\n'
+                    # print(f'[i <n=Insert {course_block}, ga={course_block} Course, gp={exception_string}[A-Z]{{4}} {number_block[0]}\d{{3}}[A-Z]?>]\n')
+                else:
+                    handled_course_blocks_string += f'[i <n=Insert {course_block}, ga={course_block} Course, gp={exception_string}{letter_block} {number_block[0]}\d{{3}}[A-Z]?>]\n'
+            # check for protocol node
+            elif re.match(r'\d{4}@', number_block):
+                # print(f'protocol node detected on number block: {number_block}')
+                handled_course_blocks_string += f'[p <n={course_block}, m={course_block[:-1]}.*>]\n'
+            # check for deliverable node
+            elif re.match(r'\d{4}([A-Z])?$', number_block):
+                handled_course_blocks_string += f'[d <n={course_block}>]\n'
+                # print(f'found a deliverable node on number block: {number_block}')
+            else:
+                print(f'found an unclassified number block')
+    # print(f'handled_course_blocks_string: {handled_course_blocks_string}')
+    return handled_course_blocks_string
 
 def classify_and_handle_chunks(still_needed_chunks):
     """
@@ -474,24 +564,25 @@ def classify_and_handle_chunks(still_needed_chunks):
             
             complex_deliverables_string += f'[s <c={required_count}, n={chunk}>\n'
             
-            course_blocks = generate_course_blocks(chunk)
+            course_blocks_and_exceptions_dict = generate_course_blocks(chunk)
             
-            for course in course_blocks:
-                if '@' in course:
-                    complex_deliverables_string += f'[p <n={course}, m={course}.*>]\n'
-                else:
-                    complex_deliverables_string += f'[d <n={course}>]\n'
-            
+            # for course in course_blocks:
+            #     if '@' in course:
+            #         complex_deliverables_string += f'[p <n={course}, m={course}.*>]\n'
+            #     else:
+            #         complex_deliverables_string += f'[d <n={course}>]\n'
+            complex_deliverables_string += classify_and_handle_course_blocks(course_blocks_and_exceptions_dict)
             complex_deliverables_string += ']\n'
 
         # Deliverable node
         elif not (re.search(r'1 Class in [A-Z]{4} \d{4}[A-Z@]?[\s\n]+or[\s\n]+', chunk)) and re.search(r'1 Class in [A-Z]{4} \d{4}(?:[A-Z](?=[\s\n]))?', chunk):
             required_count = re.search('\d+(\d+)?', chunk).group()
             
-            course_blocks = generate_course_blocks(chunk)
+            course_blocks_and_exceptions_dict = generate_course_blocks(chunk)
             
-            for course in course_blocks:
-                complex_deliverables_string += f'[d <n={course}>]\n'
+            # for course in course_blocks:
+            #     complex_deliverables_string += f'[d <n={course}>]\n'
+            complex_deliverables_string += classify_and_handle_course_blocks(course_blocks_and_exceptions_dict)
 
         # Deep credit selection node
         elif (match_obj := re.search(r'\d{1,2} Credit[s]? in', chunk)):
@@ -499,14 +590,14 @@ def classify_and_handle_chunks(still_needed_chunks):
             
             complex_deliverables_string += f'[r <c={required_count}, n={chunk}>\n'
             
-            course_blocks = generate_course_blocks(chunk)
+            course_blocks_and_exceptions_dict = generate_course_blocks(chunk)
 
-            for course in course_blocks:
-                if '@' in course:
-                    complex_deliverables_string += f'[p <n={course}, m={course}.*>]\n'
-                else:
-                    complex_deliverables_string += f'[d <n={course}>]\n'
-            
+            # for course in course_blocks:
+            #     if '@' in course:
+            #         complex_deliverables_string += f'[p <n={course}, m={course}.*>]\n'
+            #     else:
+            #         complex_deliverables_string += f'[d <n={course}>]\n'
+            complex_deliverables_string += classify_and_handle_course_blocks(course_blocks_and_exceptions_dict)
             complex_deliverables_string += ']\n'
             
         else:
@@ -627,5 +718,5 @@ def generate_degree_extraction_container(file_name):
     return DegreeExtractionContainer(curr_taken_courses, courses_needed_constuction_string, degree_plan_name, student_number, student_name, gpa)
 
 if __name__ == '__main__':
-    container = generate_degree_extraction_container('./input_files/updated_degreeworks/S3.pdf')
+    container = generate_degree_extraction_container('./input_files/updated_degreeworks/S1.pdf')
     print(container)
