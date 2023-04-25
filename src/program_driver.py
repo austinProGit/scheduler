@@ -85,13 +85,13 @@ from driver_fs_functions import *
 from cli_interface import MainMenuInterface, GraphicalUserMenuInterface, ErrorMenu
 
 # NEW <<$
-from scheduler_driver import DummyConstuctiveScheduler as Scheduler, DummyCourseIdentifier
+from scheduler_driver import ConstuctiveScheduler as Scheduler, CourseIdentifier
 # $>> <<!
 #from scheduler import Scheduler
 # !>>
 
 # NEW <<$
-from scheduler_driver import DummyConstructiveSchedulingParametersContainers as ConstructiveSchedulingParametersContainers
+from scheduler_driver import ConstructiveSchedulingParametersContainers as ConstructiveSchedulingParametersContainers
 # $>> <<!
 #from scheduling_parameters_container import ConstructiveSchedulingParametersContainers
 # !>>
@@ -99,7 +99,7 @@ from scheduler_driver import DummyConstructiveSchedulingParametersContainers as 
 from course_info_container import *
 # TODO: make courses needed parser work in dis file!
 # from courses_needed_parser import get_courses_needed
-from degreeworks_parser import generate_degree_extraction_container
+from degreeworks_parser_v2 import generate_degree_extraction_container
 from program_generated_evaluator import evaluate_container, NonDAGCourseInfoError, InvalidCourseError
 from excel_formatter import excel_formatter
 from plain_text_formatter import plain_text_export

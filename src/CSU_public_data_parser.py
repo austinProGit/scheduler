@@ -792,5 +792,3 @@ def create_tokenized_logic(section):
     regex_pattern = r"\(|\)|and|or|[A-Z]{3}[A-Z]?\s\d{4}[A-Z]?"
     tokens = re.findall(regex_pattern, section)
     return tokens
-
-
