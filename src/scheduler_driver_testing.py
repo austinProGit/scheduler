@@ -1,5 +1,5 @@
 # Thomas Merino
-# 4/24/2023
+# 4/19/2023
 # CPSC 4176 Project
 
 
@@ -25,29 +25,31 @@ if TYPE_CHECKING:
     from scheduling_parameters_container import ConstructiveSchedulingParametersContainers
     from course_info_container import CourseInfoContainer
     from courses_needed_container import CoursesNeededContainer
+    from pathlib import Path
     from end_reports import ValidationReportResult
-from end_reports import PathValidationReport, VALIDATION_REPORT_PARSED
-
-from scheduling_parameters_container import ConstructiveSchedulingParametersContainers
-from instance_identifiers import CourseIdentifier
+from end_reports import VALIDATION_REPORT_PARSED, VALIDATION_REPORT_ERRORS, VALIDATION_REPORT_NO_FILE
+from requirement_parser import RequirementsParser
 from general_utilities import *
+
+# TODO: This is not importing correctly from end_reports.py (FIX!)
+VALIDATION_REPORT_WORKING = 0x03
+
+# TODO: THIS IS A TEST IMPORT (REMOVE)!!
+from degree_extraction_container import DegreeExtractionContainer
+
+# TODO: TEMP
+from scheduling_parameters_container import SchedulerParameterContainer 
+from pathlib import Path 
 
 from expert_system_module import ExpertSystem, DynamicKnowledge
 from schedule_info_container import *
 from general_utilities import *
+from requirement_parser import RequirementsParser
 
 from bisect import insort
 from math import inf
 from random import choice, randint, shuffle, random
 
-
-# TODO: THIS IS A TEST IMPORT (REMOVE)!!
-from scheduler_driver_testing import CourseInfoContainer
-from degree_extraction_container import DegreeExtractionContainer
-
-# TODO: TEMP for testing part
-from scheduling_parameters_container import SchedulerParameterContainer 
-from pathlib import Path 
 
 """
 
@@ -122,6 +124,336 @@ FALL    SPRING  SUMMER
 
 """
 
+class CourseIdentifier:
+
+    def __init__(self, course_number: Optional[str], name: Optional[str] = None, is_stub: Optional[bool] = None):
+        self.course_number: Optional[str] = course_number
+        self.name: Optional[str] = name
+        self._is_stub: bool = is_stub if is_stub is not None else course_number is None
+
+    def __eq__(self, rhs: Any):
+        result: bool = False
+        if isinstance(rhs, CourseIdentifier):
+            rhs: CourseIdentifier
+            result = self.course_number == rhs.course_number and not self.is_stub()
+        elif isinstance(rhs, Schedulable):
+            rhs: Schedulable
+            result = self == rhs.course_identifier
+        return result
+
+    def __str__(self) -> str:
+        return self.course_number or self.name or 'Course'
+
+    def is_stub(self) -> bool:
+        return self._is_stub
+
+
+class Schedulable:
+
+    @staticmethod
+    def create_schedulables(course_identifiers: list[CourseIdentifier],
+            course_info_container: CourseInfoContainer) -> list[Schedulable]:
+        
+        result: list[Schedulable] = []
+
+        identifier: CourseIdentifier
+        for identifier in course_identifiers:
+            if identifier.is_stub():
+                raise NotImplementedError
+            else:
+
+                # TODO: REMOVE THIS - it is to support old interfaces (course info protocol)
+                FUNC_identifier = identifier if isinstance(course_info_container, CourseInfoContainer) else identifier.course_number
+                FUNC_availabilities = course_info_container.get_availability(FUNC_identifier)
+                if isinstance(FUNC_availabilities, list):
+                    FUNC_availabilities = set(map(lambda x: {'Fa':FALL, 'Sp':SPRING, 'Su':SUMMER, '--':None}[x], FUNC_availabilities))
+
+                result.append(
+                    Schedulable(
+                        identifier,
+                        course_info_container.get_prereqs(FUNC_identifier) or " ",
+                        course_info_container.get_coreqs(FUNC_identifier) or " ",
+                        course_info_container.get_hours(FUNC_identifier),
+                        FUNC_availabilities,
+                        course_info_container.get_recommended(FUNC_identifier)
+                    )
+                )
+                
+        return result
+
+
+    def __init__(self, course_identifier: CourseIdentifier, prerequisite_string: str = '', corequisite_string: str = '',
+            hours: int = 3, availability: set[SemesterType] = [],
+            recommended: set[str] = []):
+        self.course_identifier: CourseIdentifier = course_identifier
+        self._prequisite_tree_string: str = prerequisite_string
+        self._corequisite_tree_string: str = corequisite_string
+        self.hours: int = hours
+        self.availability: set[SemesterType] = availability
+        self.recommended: set[str] = recommended
+
+        self._prequisite_tree: Optional[RequirementsTree] = None
+        self._corequisite_tree: Optional[RequirementsTree] = None
+        
+    
+    def __eq__(self, rhs: Any):
+        result: bool = False
+        if isinstance(rhs, CourseIdentifier):
+            rhs: CourseIdentifier
+            result = self.course_identifier == rhs
+        elif isinstance(rhs, Schedulable):
+            rhs: Schedulable
+            result = self.course_identifier == rhs.course_identifier
+        return result
+
+    def __str__(self):
+        return str(self.course_identifier)
+    
+    def get_printable_name(self):
+        return str(self)
+
+    def get_prequisite_tree(self) -> RequirementsTree:
+
+        tree: Optional[RequirementsTree] = self._prequisite_tree
+        if tree is None:
+            tree = RequirementsParser.make_unified_from_course_selection_logic_string(self._prequisite_tree_string,
+                artificial_exhaustive=True)
+            self._prequisite_tree = tree
+
+        return tree
+
+    
+    def get_corequisite_tree(self) -> RequirementsTree:
+
+        tree: Optional[RequirementsTree] = self._corequisite_tree
+        if tree is None:
+            tree = RequirementsParser.make_unified_from_course_selection_logic_string(self._corequisite_tree_string,
+                artificial_exhaustive=True)
+            self._corequisite_tree = tree
+
+        return tree
+    
+    def sync_course_taken(self, course_identifier: CourseIdentifier) -> None:
+        course_number: Optional[str] = course_identifier.course_number
+        if course_number:
+            corequisites: RequirementsTree = self.get_corequisite_tree()
+            corequisites.sync_deep_deselection(course_number)
+
+            prequisites: RequirementsTree = self.get_prequisite_tree()
+            prequisites.sync_deep_selection(course_number)
+
+    def sync_course_taking(self, course_identifier: CourseIdentifier) -> None:
+        course_number: Optional[str] = course_identifier.course_number
+        if course_number:
+            corequisites: RequirementsTree = self.get_corequisite_tree()
+            corequisites.sync_deep_selection(course_number)
+
+            prequisites: RequirementsTree = self.get_prequisite_tree()
+            prequisites.sync_deep_deselection(course_number)
+            prequisites.sync_deep_concurrent_selection(course_number)
+
+    def sync_course_not_taken(self, course_identifier: CourseIdentifier) -> None:
+        # TODO: check if this is even a useful method
+        # NOTE: this will set all courses matching the identifier as not taken (not undo one instance in the case of multiple instances to satisfy)
+        course_number: Optional[str] = course_identifier.course_number
+        if course_number:
+            corequisites: RequirementsTree = self.get_corequisite_tree()
+            corequisites.sync_deep_deselection(course_number)
+
+            prequisites: RequirementsTree = self.get_prequisite_tree()
+            prequisites.sync_deep_deselection(course_number)
+            
+
+    def can_be_taken_for_prequisites(self) -> bool:
+        # TODO: use flag to check if the trees have been modified since the last check (to avoid deep_select_all_satified_children recalls)
+        prequisites: RequirementsTree = self.get_prequisite_tree()
+        prequisites.deep_select_all_satified_children() # Make all parents who can be satisfied selected
+        return prequisites.is_deep_resolved()
+
+    def can_be_taken_for_corequisites(self) -> bool:
+        # TODO: use flag to check if the trees have been modified since the last check (to avoid deep_select_all_satified_children recalls)
+        corequisites: RequirementsTree = self.get_corequisite_tree()
+        corequisites.deep_select_all_satified_children() # Make all parents who can be satisfied selected
+        return corequisites.is_deep_resolved()
+
+    def can_be_taken(self) -> bool:
+        return self.can_be_taken_for_prequisites() and self.can_be_taken_for_corequisites()
+
+    def reset_prerequisites_selection(self) -> None:
+        if self._corequisite_tree is not None:
+            corequisites: RequirementsTree = self.get_corequisite_tree()
+            corequisites.reset_deep_selection()
+
+    def reset_corerequisites_selection(self) -> None:
+        if self._prequisite_tree is not None:
+            corequisites: RequirementsTree = self.get_corequisite_tree()
+            corequisites.reset_deep_selection()
+
+    def reset_all_selection(self) -> None:
+        self.reset_prerequisites_selection()
+        self.reset_corerequisites_selection()
+
+
+    def create_stateless_copy(self) -> Schedulable:
+        
+        result: Schedulable =  Schedulable(
+            self.course_identifier,
+            self._prequisite_tree_string,
+            self._corequisite_tree_string,
+            self.hours,
+            self.availability,
+            self.recommended
+        )
+        return result
+
+
+
+
+class SemesterDescription:
+    '''The description of a given semester.'''
+    
+    def __init__(self, year: int, semester_type: SemesterType, courses: Optional[list[Schedulable]] = None) -> None:
+        self.year: int = year
+        self.semester_type: SemesterType = semester_type
+        self.courses: list[Schedulable] = courses if courses is not None else []
+
+    def __str__(self) -> str:
+        header: str = f'{self.year}, {SEMESTER_DESCRIPTION_MAPPING[self.semester_type]}: '
+        return header + ', '.join(self.str_iterator())
+
+    def __iter__(self) -> Iterator[Schedulable]:
+        return self.courses.__iter__()
+    
+    def __getitem__(self, index) -> str:
+        # TODO: this is used to support legacy formatters
+        return self.courses[index].get_printable_name()
+
+    def __len__(self) -> int:
+        return len(self.courses)
+
+    def __contains__(self, element: Any):
+        return any(element == course for course in self.courses)
+
+    def str_iterator(self) -> Iterator[str]:
+        return [str(course) for course in self.courses].__iter__()
+
+
+
+class ScheduleInfoContainer:
+
+    @staticmethod
+    def make_from_string_list(raw_list: list[list[str]], course_info: ScheduleInfoContainer,
+            starting_semester: SemesterType = FALL, starting_year: int = 2023,
+            confidence_level: Optional[float] = None) -> ScheduleInfoContainer:
+
+        semesters: list[SemesterDescription] = []
+        running_year: int = starting_year
+        running_semester: SemesterType = starting_semester
+
+        semester_list: list[str]
+        for semester_list in raw_list:
+
+            course_identifiers: list[CourseIdentifier] = \
+                [CourseIdentifier(course_number) for course_number in semester_list]
+
+            # course_number: str
+            # for course_number in semester_list:
+            #     course_identifiers.append(CourseIdentifier(course_number))
+
+            schedulables: list[Schedulable] = Schedulable.create_schedulables(course_identifiers, course_info)
+
+            semesters.append(SemesterDescription(running_year, running_semester, schedulables))
+
+            running_semester = SEMESTER_TYPE_SUCCESSOR[running_semester]
+            if running_semester == SPRING:
+                running_year += 1
+        
+        return ScheduleInfoContainer(semesters=semesters, confidence_level=confidence_level)
+
+    # TODO: this is redundant (combine this and the above code)
+    @staticmethod
+    def make_from_schedulables_list(raw_list: list[list[Schedulable]],
+            starting_semester: SemesterType = FALL, starting_year: int = 2023,
+            confidence_level: Optional[float] = None) -> ScheduleInfoContainer:
+
+        semesters: list[SemesterDescription] = []
+        running_year: int = starting_year
+        running_semester: SemesterType = starting_semester
+
+        schedulables_list: list[CourseIdentifier]
+        for schedulables_list in raw_list:
+            semesters.append(SemesterDescription(running_year, running_semester, schedulables_list))
+
+            running_semester = SEMESTER_TYPE_SUCCESSOR[running_semester]
+            if running_semester == SPRING:
+                running_year += 1
+        while not semesters[-1]:
+            semesters.pop()
+            
+        
+        return ScheduleInfoContainer(semesters=semesters, confidence_level=confidence_level)
+
+
+    def __init__(self, semesters: Optional[list[SemesterDescription]] = None,
+            confidence_level: Optional[float] = None):
+        self._semesters: list[SemesterDescription] = semesters if semesters is not None else []
+        self._confidence_level: Optional[float] = confidence_level
+
+    def __str__(self) -> str:
+        return "\n".join([str(semester) for semester in self._semesters]) if len(self._semesters) != 0 else '*Empty Path*'
+
+    def __iter__(self) -> Iterator[SemesterDescription]:
+        return self._semesters.__iter__()
+
+    def get_schedule(self) -> list[SemesterDescription]:
+        return self._semesters
+
+    def get_confidence_level(self) -> Optional[float]:
+        return self._confidence_level
+
+    def semester_count(self) -> int:
+        return len(self._semesters)
+
+    def max_semester_course_count(self) -> int:
+        return max(len(semester) for semester in self._semesters)
+
+    def course_count(self) -> int:
+        return sum(len(semester) for semester in self._semesters)
+
+    def to_list_of_lists(self) -> list[list[Schedulable]]:
+        return list(list(course for course in semester) for semester in self)
+    
+
+
+class PathValidationReport:
+    
+    class Error:
+        def __init__(self, description: str) -> None:
+            self.description: str = description
+
+        def __str__(self) -> str:
+            return self.description
+
+    def __init__(self, error_list: Optional[list[PathValidationReport.Error]] = None,
+                 resultType: ValidationReportResult = VALIDATION_REPORT_WORKING,
+                 file_description: Optional[Path] = None, confidence_factor: Optional[float] = None) -> None:
+        self.file_description: Optional[Path] = file_description
+        self.confidence_factor: Optional[float] = confidence_factor
+        self.error_list: list[PathValidationReport.Error] = error_list if error_list is not None else []
+        self.resultType: ValidationReportResult = resultType
+
+    def __str__(self):
+        return 'Valid' if self.is_valid() else 'Invalid'
+    
+    def is_valid(self) -> bool:
+        '''Returns the validity (boolean) of the student's path.'''
+        return self.error_list == [] and (self.resultType == VALIDATION_REPORT_PARSED or 
+            self.resultType == VALIDATION_REPORT_WORKING)
+
+    def get_errors_printable(self) -> str:
+        return '\n'.join([str(error) for error in self.error_list]) if len(self.error_list) != 0 else '*No Errors*'
+
+    
 class CreditHourInformer:
 
     @staticmethod
@@ -145,7 +477,7 @@ class CreditHourInformer:
 
     
 
-def rigorous_validate_schedule(schedule: ScheduleInfoContainer,
+def dummy_rigorous_validate_schedule(schedule: ScheduleInfoContainer,
         taken_courses: list[CourseIdentifier] = [],
         prequisite_ignored_courses: list[CourseIdentifier] = [],
         credit_hour_informer: CreditHourInformer = CreditHourInformer.make_unlimited_generator()) -> PathValidationReport:
@@ -306,6 +638,236 @@ def rigorous_validate_schedule(schedule: ScheduleInfoContainer,
 
     # New comment to test branch
 
+
+
+
+# The following is surely going to be removed:
+
+class CourseInfoContainer:
+
+    def __init__(self):
+        # "CPSC 1301": ("Computer Science", 3, set(FALL, SPRING, SUMMER), set(),
+        #     "[s <n=Prerequsites, c=1>[d <n=MATH 1234>][d <n=MATH 4321>]]",
+        #     ""),
+        # "CPSC 1301": ("Computer Science", 3, set(FALL, SPRING, SUMMER), set(),
+        #     "[s <n=Prerequsites, c=1>[d <n=MATH 1234>][d <n=MATH 4321>]]",
+        #     ""),
+        """[e <n=Requires All:>
+	[d <n=CPSC 1301K>]
+	[d <n=MATH 1113>]
+]
+"""
+        self.dataset = {
+            "CPSC 1105": ("Introduction to Computing Principles and Technology", 3, set([FALL, SPRING, SUMMER]), set(), "", ""),
+            "CPSC 1301K": ("Computer Science I", 3, set([FALL, SPRING, SUMMER]), set(), "", ""),
+            "CPSC 1302": ("Computer Science II", 3, set([FALL, SPRING, SUMMER]), set(), """(CPSC 1301K, MATH 1113)""", ""),
+            "CPSC 1555": ("Selected Topics in Computer Science", 3, set([]), set(), "", ""),
+            "CPSC 2105": ("Computer Organization", 3, set([FALL, SPRING]), set(), """[e <n=Requires All:>
+	[s <c=1, n=Requires 1:>
+		[d <n=CSCI 1301>]
+		[d <n=CPSC 1301K>]
+	]
+	[d <n=MATH 2125>]
+]
+""", ""),
+            "CPSC 2108": ("Data Structures", 3, set([FALL, SPRING, SUMMER]), set(), """[s <c=1, n=Requires 1:>
+	[e <n=Requires All:>
+		[d <n=CPSC 1302>]
+		[d <n=MATH 2125>]
+	]
+	[d <n=MATH 2125>]
+]
+""", ""),
+            "CPSC 2115": ("Information Technology Fundamentals", 3, set([]), set(), "", ""),
+            "CPSC 2125": ("Internet Programming", 3, set([FALL]), set(), """[d <n=CPSC 1301K>]
+""", ""),
+            "CPSC 2555": ("Selected Topics in Computer Science", 3, set([]), set(), """[d <n=CPSC 1302>]
+""", ""),
+            "CPSC 3105": ("Digital Multimedia Development", 3, set([SPRING]), set(), """[d <n=CPSC 2125>]
+""", ""),
+            "CPSC 3111": ("COBOL Programming", 3, set([FALL]), set(), """[d <n=CPSC 1302>]
+""", ""),
+            "CPSC 3116": ("z/OS and JCL", 3, set([FALL]), set(), """[d <n=CPSC 1302>]
+""", ""),
+            "CPSC 3118": ("Graphical User Interface Development", 3, set([SPRING]), set(), """[d <n=CPSC 1302>]
+""", ""),
+            "CPSC 3121": ("Assembly Language Programming I", 3, set([SPRING]), set(), """[e <n=Requires All:>
+	[d <n=CPSC 2105>]
+	[d <n=CPSC 1302>]
+]
+""", ""),
+            "CPSC 3125": ("Operating Systems", 3, set([FALL, SPRING]), set(), """[s <c=1, n=Requires 1:>
+	[e <n=Requires All:>
+		[d <n=CPSC 2105>]
+		[d <n=CPSC 2108>]
+	]
+	[d <n=CPSC 2108>]
+]
+""", ""),
+            "CPSC 3131": (" Database Systems I", 3, set([FALL, SPRING]), set(), """[d <n=CPSC 1302>]
+""", ""),
+            "CPSC 3137": ("Natural Language Processing and Text Mining", 3, set([]), set(), """[d <n=CPSC 1301K>]
+""", ""),
+            "CPSC 3156": ("Transaction Processing", 3, set ([SPRING]), set(), """[d <n=CPSC 3111>]
+""", ""),
+            "CPSC 3165": ("Professionalism in Computing", 3, set([FALL, SPRING, SUMMER]), set(), "", ""),
+            "CPSC 3175": ("Object-Oriented Design", 3, set([FALL, SPRING]), set(), """[d <n=CPSC 2108>]
+""", ""),
+            "CPSC 3415": ("Information Technology (IT) Practicum", 3, set([FALL, SPRING, SUMMER]), set(), "", ""),
+            "CPSC 3555": ("Selected Topics in Computer Science", 3, set([FALL, SPRING, SUMMER]), set(), """[d <n=CPSC 2108>]
+""", ""),
+            "CPSC 4000": ("Baccalaureate Survey", 3, set([FALL, SPRING, SUMMER]), set(), "", ""),
+            "CPSC 4111": ("Game Programming I", 3, set([FALL]), set(), """[e <n=Requires All:>
+	[d <n=CPSC 3118>]
+	[d <n=CPSC 3175>]
+]
+""", ""),
+            "CPSC 4112": ("Game Programming II", 3, set([SPRING]), set(), """[e <n=Requires All:>
+	[d <n=CPSC 4111>]
+	[d <n=CPSC 4113, mbtc=True>]
+]
+""", ""),
+            "CPSC 4113": ("Game Jam", 3, set([SPRING]), set(), """[e <n=Requires All:>
+	[d <n=CPSC 4111>]
+	[d <n=CPSC 4112, mbtc=True>]
+]
+""", ""),
+            "CPSC 4115": ("Algorithms", 3, set([FALL]), set(), """[e <n=Requires All:>
+	[d <n=CPSC 2108>]
+	[d <n=MATH 5125U>]
+]
+""", ""),
+            "CPSC 4121": ("Robotics Programming I", 3, set([FALL]), set(), """[d <n=CPSC 1302>]
+""", ""),
+            "CPSC 4122": ("Robotics Programming II", 3, set([]), set(), """[d <n=CPSC 4121>]
+""", ""),
+            "CPSC 4125": ("Server-Side Web Development", 3, set([FALL]), set(), """[e <n=Requires All:>
+	[d <n=CPSC 2125>]
+	[d <n=CPSC 3131>]
+]
+""", ""),
+            "CPSC 4126": ("Web Development Projects", 3, set([SPRING]), set(), """[d <n=CPSC 4125>]
+""", ""),
+            "CPSC 4127": ("Computer and Network Security", 3, set([]), set(), """[e <n=Requires All:>
+	[d <n=CYBR 2160>]
+	[s <c=1, n=Requires 1:>
+		[d <n=CYBR 2159>]
+		[d <n=MISM 3145>]
+	]
+]
+""", ""),
+            "CPSC 4130": ("Mobile Computing", 3, set([]), set(), """[d <n=CPSC 3175>]
+""", ""),
+            "CPSC 4135": ("Programming Languages", 3, set([SPRING]), set(), """[d <n=CPSC 3175>]
+""", ""),
+            "CPSC 4138": ("Advanced Database Systems", 3, set([]), set(), """[d <n=CPSC 3131>]
+""", ""),
+            "CPSC 4145": ("Computer Graphics", 3, set([FALL]), set(), """[d <n=CPSC 2108>]
+""", ""),
+            "CPSC 4148": ("Theory of Computation", 3, set([SPRING]), set(), """[d <n=CPSC 4115>]
+""", ""),
+            "CPSC 4155": ("Computer Architecture", 3, set([FALL]), set(), """[d <n=CPSC 3121>]
+""", ""),
+            "CPSC 4157": ("Computer Networks", 3, set([FALL, SUMMER]), set(), """[d <n=CPSC 2108>]
+""", ""),
+            "CPSC 4175": ("Software Engineering", 3, set([FALL]), set(), """[d <n=CPSC 3175>]
+""", ""),
+            "CPSC 4176": ("Senior Software Engineering Project", 3, set([SPRING]), set(), """[d <n=CPSC 4175>]
+""", ""),
+            "CPSC 4185": ("Artificial Intelligence and Machine Learning", 3, set([SPRING]), set(), """[d <n=CPSC 2108>]
+""", ""),
+            "CPSC 4205": ("IT Senior Capstone", 3, set([FALL, SPRING, SUMMER]), set(), "", ""),
+            "CPSC 4505": ("Undergraduate Research", 3, set([FALL, SPRING]), set(), """[d <n=CPSC 2108>]
+""", ""),
+            "CPSC 4555": ("Selected Topics in Computer Science", 3, set([]), set(), "", ""),
+            "CPSC 4698": ("Internship", 3, set([SPRING]), set(), "", ""),
+            "CPSC 4899": ("Independent Study", 3, set([SPRING]), set(), "", ""),
+            "CPSC 6000": ("Graduate Exit Examination", 3, set([FALL, SPRING, SUMMER]), set(), "", ""),
+            "CPSC 6103": ("Computer Science Principles for Teachers", 3, set([SPRING]), set(), "", ""),
+            "CPSC 6105": ("Fundamental Principles of Computer Science", 3, set([FALL, SPRING]), set(), "", ""),
+            "CPSC 6106": ("Fundamentals of Computer Programming and Data Structures", 3, set([FALL, SPRING, SUMMER]), set(), "", ""),
+            "CPSC 6107": ("Survey of Modeling and Simulation", 3, set([SPRING]), set(), "", ""),
+            "CPSC 6109": ("Algorithms Analysis and Design", 3, set([SPRING]), set(), "", ""),
+            "CPSC 6114": ("Fundamentals of Machine Learning", 3, set([FALL]), set(), "", ""),
+            "CPSC 6118": ("Human-Computer Interface Development", 3, set([]), set(), """[d <n=CPSC 6114>]
+""", ""),
+            "CPSC 6119": ("Object-Oriented Development", 3, set([FALL, SPRING]), set(), "", ""),
+            "CPSC 6124": ("Advanced Machine Learning", 3, set([SPRING]), set(), """[d <n=CPSC 6114>]
+""", ""),
+            "CPSC 6125": ("Operating Systems Design and Implementation", 3, set([FALL]), set(), "", ""),
+            "CPSC 6126": ("Introduction to Cybersecurity", 3, set([SPRING, SUMMER]), set(), "", ""),
+            "CPSC 6127": ("Contemporary Issues in Database Management Systems", 3, set([SPRING]), set(), "", ""),
+            "CPSC 6128": ("Network Security", 3, set([SPRING]), set(), """[d <n=CPSC 6126>]
+""", ""),
+            "CPSC 6129": ("Computer Language Design and Interpretation", 3, set([]), set(), "", ""),
+            "CPSC 6136": ("Human Aspects of Cybersecurity", 3, set([SUMMER]), set(), """[d <n=CPSC 6126>]
+""", ""),
+            "CPSC 6138": ("Mobile Systems and Applications", 3, set([SUMMER]), set(), """[d <n=CPSC 6119>]
+""", ""),
+            "CPSC 6147": ("Data Visualization and Presentation", 3, set([SPRING]), set(), "", ""),
+            "CPSC 6155": ("Advanced Computer Architecture", 3, set([]), set(), "", ""),
+            "CPSC 6157": ("Network and Cloud Management", 3, set([FALL]), set(), "", ""),
+            "CPSC 6159": ("Digital Forensics", 3, set([FALL]), set(), """[d <n=CPSC 6126>]
+""", ""),
+            "CPSC 6167": ("Cybersecurity Risk Management", 3, set([SPRING]), set(), """[d <n=CPSC 6126>]
+""", ""),
+            "CPSC 6175": ("Web Engineering and Technologies", 3, set([SPRING]), set(), "", ""),
+            "CPSC 6177": ("Software Design and Development", 3, set([]), set(), "", ""),
+            "CPSC 6178": ("Software Testing and Quality Assurance", 3, set([]), set(), "", ""),
+            "CPSC 6179": ("Software Project Planning and Management", 3, set([FALL]), set(), "", ""),
+            "CPSC 6180": ("Software Estimation and Measurement", 3, set([]), set(), "", ""),
+            "CPSC 6185": ("Intelligent Systems", 3, set([SPRING]), set(), "", ""),
+            "CPSC 6190": ("Applied Cryptography", 3, set([]), set(), """[d <n=CPSC 6106>]
+""", ""),
+            "CPSC 6555": ("Selected Topics in Computer Science", 3, set([SUMMER]), set(), "", ""),
+            "CPSC 6698": ("Graduate Internship in Computer Science", 3, set([]), set(), "", ""),
+            "CPSC 6899": ("Independent Study", 3, set([FALL, SPRING]), set(), "", ""),
+            "CPSC 6985": ("Research and Thesis", 3, set([SPRING]), set(), "", ""),
+            "CPSC 6986": ("Thesis Defense", 3, set([SPRING]), set(), "", ""),
+        }
+
+    def validate_course(self, courseid: str) -> bool:
+        return courseid in self.dataset
+    
+    def get_name(self, courseid: CourseIdentifier):
+        if courseid.course_number in self.dataset:
+            return self.dataset[courseid.course_number][0]
+        else:
+            raise KeyError(courseid.course_number + " is not found!")
+    
+    def get_hours(self, courseid): 
+        if courseid.course_number in self.dataset:
+            return self.dataset[courseid.course_number][1]
+        else:
+            raise KeyError(courseid.course_number + " is not found!")
+    
+    def get_availability(self, courseid):
+        if courseid.course_number in self.dataset:
+            result = self.dataset[courseid.course_number][2]
+            return result if len(result) != 0 else set([FALL, SPRING])
+        else:
+            raise KeyError(courseid.course_number + " is not found!")
+
+    def get_prereqs(self, courseid):
+        if courseid.course_number in self.dataset:
+            return self.dataset[courseid.course_number][4]
+        else:
+            raise KeyError(courseid.course_number + " is not found!")
+
+    def get_coreqs(self, courseid):
+        if courseid.course_number in self.dataset:
+            return self.dataset[courseid.course_number][5]
+        else:
+            raise KeyError(courseid.course_number + " is not found!")
+
+    def get_recommended(self, courseid):
+        if courseid.course_number in self.dataset:
+            return self.dataset[courseid.course_number][3]
+        else:
+            raise KeyError(courseid.course_number + " is not found!")
+
+    def get_importance(self, courseid):
+        return 1
 
 
 # Approach:
@@ -722,7 +1284,7 @@ judge_path: ScheduleFitenessFunction
 def judge_path(schedule_info_container: ScheduleInfoContainer, dummy_genetic_optimizer: GeneticOptimizer) -> float:
     # TODO: this is unfinished of course (implement)
     
-    validation_report: PathValidationReport = rigorous_validate_schedule(
+    validation_report: PathValidationReport = dummy_rigorous_validate_schedule(
         schedule = schedule_info_container,
         taken_courses = dummy_genetic_optimizer.taken_course,
         prequisite_ignored_courses = dummy_genetic_optimizer.prequisite_ignored_courses,
@@ -839,6 +1401,17 @@ def availability_rule(course: ConstuctiveScheduler.Schedulable,
         courses_needed: list[ConstuctiveScheduler.Schedulable],
         course_info_container: CourseInfoContainer) -> float:
     return FITNESS_LISTING[max(len(course.schedulable.availability) - 1, 2)]
+    
+# TODO: REMOVE THIS CLASS! IT IS USELESS!!
+class ConstructiveSchedulingParametersContainers(SchedulerParameterContainer):
+    
+    def set_hours(self, semester_type: SemesterType, hours: int) -> None:
+        '''Get the acceptability range for hours for a given semester type and year.'''
+        if semester_type != SUMMER:
+            self._fall_spring_hours = hours
+        else:
+            self._summer_hours = hours
+
 
 
 class ConstuctiveScheduler:
@@ -972,6 +1545,7 @@ class ConstuctiveScheduler:
         return self._courses_needed_container
     
     def get_hours_per_semester(self, semesterType: SemesterType = FALL) -> range:
+        # TODO: this uses just hours for the Fall (fix)
         return self._parameters_container.get_hours_for(semesterType)
     
     def configure_parameters(self, parameters_containter: SchedulerParameterContainer) -> None:
@@ -1016,8 +1590,6 @@ class ConstuctiveScheduler:
 
                 course_identifier: CourseIdentifier = \
                     CourseIdentifier(course_number, schedulable_parameters_item.course_name)
-
-                # TODO: IMP NEW -> 
 
                 # TODO: REMOVE THIS - it is to support old interfaces (course info protocol)
                 FUNC_course_identifier = course_identifier if isinstance(self._course_info_container, CourseInfoContainer) else course_identifier.course_number
@@ -1081,6 +1653,12 @@ class ConstuctiveScheduler:
             taken_course: CourseIdentifier
             for taken_course in taken_courses:
                 schedulable.schedulable.sync_course_taken(taken_course)
+            
+        # TODO: this is debugging (REMOVE)
+        # for schedulable_class_hours, schedulable_class in schedulables_dictionary._data.items():
+        #     print(schedulable_class_hours, ":")
+        #     for schedulable in schedulable_class:
+        #         print(schedulable, schedulable.first_take_fitness)
 
         return schedulables_dictionary
 
@@ -1235,6 +1813,28 @@ class ConstuctiveScheduler:
         
         # Create a list of lists using the above schedulables
         result_list: list[list[Schedulable]] = self._constructive_schedule_as_list(schedulables_dictionary, simple_corequisite_pairs)
+        
+        # TODO: TEST!!! REMOVE:
+        # Little Scramble:
+        # t = result_list[0][1]
+        # result_list[0][1] = result_list[1][0]
+        # result_list[1][0] = t
+
+        # Big Scramble:
+        # li = len(result_list) - 1
+        # for _ in range(5):
+        #     l = result_list[randint(0, li)]
+        #     if l:
+        #         t = l.pop(randint(0, len(l) - 1))
+        #         result_list[randint(0, li)].append(t)
+        # # Show prescramble
+        # print(ScheduleInfoContainer.make_from_schedulables_list(
+        #     raw_list = result_list,
+        #     starting_semester = self.semester_start,
+        #     starting_year = self.year_start,
+        #     confidence_level = 0
+        # ))
+        # TODO: END TEST!
 
         # Perform optimizations here (if an optimizer was passes in)
         if optimizer is not None:
@@ -1247,6 +1847,7 @@ class ConstuctiveScheduler:
             fitness_threshold: Optional[float] = None
             reduction_size: int = population_size//4
             best_performer_maintain: Optional[int] = 5
+
 
             trainer: GeneticOptimizer = GeneticOptimizer(
                 course_info_container=self._course_info_container,
@@ -1276,6 +1877,9 @@ class ConstuctiveScheduler:
             trainer.fill_population_with_model([model_gene])
 
             trainer.set_to_track_session(maximum_iterations, fitness_threshold=fitness_threshold)
+
+            # TODO: remove this print
+            # print("KEYS AND STUFF", [(i, str(trainer.domain[i])) for i in range(len(trainer.domain))])
             
             while not trainer.run_iteration(reduction_size=reduction_size, \
                 best_performer_maintain=best_performer_maintain): pass
@@ -1319,7 +1923,7 @@ def dummy_validation_unit_test():
         ['CPSC 4112', 'CPSC 4113']
     ], course_info_container, starting_semester=FALL, starting_year=2023)
     
-    report_1: PathValidationReport = rigorous_validate_schedule(
+    report_1: PathValidationReport = dummy_rigorous_validate_schedule(
         test_path_1,
         taken_courses=[CourseIdentifier('MATH 2125'), CourseIdentifier('MATH 1113')],
         prequisite_ignored_courses=[],
@@ -1343,7 +1947,7 @@ def dummy_validation_unit_test():
         ['CPSC 3118', 'CPSC 2555'],
     ], course_info_container, starting_semester=SPRING, starting_year=2023)
     
-    report_2: PathValidationReport = rigorous_validate_schedule(
+    report_2: PathValidationReport = dummy_rigorous_validate_schedule(
         test_path_2,
         taken_courses=[CourseIdentifier('MATH 2125'), CourseIdentifier('MATH 1113'), CourseIdentifier('CPSC 1301K')],
         prequisite_ignored_courses=[],
@@ -1372,7 +1976,7 @@ def dummy_validation_unit_test():
         ['CPSC 4112', 'CPSC 4113']
     ], course_info_container, starting_semester=FALL, starting_year=2023)
     
-    report_3: PathValidationReport = rigorous_validate_schedule(
+    report_3: PathValidationReport = dummy_rigorous_validate_schedule(
         test_path_3,
         taken_courses=[CourseIdentifier('MATH 2125'), CourseIdentifier('MATH 1113')],
         prequisite_ignored_courses=[],
@@ -1400,7 +2004,7 @@ def dummy_validation_unit_test():
         ['CPSC 4112', 'CPSC 4113']
     ], course_info_container, starting_semester=FALL, starting_year=2023)
     
-    report_4: PathValidationReport = rigorous_validate_schedule(
+    report_4: PathValidationReport = dummy_rigorous_validate_schedule(
         test_path_4,
         taken_courses=[CourseIdentifier('MATH 1113')],
         prequisite_ignored_courses=[],
@@ -1424,7 +2028,7 @@ def dummy_validation_unit_test():
         ['CPSC 1301K']
     ], course_info_container, starting_semester=FALL, starting_year=2023)
     
-    report_5: PathValidationReport = rigorous_validate_schedule(
+    report_5: PathValidationReport = dummy_rigorous_validate_schedule(
         test_path_5,
         taken_courses=[CourseIdentifier('MATH 1113')],
         prequisite_ignored_courses=[],
@@ -1451,7 +2055,7 @@ def dummy_validation_unit_test():
         ['CPSC 3118', 'CPSC 3156', 'CPSC 4130', 'CPSC 4126', 'CPSC 4138']
     ], course_info_container, starting_semester=SPRING, starting_year=2023)
     
-    report_6: PathValidationReport = rigorous_validate_schedule(
+    report_6: PathValidationReport = dummy_rigorous_validate_schedule(
         test_path_6,
         taken_courses=[CourseIdentifier('MATH 1113'), CourseIdentifier('MATH 2125')],
         prequisite_ignored_courses=[],
@@ -1524,7 +2128,7 @@ if __name__ == '__main__':
 
         
 
-        report: PathValidationReport = rigorous_validate_schedule(
+        report: PathValidationReport = dummy_rigorous_validate_schedule(
             test_path_a,
             taken_courses=[CourseIdentifier('MATH 2125'), CourseIdentifier('MATH 1113')],
             prequisite_ignored_courses=[],
@@ -1601,7 +2205,7 @@ if __name__ == '__main__':
         path: ScheduleInfoContainer = scheduler.generate_schedule(prequisite_ignored_courses=prequisite_ignored_courses)
         print(path)
 
-        generated_report: PathValidationReport = rigorous_validate_schedule(
+        generated_report: PathValidationReport = dummy_rigorous_validate_schedule(
             path,
             taken_courses=[CourseIdentifier('MATH 2125'), CourseIdentifier('MATH 1113'), CourseIdentifier('MATH 5125U')],
             prequisite_ignored_courses=[],

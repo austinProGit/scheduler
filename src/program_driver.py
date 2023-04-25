@@ -85,13 +85,13 @@ from driver_fs_functions import *
 from cli_interface import MainMenuInterface, GraphicalUserMenuInterface, ErrorMenu
 
 # NEW <<$
-from scheduler_driver import DummyConstuctiveScheduler as Scheduler, DummyCourseIdentifier
+from scheduler_driver import ConstuctiveScheduler as Scheduler, CourseIdentifier
 # $>> <<!
 #from scheduler import Scheduler
 # !>>
 
 # NEW <<$
-from scheduler_driver import DummyConstructiveSchedulingParametersContainers as ConstructiveSchedulingParametersContainers
+from scheduler_driver import ConstructiveSchedulingParametersContainers as ConstructiveSchedulingParametersContainers
 # $>> <<!
 #from scheduling_parameters_container import ConstructiveSchedulingParametersContainers
 # !>>
@@ -786,7 +786,8 @@ class SmartPlannerController:
             if PATH_TO_GRADUATION_EXPORT_TYPE in export_types:
                 unique_ptg_destination = get_next_free_filename(desired_destination.with_suffix('.xlsx'))
                 # Lew erased 'Path To Graduation' from here to work with excel_formatter
-                excel_formatter(Path(template_path), unique_ptg_destination, semesters_listing, self._scheduler.get_course_info())
+                # excel_formatter(Path(template_path), unique_ptg_destination, semesters_listing, self._scheduler.get_course_info())
+                excel_formatter(Path(template_path), unique_ptg_destination, semesters_listing)
                 self.output('Schedule (Path to Graduation) exported as {0}'.format(unique_ptg_destination))
                 if os.name == 'nt':
                     os.startfile(unique_ptg_destination)

@@ -2,6 +2,7 @@
 # Contributor: Vince Miller
 
 from urllib.request import urlopen
+import requests
 from bs4 import BeautifulSoup
 from recursive_descent_parser import *
 import re
@@ -13,30 +14,41 @@ import datetime
 import pickle
 
 
+def website_error(url):
+    error_found = False
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as error:
+        if error.response.status_code == 404:
+            print(f"\n{error}\n")
+            error_found = True
+    except requests.exceptions.RequestException as error:
+        print(f"\n{error}\n")
+        error_found = True
+    return error_found
+
+
 # Webcrawls one page to retrieve Baccalaureate Degrees/Majors. (80 degrees as of April 2023) 
 def get_baccalaureate_degrees():
     print("Retrieving Baccalaureate Degrees dictionary from https://catalog.columbusstate.edu/academic-degrees-programs/degrees-baccalaureate/")
-
     url = "https://catalog.columbusstate.edu/academic-degrees-programs/degrees-baccalaureate/"
-    html = urlopen(url).read()
-    soup = BeautifulSoup(html, features="html.parser")
-    degrees = soup.find("div", class_="page_content")
-    degrees = degrees.text
-    degrees = degrees.replace("\xa0", " ")
-    degree_pattern = r"[A-Z][a-z]+\s.+"
-    degrees = re.findall(degree_pattern, degrees)
-    degree_string = "\n"
+    if not website_error(url):
+        html = urlopen(url).read()
+        soup = BeautifulSoup(html, features="html.parser")
+        degrees = soup.find("div", class_="page_content")
+        degrees = degrees.text
+        degrees = degrees.replace("\xa0", " ")
+        degree_pattern = r"[A-Z][a-z]+\s.+"
+        degrees = re.findall(degree_pattern, degrees)
+        degree_string = "\n"
 
-    for degree in degrees:
-        degree_string += f"{degree}\n"
+        for degree in degrees:
+            degree_string += f"{degree}\n"
 
-    major_dict = get_majors_and_tracks(degree_string)
-    file1 = get_source_path()
-    file1 = get_source_relative_path(file1, "output_files/baccalaureate_degrees_dictionary.pickle")
-    with open(file1, "wb") as f:
-        pickle.dump(major_dict, f)
-
-    print(f"Baccalaureate Degrees dictionary complete.\n")
+        major_dict = get_majors_and_tracks(degree_string)
+        write_pickle_file("baccalaureate_degrees_dictionary.pickle", major_dict)
+        print(f"Baccalaureate Degrees dictionary complete.\n")
 
 
 # Author: Austin Lee
@@ -80,17 +92,18 @@ def get_majors_and_tracks(degree_string):
 # Webcrawls one page to retrieve 116 department names of CSU.
 def get_department_dict():
     url = "https://catalog.columbusstate.edu/course-descriptions/"
+    if website_error(url):
+        return None
     html = urlopen(url).read()
     soup = BeautifulSoup(html, features="html.parser")
     text = soup.text
     depts = re.findall(r"([A-Z]{3}[A-Z]?)\s-\s.", text)
     dept_dict = {}
+
     for dept in depts:
         dept_dict[dept] = None
-    file1 = get_source_path()
-    file1 = get_source_relative_path(file1, "output_files/department_dictionary.pickle")
-    with open(file1, "wb") as f:
-        pickle.dump(dept_dict, f)
+
+    write_pickle_file("department_dictionary.pickle", dept_dict)
     return dept_dict
 
 
@@ -102,23 +115,42 @@ def get_course_dict():
     depts = get_department_dict()
     l = len(depts)
     print(f"Dictionary complete with {l} departments.\n")
+    dept_error_list = []
     refined_courses = {}
+
     for dept in depts:
         url = "https://catalog.columbusstate.edu/course-descriptions/"+str(dept).lower()+"/"
-        print("Retrieving course dictionary from " + url)
-        html = urlopen(url).read()
-        soup = BeautifulSoup(html, features="html.parser")
-        courses = soup.find_all("span", class_="text col-3 detail-code margin--tiny text--semibold text--huge")
-        for course in courses:
-            refined_courses[course.text] = None
-        print(f"Course dictionary from {dept} complete.")
-    file1 = get_source_path()
-    file1 = get_source_relative_path(file1, "output_files/course_dictionary.pickle")
-    with open(file1, "wb") as f:
-        pickle.dump(refined_courses, f)
+        if not website_error(url):
+            print("Retrieving course dictionary from " + url)
+            html = urlopen(url).read()
+            soup = BeautifulSoup(html, features="html.parser")
+            courses = soup.find_all("span", class_="text col-3 detail-code margin--tiny text--semibold text--huge")
+
+            for course in courses:
+                refined_courses[course.text] = None
+            print(f"Course dictionary from {dept} complete.")
+        else:
+            dept_error_list.append(dept)
+
+    for dept in dept_error_list:
+        if dept_error_list != []:
+            del depts[dept]
+
+    if dept_error_list != []:
+        write_pickle_file("department_dictionary.pickle", depts)
+
+    write_pickle_file("course_dictionary.pickle", refined_courses)
+
     l = len(refined_courses)
     print(f"Dictionary complete with {l} courses.\n")
     return refined_courses
+
+
+def write_pickle_file(filename, obj):
+    file1 = get_source_path()
+    file1 = get_source_relative_path(file1, "output_files/" + filename)
+    with open(file1, "wb") as f:
+        pickle.dump(obj, f)
 
 
 # Using pickled file to retrieve information (dictionary for this case)
@@ -140,9 +172,13 @@ def get_baccalaureate_degrees_pickle_file():
 
 
 def update_course_info(dept=None):
-    dept_dict = get_department_dict() #comment out for faster processing
-    course_dict = get_course_dict() #comment out for faster processing
     major_dict = get_baccalaureate_degrees() #comment out for faster processing
+    dept_dict = get_department_dict() #comment out for faster processing
+    if dept_dict == None: 
+        print("Website Error: Department dictionary unable to update along with corresponding updates. (Default to last updated data version)")
+        return None
+
+    course_dict = get_course_dict() #comment out for faster processing
     df_dict = {}
     dept_dict = get_pickle_file("department_dictionary.pickle") #Quick way
     course_dict = get_pickle_file("course_dictionary.pickle") #Quick way
@@ -676,3 +712,4 @@ def create_tokenized_logic(section):
 
 #update_course_info()
 # print(get_baccalaureate_degrees_pickle_file())
+
