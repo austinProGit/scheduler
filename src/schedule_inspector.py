@@ -327,10 +327,6 @@ def freshman_with_4000_level_count(schedule):
 #dfdict = load_course_info(file0)
 #container = CourseInfoContainer(dfdict)
 
-#course_identifier_CPSC_3121 = DummyCourseIdentifier(course_number="CPSC 3121")
-#course_identifier_CPSC_3165 = DummyCourseIdentifier(course_number="CPSC 3165")
-#course_identifier_CPSC_4000 = DummyCourseIdentifier(course_number="CPSC 4000")
-#course_identifier_CPSC_4135 = DummyCourseIdentifier(course_number="CPSC 4135")
 #course_identifier_MATH_1113 = DummyCourseIdentifier(course_number="MATH 1113")
 #course_identifier_STAT_3127 = DummyCourseIdentifier(course_number="STAT 3127")
 #course_identifier_CPSC_2108 = DummyCourseIdentifier(course_number="CPSC 2108")
@@ -338,10 +334,6 @@ def freshman_with_4000_level_count(schedule):
 #course_identifier_CPSC_XXXX = DummyCourseIdentifier(course_number="CPSC XXXX", name="Elective", is_stub=True)
 #course_identifier_CPSC_3XX = DummyCourseIdentifier(course_number="CPSC 3@X", name="Elective", is_stub=True)
 
-#cr1 = container.get_course_record(course_identifier_CPSC_3121)
-#cr2 = container.get_course_record(course_identifier_CPSC_3165)
-#cr3 = container.get_course_record(course_identifier_CPSC_4000)
-#cr4 = container.get_course_record(course_identifier_CPSC_4135)
 #cr5 = container.get_course_record(course_identifier_MATH_1113)
 #cr6 = container.get_course_record(course_identifier_STAT_3127)
 #cr7 = container.get_course_record(course_identifier_CPSC_2108)
@@ -349,34 +341,18 @@ def freshman_with_4000_level_count(schedule):
 #crX = container.get_course_record(course_identifier_CPSC_XXXX)
 #crY = container.get_course_record(course_identifier_CPSC_3XX)
 
-#course_obj_list =[[cr1, cr2, crX], [cr3, cr4, crY], [cr5, cr6, cr7, cr8], 
-#                  [cr1, cr2, crX], [cr3, cr4, crY], [cr5, cr6, cr7, cr8], 
-#                  [cr1, cr2, crX], [cr3, cr4, crY], [cr5, cr6, cr7, cr8], 
-#                  [cr1, cr2, crX], [cr3, cr4, crY], [cr5, cr6, cr7, cr8]]
+#course_obj_list =[[crX], [crY], [cr5, cr6, cr7, cr8], 
+#                  [crX], [crY], [cr5, cr6, cr7, cr8], 
+#                  [crX], [crY], [cr5, cr6, cr7, cr8], 
+#                  [crX], [crY], [cr5, cr6, cr7, cr8]]
 
-#print(schedule_length(course_obj_list), '\n')
-#print(semester_type_sequence(course_obj_list), '\n')
-#print(cr3)
-#print(semester_type_of_course(course_obj_list, cr3))
-#print(semester_position_of_course(course_obj_list, cr3))
-#print(length_of_all_semesters(course_obj_list), '\n')
-#print(senior_year_semesters_list(course_obj_list), '\n')
 #print(senior_year_semesters_list_of_lists(course_obj_list))
 #print(senior_with_1000_level_courses(course_obj_list))
-#print(senior_with_1000_level_count(course_obj_list))
 #print(senior_with_2000_level_courses(course_obj_list))
-#print(senior_with_2000_level_count(course_obj_list), '\n')
-#print(junior_year_semesters_list(course_obj_list), '\n')
 #print(junior_year_semesters_list_of_lists(course_obj_list))
 #print(junior_with_1000_level_courses(course_obj_list))
-#print(junior_with_1000_level_count(course_obj_list), '\n')
-#print(sophmore_year_semesters_list(course_obj_list), '\n')
 #print(sophmore_year_semesters_list_of_lists(course_obj_list))
 #print(sophmore_with_4000_level_courses(course_obj_list))
-#print(sophmore_with_4000_level_count(course_obj_list), '\n')
 #print(freshman_year_semesters_list_of_lists(course_obj_list), '\n')
-#print(freshman_year_semesters_list(course_obj_list))
 #print(freshman_with_3000_level_courses(course_obj_list))
-#print(freshman_with_3000_level_count(course_obj_list))
 #print(freshman_with_4000_level_courses(course_obj_list))
-#print(freshman_with_4000_level_count(course_obj_list))
