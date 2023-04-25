@@ -32,7 +32,10 @@ from scheduling_parameters_container import ConstructiveSchedulingParametersCont
 from instance_identifiers import CourseIdentifier
 from general_utilities import *
 
+# Lew: Comment import below to prevent circular importation ERROR for isolation tests of schedule_inspector and expert_system_module to
+# instantiate CourseIdentifier objects.
 from expert_system_module import ExpertSystem, DynamicKnowledge
+
 from schedule_info_container import *
 from general_utilities import *
 

@@ -36,20 +36,20 @@ def last_semester_type(schedule):
         return semester_types[-1]
     else: return None
 
-def semester_type_of_course(schedule, courseID):
+def semester_type_of_course(schedule, course_report_obj):
     semester_type = None
     sequence = semester_type_sequence(schedule)
     for semester in range(schedule_length(schedule)):
-        if courseID in schedule[semester]:
+        if course_report_obj in schedule[semester]:
             semester_type = sequence[semester]
             break
     return semester_type
 
-def semester_position_of_course(schedule, courseID):
+def semester_position_of_course(schedule, course_report_obj):
     semester_position = None
     sequence = semester_type_sequence(schedule)
     for semester in range(schedule_length(schedule)):
-        if courseID in schedule[semester]:
+        if course_report_obj in schedule[semester]:
             semester_position = semester
             break
     return semester_position
@@ -120,7 +120,7 @@ def senior_with_1000_level_courses(schedule):
     senior_year = senior_year_semesters_list(schedule)
     if senior_year != None:
         for course in senior_year:
-            if ' 1' in course:
+            if ' 1' in course.ID:
                 found = True
                 break
     return found
@@ -131,9 +131,9 @@ def senior_with_1000_level_count(schedule):
     senior_year = senior_year_semesters_list(schedule)
     if senior_year != None:
         for course in senior_year:
-            if ' 1' in course:
+            if ' 1' in course.ID:
                 count += 1
-                message += '1000 level course ' + course + ' detected in senior year.\n'
+                message += '1000 level course ' + course.ID + ' detected in senior year.\n'
     return count, message
 
 def senior_with_2000_level_courses(schedule):
@@ -141,7 +141,7 @@ def senior_with_2000_level_courses(schedule):
     senior_year = senior_year_semesters_list(schedule)
     if senior_year != None:
         for course in senior_year:
-            if ' 2' in course:
+            if ' 2' in course.ID:
                 found = True
                 break
     return found
@@ -152,9 +152,9 @@ def senior_with_2000_level_count(schedule):
     senior_year = senior_year_semesters_list(schedule)
     if senior_year != None:
         for course in senior_year:
-            if ' 2' in course:
+            if ' 2' in course.ID:
                 count += 1
-                message += '2000 level course ' + course + ' detected in senior year.\n'
+                message += '2000 level course ' + course.ID + ' detected in senior year.\n'
     return count, message
 
 def junior_interval(schedule):
@@ -187,7 +187,7 @@ def junior_with_1000_level_courses(schedule):
     junior_year = junior_year_semesters_list(schedule)
     if junior_year != None:
         for course in junior_year:
-            if ' 1' in course:
+            if ' 1' in course.ID:
                 found = True
                 break
     return found
@@ -198,9 +198,9 @@ def junior_with_1000_level_count(schedule):
     junior_year = junior_year_semesters_list(schedule)
     if junior_year != None:
         for course in junior_year:
-            if ' 1' in course:
+            if ' 1' in course.ID:
                 count += 1
-                message += '1000 level course ' + course + ' detected in junior year.\n'
+                message += '1000 level course ' + course.ID + ' detected in junior year.\n'
     return count, message
 
 def sophmore_interval(schedule):
@@ -233,7 +233,7 @@ def sophmore_with_4000_level_courses(schedule):
     sophmore_year = sophmore_year_semesters_list(schedule)
     if sophmore_year != None:
         for course in sophmore_year:
-            if ' 4' in course:
+            if ' 4' in course.ID:
                 found = True
                 break
     return found
@@ -244,9 +244,9 @@ def sophmore_with_4000_level_count(schedule):
     sophmore_year = sophmore_year_semesters_list(schedule)
     if sophmore_year != None:
         for course in sophmore_year:
-            if ' 4' in course:
+            if ' 4' in course.ID:
                 count += 1
-                message += '4000 level course ' + course + ' detected in sophmore year.\n'
+                message += '4000 level course ' + course.ID + ' detected in sophmore year.\n'
     return count, message
 
 def freshman_interval(schedule):
@@ -279,7 +279,7 @@ def freshman_with_3000_level_courses(schedule):
     freshman_year = freshman_year_semesters_list(schedule)
     if freshman_year != None:
         for course in freshman_year:
-            if ' 3' in course:
+            if ' 3' in course.ID:
                 found = True
                 break
     return found
@@ -290,9 +290,9 @@ def freshman_with_3000_level_count(schedule):
     freshman_year = freshman_year_semesters_list(schedule)
     if freshman_year != None:
         for course in freshman_year:
-            if ' 3' in course:
+            if ' 3' in course.ID:
                 count += 1
-                message += '3000 level course ' + course + ' detected in freshman year.\n'
+                message += '3000 level course ' + course.ID + ' detected in freshman year.\n'
     return count, message
 
 def freshman_with_4000_level_courses(schedule):
@@ -300,7 +300,7 @@ def freshman_with_4000_level_courses(schedule):
     freshman_year = freshman_year_semesters_list(schedule)
     if freshman_year != None:
         for course in freshman_year:
-            if ' 4' in course:
+            if ' 4' in course.ID:
                 found = True
                 break
     return found
@@ -311,109 +311,72 @@ def freshman_with_4000_level_count(schedule):
     freshman_year = freshman_year_semesters_list(schedule)
     if freshman_year != None:
         for course in freshman_year:
-            if ' 4' in course:
+            if ' 4' in course.ID:
                 count += 1
-                message += '4000 level course ' + course + ' detected in freshman year.\n'
+                message += '4000 level course ' + course.ID + ' detected in freshman year.\n'
     return count, message
 
-def coreqs_invalid(schedule, course_info):
-    # TODO: commented out before presentation for demonstration
-    # for semester in schedule: 
-    #         for course in semester:
-    #             coreqs = course_info.get_coreqs(course) if course_info.get_coreqs(course) != [] else []
-    #             if coreqs != []:
-    #                 for coreq in coreqs:
-    #                     if coreq not in semester: return True
-    return False
+# Testing ------------------------------------------------------------------------------------------------
 
-def coreqs_invalid_count(schedule, course_info):
-    message = ''
-    count = 0
-    # TODO: commented out before presentation for demonstration
-    # for semester in schedule: 
-    #         for course in semester:
-    #             coreqs = course_info.get_coreqs(course) if course_info.get_coreqs(course) != [] else []
-    #             if coreqs != []:
-    #                 for coreq in coreqs:
-    #                     if coreq not in semester: 
-    #                         count += 1
-    #                         message += course + ' coreq ' + coreq + ' not in same semester.\n'
-    return count, message
-
-def gateway_courses_invalid(schedule, course_info):
-    success = False
-    message = ''
-    for semester in range(schedule_length(schedule)):
-            for course in schedule[semester]:
-                weight = course_info.get_weight(course)
-                if weight != None and weight > 6:
-                    if semester > (schedule_length(schedule) / 2): 
-                        success = True
-                        message += course + ' with ' + str(weight) + ' child descendants found in semester ' + str(semester + 1) + '.\n'
-    return success, message
-
-def importance_invalid(schedule, course_info):
-    success = False
-    message = ''
-    for semester in schedule:
-        for course in semester:
-            importance = course_info.get_importance(course)
-            if importance != None and importance < 50:
-                success = True
-                message += course + ' with ' + str(importance) + ' importance rating found in schedule.\n'
-    return success, message
-
-# Tesing ------------------------------------------------------------------------------------------------
+#from driver_fs_functions import *
 #from course_info_container import *
-#from program_generated_evaluator import evaluate_container
+#from scheduler_driver import *
 
-#df = load_course_info('src/input_files/Course Info.xlsx')
-#lst = load_course_info_excused_prereqs('src/input_files/Course Info.xlsx')
-#con = CourseInfoContainer(df, lst)
-#report = evaluate_container(con)
-#con.load_report(report)
+#file0 = get_source_path()
+#file0 = get_source_relative_path(file0, 'input_files/Course Info.xlsx')
+#dfdict = load_course_info(file0)
+#container = CourseInfoContainer(dfdict)
 
-#a = [['CPSC 1301'], [], ['CPSC 1115'],
-#             ['CPSC 2108', 'MATH 2125'], ['CPSC 1302', 'MATH 1113'], ['MATH 2125', 'CPSC 2105'], 
-#             ['CPSC 3165', 'CPSC 3175'], ['CPSC 3131', 'CPSC 3121'], ['CPSC 3116', 'CPSC 3415'], 
-#             ['CPSC 4176', 'CPSC 4155'], ['CPSC 4175', 'CPSC 4148'], ['CPSC 1301', 'CPSC 3137']]#, ['CPSC 4157', 'CPSC 4138']]
+#course_identifier_CPSC_3121 = DummyCourseIdentifier(course_number="CPSC 3121")
+#course_identifier_CPSC_3165 = DummyCourseIdentifier(course_number="CPSC 3165")
+#course_identifier_CPSC_4000 = DummyCourseIdentifier(course_number="CPSC 4000")
+#course_identifier_CPSC_4135 = DummyCourseIdentifier(course_number="CPSC 4135")
+#course_identifier_MATH_1113 = DummyCourseIdentifier(course_number="MATH 1113")
+#course_identifier_STAT_3127 = DummyCourseIdentifier(course_number="STAT 3127")
+#course_identifier_CPSC_2108 = DummyCourseIdentifier(course_number="CPSC 2108")
+#course_identifier_CPSC_3125 = DummyCourseIdentifier(course_number="CPSC 3125")
+#course_identifier_CPSC_XXXX = DummyCourseIdentifier(course_number="CPSC XXXX", name="Elective", is_stub=True)
+#course_identifier_CPSC_3XX = DummyCourseIdentifier(course_number="CPSC 3@X", name="Elective", is_stub=True)
 
-#b = [['CPSC 2105', 'CPSC 1301'], ['CPSC 3333', 'CPSC 4444'], ['CPSC 1115'],
-#             [], ['CPSC 1302', 'MATH 1113'], ['CPSC 4444'], 
-#             ['CPSC 3165', 'CPSC 3175', 'CPSC 1111'], ['CPSC 1111'], ['CPSC 3116', 'CPSC 3415', 'CPSC 1111'], 
-#             ['CPSC 4176', 'CPSC 4155'], ['CPSC 4175', 'CPSC 4148', 'CPSC 1111'], ['CPSC 1111', 'CPSC 2222']]
+#cr1 = container.get_course_record(course_identifier_CPSC_3121)
+#cr2 = container.get_course_record(course_identifier_CPSC_3165)
+#cr3 = container.get_course_record(course_identifier_CPSC_4000)
+#cr4 = container.get_course_record(course_identifier_CPSC_4135)
+#cr5 = container.get_course_record(course_identifier_MATH_1113)
+#cr6 = container.get_course_record(course_identifier_STAT_3127)
+#cr7 = container.get_course_record(course_identifier_CPSC_2108)
+#cr8 = container.get_course_record(course_identifier_CPSC_3125)
+#crX = container.get_course_record(course_identifier_CPSC_XXXX)
+#crY = container.get_course_record(course_identifier_CPSC_3XX)
 
-#c = None
+#course_obj_list =[[cr1, cr2, crX], [cr3, cr4, crY], [cr5, cr6, cr7, cr8], 
+#                  [cr1, cr2, crX], [cr3, cr4, crY], [cr5, cr6, cr7, cr8], 
+#                  [cr1, cr2, crX], [cr3, cr4, crY], [cr5, cr6, cr7, cr8], 
+#                  [cr1, cr2, crX], [cr3, cr4, crY], [cr5, cr6, cr7, cr8]]
 
-#print(schedule_length(b), '\n')
-#print(semester_type_sequence(b), '\n')
-#print(semester_type_of_course(b, 'CPSC 4148'))
-#print(semester_position_of_course(b, 'CPSC 4148'))
-#print(length_of_all_semesters(b), '\n')
-#print(senior_year_semesters_list(b), '\n')
-#print(senior_year_semesters_list_of_lists(b))
-#print(senior_with_1000_level_courses(b))
-#print(senior_with_1000_level_count(b))
-#print(senior_with_2000_level_courses(b))
-#print(senior_with_2000_level_count(b), '\n')
-#print(junior_year_semesters_list(b), '\n')
-#print(junior_year_semesters_list_of_lists(b))
-#print(junior_with_1000_level_courses(b))
-#print(junior_with_1000_level_count(b), '\n')
-#print(sophmore_year_semesters_list(b), '\n')
-#print(sophmore_year_semesters_list_of_lists(b))
-#print(sophmore_with_4000_level_courses(b))
-#print(sophmore_with_4000_level_count(b), '\n')
-#print(freshman_year_semesters_list_of_lists(b), '\n')
-#print(freshman_year_semesters_list(b))
-#print(freshman_with_3000_level_courses(b))
-#print(freshman_with_3000_level_count(b))
-#print(freshman_with_4000_level_courses(b))
-#print(freshman_with_4000_level_count(b))
-#print(coreqs_invalid(a, con))
-#print(coreqs_invalid_count(a, con))
-#print(empty_lists_in_schedule(a))
-#print(empty_lists_in_schedule_count(a))
-#print(gateway_courses_invalid(a, con))
-#print(importance_invalid(a, con))
-#print(scheduleA, '\n')
+#print(schedule_length(course_obj_list), '\n')
+#print(semester_type_sequence(course_obj_list), '\n')
+#print(cr3)
+#print(semester_type_of_course(course_obj_list, cr3))
+#print(semester_position_of_course(course_obj_list, cr3))
+#print(length_of_all_semesters(course_obj_list), '\n')
+#print(senior_year_semesters_list(course_obj_list), '\n')
+#print(senior_year_semesters_list_of_lists(course_obj_list))
+#print(senior_with_1000_level_courses(course_obj_list))
+#print(senior_with_1000_level_count(course_obj_list))
+#print(senior_with_2000_level_courses(course_obj_list))
+#print(senior_with_2000_level_count(course_obj_list), '\n')
+#print(junior_year_semesters_list(course_obj_list), '\n')
+#print(junior_year_semesters_list_of_lists(course_obj_list))
+#print(junior_with_1000_level_courses(course_obj_list))
+#print(junior_with_1000_level_count(course_obj_list), '\n')
+#print(sophmore_year_semesters_list(course_obj_list), '\n')
+#print(sophmore_year_semesters_list_of_lists(course_obj_list))
+#print(sophmore_with_4000_level_courses(course_obj_list))
+#print(sophmore_with_4000_level_count(course_obj_list), '\n')
+#print(freshman_year_semesters_list_of_lists(course_obj_list), '\n')
+#print(freshman_year_semesters_list(course_obj_list))
+#print(freshman_with_3000_level_courses(course_obj_list))
+#print(freshman_with_3000_level_count(course_obj_list))
+#print(freshman_with_4000_level_courses(course_obj_list))
+#print(freshman_with_4000_level_count(course_obj_list))

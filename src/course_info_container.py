@@ -6,8 +6,6 @@ import re
 import pickle
 from dataframe_io import *
 from driver_fs_functions import *
-#from courses_needed_container import *
-#from program_generated_evaluator import evaluate_container
 
 # ------COURSE INFO CONTAINER CLASS---------END OF CLASS-----------END OF CLASS----------END OF CLASS-------------
 
@@ -322,7 +320,6 @@ def get_pickle(filename):
     with open(file1, "rb") as f:
         obj = pickle.load(f)
     return obj 
-
 
 
 # quick test below

@@ -71,7 +71,9 @@ from schedule_inspector import *
 
 
 # Translation map from semester K to the next
-SEMESTER_TYPE_SUCCESSOR = {'Fa': 'Sp', 'Sp': 'Su', 'Su': 'Fa'}
+
+# Lew change global variable name to SEMESTER_TYPE_SUCCESSOR1; conflict with general_utilities.py SEMESTER_TYPE_SUCCESSOR
+SEMESTER_TYPE_SUCCESSOR1 = {'Fa': 'Sp', 'Sp': 'Su', 'Su': 'Fa'}
 COURSE_RULE = 0b0001
 PATH_RULE = 0b0010
 
@@ -261,7 +263,8 @@ class ExpertSystem:
             semester_average = 1 if len(semester) == 0 else semester_cf_sum / len(semester)
             courses_path_cf_sum += semester_average
             
-            semester_type = SEMESTER_TYPE_SUCCESSOR[semester_type]
+            # Lew change global variable name to SEMESTER_TYPE_SUCCESSOR1; conflict with general_utilities.py SEMESTER_TYPE_SUCCESSOR
+            semester_type = SEMESTER_TYPE_SUCCESSOR1[semester_type]
         # Lew suggests fix below: Division by 0 error can occur for empty schedule: may never happen, but better to be safe.
         courses_average_cf = 1 if len(schedule) == 0 else courses_path_cf_sum / len(schedule)
         
@@ -374,72 +377,6 @@ class ExpertSystem:
         cf -= (high() * count4000)
         return cf
 
-    # ------------------------------------ CoReq Rule -----------------------------------
-    # The coreq_rule checks for coreqs of courses colocation within the same semester.
-    # TODO: Refactor or throw away
-    #@confidencerule(confidence=1.0, rule_mask=PATH_RULE)
-    #def coreq_rule(schedule, facts, course_info):
-    #    es = ExpertSystem
-    #    rule = es.rule_coreq_ok | es.rule_coreq_a
-    #    return rule(schedule, facts, course_info)
-
-    #@rulepart(confidence=1)
-    #def rule_coreq_ok(schedule, facts, course_info):
-    #    if coreqs_invalid(schedule, course_info): return 0
-    #    return 1
-
-    #@rulepart(confidence=1)
-    #def rule_coreq_a(schedule, facts, course_info):
-    #    cf = 1
-    #    info = coreqs_invalid_count(schedule, course_info)
-    #    count, message = info[0], info[1]
-    #    cf -= (high() * count)
-    #    return cf
-
-    # ------------------------------------ Gateway Rule ----------------------------------
-    # The gateway_rule ensures courses with heavy weights (child descendants of courses > 6) are in the first half of path.
-    # TODO: Refactor or throw away
-    #@confidencerule(confidence=1.0, rule_mask=PATH_RULE)
-    #def gateway_rule(schedule, facts, course_info):
-    #    es = ExpertSystem
-    #    rule = es.rule_gateway_ok | es.rule_gateway_a
-    #    return rule(schedule, facts, course_info)
-
-    #@rulepart(confidence=1)
-    #def rule_gateway_ok(schedule, facts, course_info):
-    #    if gateway_courses_invalid(schedule, course_info)[0]: return 0
-    #    return 1
-
-    #@rulepart(confidence=1)
-    #def rule_gateway_a(schedule, facts, course_info):
-    #    cf = 1
-    #    info = gateway_courses_invalid(schedule, course_info)
-    #    count, message = info[0], info[1]
-    #    cf -= (high() * count)
-    #    return cf
-
-    # ------------------------------------ Importance Rule ----------------------------------
-    # The importance_rule is ambigiously set by user or admin.  A rating less than 50 found in schedule drops confidence.
-    # Highly dependent on user importance input on Course Info.xlsx.  May throw away...
-    @confidencerule(confidence=1.0, rule_mask=PATH_RULE)
-    def importance_rule(schedule, facts, course_info):
-        es = ExpertSystem
-        rule = es.rule_importance_ok | es.rule_importance_a
-        return rule(schedule, facts, course_info)
-
-    @rulepart(confidence=1)
-    def rule_importance_ok(schedule, facts, course_info):
-        if importance_invalid(schedule, course_info)[0]: return 0
-        return 1
-
-    @rulepart(confidence=1)
-    def rule_importance_a(schedule, facts, course_info):
-        cf = 1
-        info = importance_invalid(schedule, course_info)
-        count, message = info[0], info[1]
-        cf -= (high() * count)
-        return cf
-
     # ------------------------------------ Empty Rule ----------------------------------
     # The empty_rule detects empty semesters.  Two empty semesters is cause for concern.
 
@@ -515,41 +452,54 @@ class ExpertSystem:
 #    print(es.calculate_confidence(kb, DummyContainer()))
 
 # ---------------------------------------- Lew Testing ----------------------------------------
+
+#from driver_fs_functions import *
 #from course_info_container import *
-#from program_generated_evaluator import evaluate_container
+#from scheduler_driver import *
 
-#df = load_course_info('src/input_files/Course Info.xlsx')
-#lst = load_course_info_excused_prereqs('src/input_files/Course Info.xlsx')
-#con = CourseInfoContainer(df, lst)
-#report = evaluate_container(con)
-#con.load_report(report)
+#file0 = get_source_path()
+#file0 = get_source_relative_path(file0, 'input_files/Course Info.xlsx')
+#dfdict = load_course_info(file0)
+#container = CourseInfoContainer(dfdict)
 
-##print(container._report.course_descendants)
+#course_identifier_CPSC_3121 = DummyCourseIdentifier(course_number="CPSC 3121")
+#course_identifier_CPSC_3165 = DummyCourseIdentifier(course_number="CPSC 3165")
+#course_identifier_CPSC_4000 = DummyCourseIdentifier(course_number="CPSC 4000")
+#course_identifier_CPSC_4135 = DummyCourseIdentifier(course_number="CPSC 4135")
+#course_identifier_MATH_1113 = DummyCourseIdentifier(course_number="MATH 1113")
+#course_identifier_STAT_3127 = DummyCourseIdentifier(course_number="STAT 3127")
+#course_identifier_CPSC_2108 = DummyCourseIdentifier(course_number="CPSC 2108")
+#course_identifier_CPSC_3125 = DummyCourseIdentifier(course_number="CPSC 3125")
+#course_identifier_CPSC_XXXX = DummyCourseIdentifier(course_number="CPSC XXXX", name="Elective", is_stub=True)
+#course_identifier_CPSC_3XX = DummyCourseIdentifier(course_number="CPSC 3@X", name="Elective", is_stub=True)
+
+#cr1 = container.get_course_record(course_identifier_CPSC_3121)
+#cr2 = container.get_course_record(course_identifier_CPSC_3165)
+#cr3 = container.get_course_record(course_identifier_CPSC_4000)
+#cr4 = container.get_course_record(course_identifier_CPSC_4135)
+#cr5 = container.get_course_record(course_identifier_MATH_1113)
+#cr6 = container.get_course_record(course_identifier_STAT_3127)
+#cr7 = container.get_course_record(course_identifier_CPSC_2108)
+#cr8 = container.get_course_record(course_identifier_CPSC_3125)
+#crX = container.get_course_record(course_identifier_CPSC_XXXX)
+#crY = container.get_course_record(course_identifier_CPSC_3XX)
+
+#bad_list =[[cr1, cr2, crX], [cr3, cr4, crY], [cr5, cr6, cr7, cr8], 
+#         [cr1, cr2, crX], [cr3, cr4, crY], [cr5, cr6, cr7, cr8], 
+#         [cr1, cr2, crX], [cr3, cr4, crY], [cr5, cr6, cr7, cr8], 
+#         [cr1, cr2, crX], [cr3, cr4, crY], [cr5, cr6, cr7, cr8]]
+
+#good_list =[[cr5, cr5, cr5], [cr7, cr7, cr7], [cr5, cr5, cr5, cr5], 
+#         [cr1, cr2, cr7], [cr1, cr2, cr7], [cr1, cr2, cr7, cr1], 
+#         [cr3, cr4, cr6], [cr3, cr4, cr6], [cr3, cr4, cr6, cr3], 
+#         [cr8, crX, crY], [cr8, crX, crY], [cr8, crX, crY, cr8]]
+
 
 #es = ExpertSystem.get_default_instance()
-##print([(r, r.confidence) for r in es.rules])
 #kb = DynamicKnowledge()
 
-#a = [['CPSC 1301'], [], ['CPSC 1115', 'CPSC 4444', 'CPSC 3333'],
-#             ['CPSC 2108', 'MATH 2125'], ['CPSC 1302'], ['MATH 2125', 'CPSC 2105', 'CPSC 4000'], 
-#             ['CPSC 3165', 'CPSC 3175'], ['CPSC 3131', 'CPSC 3121', 'CPSC 1000'], [], 
-#             ['CPSC 4176', 'CPSC 4155', 'CPSC 1111', 'CPSC 2222'], ['CPSC 4175', 'CPSC 4148', 'CPSC 1301', 'CPSC 3137'], []]#, ['CPSC 4157', 'CPSC 4138']]
-
-#b = [['CPSC 2105', 'CPSC 1301'], ['CPSC 3333', 'CPSC 4444'], ['CPSC 1115'],
-#             [], ['CPSC 1302', 'MATH 1113'], ['CPSC 4444'], 
-#             ['CPSC 3165', 'CPSC 3175', 'CPSC 1111'], ['CPSC 1111'], ['CPSC 3116', 'CPSC 3415', 'CPSC 1111'], 
-#             ['CPSC 4176', 'CPSC 4155'], ['CPSC 4175', 'CPSC 4148', 'CPSC 1111'], ['CPSC 1111', 'CPSC 2222']]
-
-#c = [['CPSC 1105', 'CPSC 1301'], ['CPSC 0000'], ['CPSC 1115'],
-#             ['CPSC 2108'], ['CPSC 1302', 'MATH 1113'], ['MATH 2125', 'CPSC 2105'], 
-#             ['CPSC 3165', 'CPSC 3175'], ['CPSC 3131', 'CPSC 3121'], ['CPSC 3116', 'CPSC 3415'], 
-#             ['CPSC 4176', 'CPSC 4155'], ['CPSC 4175', 'CPSC 4148'], ['CPSC 4157', 'CPSC 4138']]
-
-#d = None
-##kb.load_facts({'schedule': scheduleA})
-#kb.set_schedule(a)
-##print(kb.facts)
-#print(es.calculate_confidence(kb, con))
+#kb.set_schedule(good_list)
+#print(es.calculate_confidence(kb, container))
 
 
 

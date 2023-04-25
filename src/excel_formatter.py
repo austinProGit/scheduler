@@ -5,7 +5,6 @@ import openpyxl
 import shutil
 from datetime import date
 from driver_fs_functions import *
-from pathlib import Path
 
 
 def excel_formatter(input_path, output_file_name, sched):  # first param is source file path
@@ -65,10 +64,10 @@ def next_season(current_season, num):
 
 # ***************END OF EXCEL_FORMATTER MODULE***************END OF EXCEL_FORMATTER MODULE********************
 #Internal testing below
-#container = CourseInfoContainer(load_course_info('scheduler/src/input_files/Course Info.xlsx'))
 
 #from driver_fs_functions import *
 #from course_info_container import *
+#from scheduler_driver import *
 
 #file0 = get_source_path()
 #file0 = get_source_relative_path(file0, 'input_files/Course Info.xlsx')
