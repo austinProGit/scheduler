@@ -3,7 +3,7 @@
 # Description: Main file for our program, runs smart planner controller
 
 from program_driver import SmartPlannerController
-# Lew decreased line indentation accordingly
+
 if __name__ == '__main__':
     planner = SmartPlannerController()
     
