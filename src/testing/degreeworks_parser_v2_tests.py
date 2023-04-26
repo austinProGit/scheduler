@@ -4,7 +4,6 @@
 
 import sys
 import os
-import difflib
 
 current = os.path.dirname(os.path.realpath(__file__)) # Gets the name of the directory where this file is present.
 parent = os.path.dirname(current) # Gets the parent directory name where the current directory is present.
@@ -478,6 +477,7 @@ DANC 1310 or MSAL 4419 or THEA 1375>
          '2.58'
     )
 
+    # Test Case 5
     degreeworks_input_5_ex_out = DegreeExtractionContainer(
         ['MATH 3175', 'MATH 1132', 'MATH 1131', 'PHIL 1***', 'MATH 1111', 
          'ASTR 1305', 'ASTR 1106', 'CPSC 4185', 'CPSC 4135', 'CPSC 3121', 
@@ -529,6 +529,7 @@ STAT 3127>
          '2.82'
     )
 
+    # Test Case 7
     degreeworks_input_7_ex_out = DegreeExtractionContainer(
         ['MATH 1111', 'MATH 1111', 'CPSC 1***', 'MATH 1113', 'CYBR 2160', 
          'CYBR 2159', 'CPSC 1302', 'CPSC 1301K', 'PEDS 1555', 'KINS 1106', 
@@ -573,6 +574,7 @@ STAT 3127>
          '1.93'
     )
 
+    # Test Case 8
     degreeworks_input_8_ex_out = DegreeExtractionContainer(
         ['POLS 2401', 'MATH 1111', 'CPSC 3118', 'CPSC 3121', 'MATH 2125', 
          'MATH 1113', 'MATH 5125U', 'CPSC 3175', 'CPSC 3165', 'CPSC 3131', 
@@ -687,6 +689,7 @@ STAT 3127>
          '3.51'
     )
 
+    # Test Case 9
     degreeworks_input_9_ex_out = DegreeExtractionContainer(
         ['STAT 3127', 'ECON 2105', 'PSYC 1105', 'ASTR 1106', 'CPSC 4185', 
          'MATH 2125', 'MATH 1113', 'MATH 5125U', 'CPSC 3175', 'CPSC 3131', 
@@ -768,6 +771,7 @@ or 2@ or SWAH 1@ or 2@>
          '2.08'
     )
 
+    # Test Case 10
     degreeworks_input_10_ex_out = DegreeExtractionContainer(
         ['CPSC 2***', 'MISM 1***', 'CPSC 1***', 'ARTS 1010', 'CPSC 3***', 
          'MATH 1113', 'CPSC 1302', 'CPSC 1301K', 'PSYC 1101', 'POLS 1101', 
@@ -951,89 +955,33 @@ DANC 1310 or MSAL 4419 or THEA 1375>
          '2.69'
     )
 
-#     degreeworks_input_4_ex_out = DegreeExtractionContainer(
-#         ['MATH 1111', 'ITDS 1779H', 'MATH 2125', 'MATH 1113', 'MATH 5125U', 
-#          'CPSC 3131', 'CPSC 2108', 'CYBR 2106', 'CYBR 2159', 'CPSC 2105', 
-#          'CPSC 1302', 'CPSC 1301K', 'PEDS 2378', 'KINS 1106', 'SOCI 1101', 
-#          'POLS 1101', 'HIST 2111', 'STAT 1401', 'GEOL 1121K', 'BIOL 1215K', 
-#          'ARTH 1100', 'PHIL 2010', 'PERS 1506', 'COMM 1110', 'ENGL 1102', 
-#          'ENGL 1101'],
-#          '''
-#          (CPSC 3125,CPSC 3165,CPSC 3175,CPSC 4000,CPSC 3121,CPSC 5115U,CPSC 4175,CPSC 4176)
-
-# [s <c=1, n=Still needed:
-# 1 Class in ANTH 1105@ or 1107 or 2105 or 2136 or ENGL 2136 or GEOG 1101
-# or HIST 1111 or 1112 or INTS 2105@ or ITDS 1146 or 1156>
-# [p <n=ANTH 1105@, m=ANTH 1105.*>]
-# [d <n=ANTH 1107>]
-# [d <n=ANTH 2105>]
-# [d <n=ANTH 2136>]
-# [d <n=ENGL 2136>]
-# [d <n=GEOG 1101>]
-# [d <n=HIST 1111>]
-# [d <n=HIST 1112>]
-# [p <n=INTS 2105@, m=INTS 2105.*>]
-# [d <n=ITDS 1146>]
-# [d <n=ITDS 1156>]
-# ]
-# [s <c=1, n=Still needed:
-# 1 Class in CPSC 4135 or 5135U>
-# [d <n=CPSC 4135>]
-# [d <n=CPSC 5135U>]
-# ]
-# [s <c=1, n=Still needed:
-# 1 Class in CPSC 4148 or 5128U>
-# [d <n=CPSC 4148>]
-# [d <n=CPSC 5128U>]
-# ]
-# [s <c=1, n=Still needed:
-# 1 Class in CPSC 4155 or 5155U>
-# [d <n=CPSC 4155>]
-# [d <n=CPSC 5155U>]
-# ]
-# [s <c=1, n=Still needed:
-# 1 Class in CPSC 4157 or 5157U>
-# [d <n=CPSC 4157>]
-# [d <n=CPSC 5157U>]
-# ]
-# [r <c=6, n=Still needed: 6 Credits in CPSC 3@ or 4@ or 5@ or CYBR 3@ or 4@ or 5@>
-# [i <n=Insert CPSC 3@, ga=CPSC 3@ Course, gp=CPSC 3\d{3}[A-Z]?>]
-# [i <n=Insert CPSC 4@, ga=CPSC 4@ Course, gp=CPSC 4\d{3}[A-Z]?>]
-# [i <n=Insert CPSC 5@, ga=CPSC 5@ Course, gp=CPSC 5\d{3}[A-Z]?>]
-# [i <n=Insert CYBR 3@, ga=CYBR 3@ Course, gp=CYBR 3\d{3}[A-Z]?>]
-# [i <n=Insert CYBR 4@, ga=CYBR 4@ Course, gp=CYBR 4\d{3}[A-Z]?>]
-# [i <n=Insert CYBR 5@, ga=CYBR 5@ Course, gp=CYBR 5\d{3}[A-Z]?>]
-# ]
-# [r <c=5, n=Still needed: 5 Credits in @ 1@ or 2@ or 3@ or 4@ or 5@U Except ENGL 1101 or
-#  1102>
-# [i <n=Insert @ 1@, ga=@ 1@ Course, gp=^(?!ENGL 1101|ENGL 1102)[A-Z]{4} 1\d{3}[A-Z]?>]
-# [i <n=Insert @ 2@, ga=@ 2@ Course, gp=^(?!ENGL 1101|ENGL 1102)[A-Z]{4} 2\d{3}[A-Z]?>]
-# [i <n=Insert @ 3@, ga=@ 3@ Course, gp=^(?!ENGL 1101|ENGL 1102)[A-Z]{4} 3\d{3}[A-Z]?>]
-# [i <n=Insert @ 4@, ga=@ 4@ Course, gp=^(?!ENGL 1101|ENGL 1102)[A-Z]{4} 4\d{3}[A-Z]?>]
-# [i <n=Insert @ 5@U, ga=@ 5@U Course, gp=^(?!ENGL 1101|ENGL 1102)[A-Z]{4} 5\d{3}[A-Z]?>]
-# ]
-#          ''',
-#          'Computer Science - Systems',
-#          '123456789',
-#          'AAA, BBB',
-#          '3.11'
-#     )
-    
     test_case_list = []
 
     def add_test(test_name, test_data, ex_out):
         """For each test, a dictionary is added with the following information:"""
         test_case_list.append({"test_name": test_name, "test_data": test_data, "ex_out": ex_out})
 
-    add_test("S1.pdf", './input_files/updated_degreeworks/S1.pdf', degreeworks_input_1_ex_out)
-    add_test("S2.pdf", './input_files/updated_degreeworks/S2.pdf', degreeworks_input_2_ex_out)
-    add_test("S3.pdf", './input_files/updated_degreeworks/S3.pdf', degreeworks_input_3_ex_out)
-    add_test("S4.pdf", './input_files/updated_degreeworks/S4.pdf', degreeworks_input_4_ex_out)
-    add_test("S5.pdf", './input_files/updated_degreeworks/S5.pdf', degreeworks_input_5_ex_out)
-    add_test("S7.pdf", './input_files/updated_degreeworks/S7.pdf', degreeworks_input_7_ex_out)
-    add_test("S8.pdf", './input_files/updated_degreeworks/S8.pdf', degreeworks_input_8_ex_out)
-    add_test("S9.pdf", './input_files/updated_degreeworks/S9.pdf', degreeworks_input_9_ex_out)
-    add_test("S10.pdf", './input_files/updated_degreeworks/S10.pdf', degreeworks_input_10_ex_out)
+    individualized_source_path = get_source_path()
+    relative_source_path_s1 = get_source_relative_path(individualized_source_path, 'input_files/updated_degreeworks/S1.pdf')
+    relative_source_path_s2 = get_source_relative_path(individualized_source_path, 'input_files/updated_degreeworks/S2.pdf')
+    relative_source_path_s3 = get_source_relative_path(individualized_source_path, 'input_files/updated_degreeworks/S3.pdf')
+    relative_source_path_s4 = get_source_relative_path(individualized_source_path, 'input_files/updated_degreeworks/S4.pdf')
+    relative_source_path_s5 = get_source_relative_path(individualized_source_path, 'input_files/updated_degreeworks/S5.pdf')
+    relative_source_path_s7 = get_source_relative_path(individualized_source_path, 'input_files/updated_degreeworks/S7.pdf')
+    relative_source_path_s8 = get_source_relative_path(individualized_source_path, 'input_files/updated_degreeworks/S8.pdf')
+    relative_source_path_s9 = get_source_relative_path(individualized_source_path, 'input_files/updated_degreeworks/S9.pdf')
+    relative_source_path_s10 = get_source_relative_path(individualized_source_path, 'input_files/updated_degreeworks/S10.pdf')
+
+    add_test("S1.pdf", relative_source_path_s1, degreeworks_input_1_ex_out)
+    add_test("S2.pdf", relative_source_path_s2, degreeworks_input_2_ex_out)
+    add_test("S3.pdf", relative_source_path_s3, degreeworks_input_3_ex_out)
+    add_test("S4.pdf", relative_source_path_s4, degreeworks_input_4_ex_out)
+    add_test("S5.pdf", relative_source_path_s5, degreeworks_input_5_ex_out)
+    add_test("S7.pdf", relative_source_path_s7, degreeworks_input_7_ex_out)
+    add_test("S8.pdf", relative_source_path_s8, degreeworks_input_8_ex_out)
+    add_test("S9.pdf", relative_source_path_s9, degreeworks_input_9_ex_out)
+    add_test("S10.pdf", relative_source_path_s10, degreeworks_input_10_ex_out)
+
     print('=============================== Start Degreeworks Parser Tests ===============================\n')
 
     for test in test_case_list:
@@ -1069,14 +1017,7 @@ DANC 1310 or MSAL 4419 or THEA 1375>
         else:
             tests_passed = False
             print(f'The {test["test_name"]} test FAILED.')
-            # print('The following are the differences between the expected\
-            #       output and the generated output:')
-            # differ = difflib.Differ()
-            # diff = list(differ.compare(str(test_container), str(test["ex_out"])))
-            # for line in diff:
-            #     if line.startswith("+") or line.startswith("-"):
-            #         print(line)
-            # print(diff)
+
     print('\n=============================== End Degreeworks Parser Tests ===============================\n')
 
     return tests_passed
