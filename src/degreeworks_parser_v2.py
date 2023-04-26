@@ -702,5 +702,5 @@ def generate_degree_extraction_container(file_name):
     return DegreeExtractionContainer(curr_taken_courses, courses_needed_constuction_string, degree_plan_name, student_number, student_name, gpa)
 
 if __name__ == '__main__':
-    container = generate_degree_extraction_container('./input_files/updated_degreeworks/S11.pdf')
+    container = generate_degree_extraction_container('./input_files/updated_degreeworks/S10.pdf')
     print(container)
