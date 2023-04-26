@@ -425,7 +425,7 @@ class _NodeSuper:
 
             result = child.get_deep_child_parent_by_course_id(course_id)
 
-            if result is None and child.matches_course_number(course_id):
+            if result is None and child.matches_course_id(course_id):
                 result = self
             
             if result:
@@ -441,8 +441,8 @@ class _NodeSuper:
 
         child: RequirementsTree
         for child in children:
-            result = child.has_deep_child_parent_by_course_id(course_id) or \
-                self.matches_course_number(course_id)
+            result = child.has_deep_child_by_course_id(course_id) or \
+                self.matches_course_id(course_id)
             if result:
                 break
         
@@ -1732,4 +1732,4 @@ class DeepCreditBasedNode(_GroupNode):
         return result
     
 
-RequirementsTree = Union[ShallowCountBasedNode, DeepCountBasedNode, DeepCreditBasedNode, ExhaustiveNode, DeliverableCourse, CourseProtocol, CourseInserter]
+RequirementsTree = Union[_NodeSuper, ShallowCountBasedNode, DeepCountBasedNode, DeepCreditBasedNode, ExhaustiveNode, DeliverableCourse, CourseProtocol, CourseInserter]

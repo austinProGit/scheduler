@@ -24,40 +24,41 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Callable
+    from typing import Callable, Any
     from program_driver import SmartPlannerController
-    ControllerCommand = Callable[[SmartPlannerController, str], None]
+    InterfaceCommand = Callable[[SmartPlannerController, str], None]
 
 
 # TODO: Maybe make the command dictionary statically set (may be a better approach).
 
+
 # The following is the base class for interface objects.
 class GeneralInterface:
 
-    name = 'MENU'
+    _commands: dict[str, InterfaceCommand]
+    name: str = 'MENU'
     
-    def add_command(self, callback, *command_names):
+    def add_command(self, callback: InterfaceCommand, *command_names: str) -> None:
         '''Adds a command (the provided callback) to the menu. The method add the command to the _commands dictionary using the names provided after the callback.'''
+        command_name: str
         for command_name in command_names:
             self._commands[command_name] = callback
     
     
-    def was_pushed(self, controller):
+    def was_pushed(self, controller: SmartPlannerController) -> None:
         '''Method that is called upon the interface being pushed onto the interface stack.'''
         pass
     
-    
-    def deconstruct(self, controller):
+    def deconstruct(self, controller: SmartPlannerController) -> None:
         '''Destruction method that is called upon the interface being dismissed.'''
         pass
     
-    
-    def parse_input(self, controller, user_input):
+    def parse_input(self, controller: SmartPlannerController, user_input: str) -> None:
         '''Handle input on behalf of the program.'''
-        input_string = user_input.strip() # Strip the input
-        first_space_index = input_string.find(' ') # Get the position of the first space in the input string
-        command_key = input_string # Set the key (string) for the command to the entire input by default
-        argument = '' # Set the command arguments to an empty string by default
+        input_string: str = user_input.strip() # Strip the input
+        first_space_index: int = input_string.find(' ') # Get the position of the first space in the input string
+        command_key: str = input_string # Set the key (string) for the command to the entire input by default
+        argument: str = '' # Set the command arguments to an empty string by default
         
         # Check if the input has multiple words
         if first_space_index != -1:
@@ -66,14 +67,14 @@ class GeneralInterface:
         
         # Check if the command key is valid
         if command_key in self._commands:
-            command = self._commands[command_key] # Get the command (function) to execute
+            command: InterfaceCommand = self._commands[command_key] # Get the command (function) to execute
             command(controller, argument) # Invoke the command with the controller and passed arguments
         else:
             # Report invalid input
             self._report_invalid_command_error(controller, command_key)
     
     
-    def _report_invalid_command_error(self, controller, command_string):
+    def _report_invalid_command_error(self, controller, command_string) -> None:
         '''Report when an unsupported command is entered (this may be overridden to provide relevant tools/help).'''
         controller.output_error('Sorry, no command matching "{0}" was found.'.format(command_string))
     

@@ -1,9 +1,9 @@
-# Author: Vincent Miller, Thomas Merino
+# Team Xolo
 # Date: 31 August 2022
-# Description: Main file for our program, runs smart planner controller
+# Description: Main file for our program, runs creates and runs the smart planner controller
 
 from program_driver import SmartPlannerController
-# Lew decreased line indentation accordingly
+
 if __name__ == '__main__':
     planner = SmartPlannerController()
     

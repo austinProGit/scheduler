@@ -25,6 +25,8 @@ class ExportReport:
 
 
 class PathValidationReport:
+    '''Class for representing a path to graduation validation report. This stores all errors if present,
+     the path file's description (preferably printable), and the confidence factor.'''
     
     class Error:
         def __init__(self, description: str) -> None:

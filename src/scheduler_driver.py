@@ -137,7 +137,7 @@ class CreditHourInformer:
         raise ValueError('Illegal credit hour informer state encountered.')
 
     def __init__(self, meta_informer: Any):
-        self._generator: Callable[[SemesterType, int], int] = self._invalid_generator
+        self._generator: Callable[[SemesterType, int], float] = self._invalid_generator
         if meta_informer is None:
             pass
         elif isinstance(meta_informer, ConstuctiveScheduler):
@@ -176,6 +176,7 @@ def rigorous_validate_schedule(schedule: ScheduleInfoContainer,
         # Create a list of schedulables to check (requirements)--the identifiers will be added to running_taken_courses
         currently_taking_courses: list[Schedulable] = []
         
+        error_description: str
         course: Schedulable
 
         # Check for repeating course within a semester and update the coreq.s
@@ -187,10 +188,12 @@ def rigorous_validate_schedule(schedule: ScheduleInfoContainer,
             # Check for repeating course within a semester
             if course not in currently_taking_courses:
                 
+                
+
                 # Check if the course was taken in another semester
                 if course in running_taken_courses:
                     # Repeating course found in different semester (append an error report)
-                    error_description: str = f'Taking {course} again in {SEMESTER_DESCRIPTION_MAPPING[working_semester]} {working_year}'
+                    error_description = f'Taking {course} again in {SEMESTER_DESCRIPTION_MAPPING[working_semester]} {working_year}'
                     error_list.append(PathValidationReport.Error(error_description))
 
                 # Make each course recognize the coreq. relationship (bidirectional)
@@ -212,12 +215,12 @@ def rigorous_validate_schedule(schedule: ScheduleInfoContainer,
                 # Check if going over credit limit per semester
                 if credits_left < 0:
                     # The semester went over the limit of credits
-                    error_description: str = f'Went over credit limit during {SEMESTER_DESCRIPTION_MAPPING[working_semester]} {working_year}'
+                    error_description = f'Went over credit limit during {SEMESTER_DESCRIPTION_MAPPING[working_semester]} {working_year}'
                     error_list.append(PathValidationReport.Error(error_description))
 
             else:
                 # Repeating course found in the same semester (append an error report)
-                error_description: str = f'Taking {course} multiple times in {SEMESTER_DESCRIPTION_MAPPING[working_semester]} {working_year}'
+                error_description = f'Taking {course} multiple times in {SEMESTER_DESCRIPTION_MAPPING[working_semester]} {working_year}'
                 error_list.append(PathValidationReport.Error(error_description))
 
 
@@ -228,13 +231,13 @@ def rigorous_validate_schedule(schedule: ScheduleInfoContainer,
             if not course.can_be_taken() and course not in prequisite_ignored_courses:
                 # TODO: add a logic requirement print out to the report (prereq.s and coreq.s)
                 # Inadequate fulfillment of requirements (append an error report)
-                error_description: str = f'Not all requirements satisfied before taking {course} in {SEMESTER_DESCRIPTION_MAPPING[working_semester]} {working_year}'
+                error_description = f'Not all requirements satisfied before taking {course} in {SEMESTER_DESCRIPTION_MAPPING[working_semester]} {working_year}'
                 error_list.append(PathValidationReport.Error(error_description))
 
             # Check availability
             if working_semester not in course.availability:
                 # Inadequate fulfillment of requirements (append an error report)
-                error_description: str = f'Availability for {course} not present in {SEMESTER_DESCRIPTION_MAPPING[working_semester]} {working_year}'
+                error_description = f'Availability for {course} not present in {SEMESTER_DESCRIPTION_MAPPING[working_semester]} {working_year}'
                 error_list.append(PathValidationReport.Error(error_description))
         
 
@@ -616,10 +619,10 @@ class GeneticOptimizer:
         
         semester_last_index = len(gene.selections) - 1
         semester_index = randint(0, semester_last_index)
-        prototype_semester: list[str] = gene.selections[semester_index]
+        prototype_semester: list[int] = gene.selections[semester_index]
         while not prototype_semester:
             semester_index = randint(0, semester_last_index)
-            prototype_semester: list[str] = gene.selections[semester_index]
+            prototype_semester = gene.selections[semester_index]
         
         mutation_course_index = randint(0, len(prototype_semester) - 1)
         old_delta = prototype_semester[mutation_course_index]
@@ -640,7 +643,7 @@ class GeneticOptimizer:
 
                 semester_to_index = randint(0, semester_last_index)
                 needed_swap_delta = destination_semester_index - semester_to_index
-                prototype_to_semester: list[str] = gene.selections[semester_to_index]
+                prototype_to_semester: list[int] = gene.selections[semester_to_index]
                 if needed_swap_delta in prototype_to_semester:
                     to_replace_index = prototype_to_semester.index(needed_swap_delta)
                     prototype_to_semester[to_replace_index] = semester_index - semester_to_index
