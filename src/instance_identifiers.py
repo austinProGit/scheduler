@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Optional, Any
-    from course_info_container import CourseInfoContainer
+    from course_info_container import CourseInfoContainer, CourseRecord
     from requirement_container import RequirementsContainer
     from requirement_tree import RequirementsTree
     
@@ -39,81 +39,10 @@ class CourseIdentifier:
         return result
 
     def __str__(self) -> str:
-        return self.course_number or self.name or 'Course'
+        return self.course_number or self.name or DEFAULT_COURSE_PRINTABLE_NAME
 
     def is_stub(self) -> bool:
         return self._is_stub
-
-
-
-class LegacyCourseIdentifier:
-
-    def __init__(self, course_number: Optional[str] = None, course_name: Optional[str] = None, is_concrete: bool = True, \
-            can_exist_multiple_times: bool = False) -> None:
-        self._course_number: Optional[str] = course_number
-        self._course_name: Optional[str] = course_name
-        self._is_concrete: bool = is_concrete and course_number is not None
-        self._can_exist_multiple_times: bool = can_exist_multiple_times
-        
-        self._stub_credits: Optional[int] = None
-        self._stub_prequisite_tree: Optional[RequirementsContainer] = None
-        self._stub_corequisite_tree: Optional[RequirementsContainer] = None
-    
-    def __str__(self) -> str:
-        return self.get_printable_name()
-
-    def get_printable_name(self) -> str:
-
-        result: str = ''
-
-        if self._is_concrete:
-            result = str(self._course_number)
-            if self._course_name is not None:
-                result +=  f' - {self._course_name}'
-        else:
-            result = self._course_name or DEFAULT_COURSE_PRINTABLE_NAME
-        
-        return result
-
-
-    def get_unique_id(self) -> Optional[str]:
-        return self._course_number
-    
-    def get_name(self) -> Optional[str]:
-        return self._course_name or self._course_number
-
-    def is_concrete(self) -> bool:
-        return self._is_concrete
-
-    def can_exist_multiple_times(self) -> bool:
-        return self._can_exist_multiple_times
-
-    def get_credit_hours(self, course_info_container: CourseInfoContainer) -> int:
-
-        result: int = DEFAULT_COURSE_CREDIT_HOURS
-
-        if self._is_concrete:
-            # TODO: add the actual function call here:
-            #course_info_container.get_credits(self._course_number)
-            pass
-        elif result is None and self._stub_credits is not None:
-            result = self._stub_credits
-        
-        return result
-
-    def get_prequisites(self, course_info_container) -> Optional[RequirementsContainer]:
-        
-        result: Optional[RequirementsContainer] = self._stub_prequisite_tree
-
-        if self._is_concrete:
-            # TODO: add the actual function call here:
-            course_info_container.get_credits(self._course_number)
-        elif result is None:
-            result = None # TODO: ADD DEFAULT TREE
-        
-        return result
-        
-
 
 class Schedulable:
 
@@ -128,24 +57,28 @@ class Schedulable:
             if identifier.is_stub():
                 raise NotImplementedError
             else:
-                # TODO: IMP NEW -> 
 
-                # TODO: REMOVE THIS - it is to support old interfaces (course info protocol)
-                FUNC_identifier = identifier if isinstance(course_info_container, CourseInfoContainer) else identifier.course_number
-                FUNC_availabilities = course_info_container.get_availability(FUNC_identifier)
-                if isinstance(FUNC_availabilities, list):
-                    FUNC_availabilities = set(map(lambda x: {'Fa':FALL, 'Sp':SPRING, 'Su':SUMMER, '--':None}[x], FUNC_availabilities))
+                course_record: Optional[CourseRecord] = course_info_container.get_course_record(identifier)
 
-                result.append(
-                    Schedulable(
-                        identifier,
-                        course_info_container.get_prereqs(FUNC_identifier) or " ",
-                        course_info_container.get_coreqs(FUNC_identifier) or " ",
-                        course_info_container.get_hours(FUNC_identifier),
-                        FUNC_availabilities,
-                        course_info_container.get_recommended(FUNC_identifier)
+                if course_record is not None:
+
+                    FUNC_availabilities = set(map(lambda x: {'Fa':FALL, 'Sp':SPRING, 'Su':SUMMER, '--':None}[x], course_record.avail))
+
+                    result.append(
+                        Schedulable(
+                            identifier,
+                            course_record.prereqs or " ",
+                            course_record.coreqs or " ",
+                            course_record.hours,
+                            FUNC_availabilities,
+                            course_record.recommended
+                        )
                     )
-                )
+
+                else:
+                    pass
+                    #raise ValueError(f'Known course encountered: "{str(identifier)}" - Please asks an administrator to resolve this or ' +
+                    #'enter the course into the course info file manually and restart the program.')
                 
         return result
 

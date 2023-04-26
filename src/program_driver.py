@@ -87,7 +87,7 @@ from path_to_grad_parser import parse_path_to_grad
 # Validators
 from batch_validation import batch_validation
 from program_generated_evaluator import evaluate_container, NonDAGCourseInfoError, InvalidCourseError
-from user_submitted_validator import validate_user_submitted_path
+from user_submitted_validator import rigorous_validate_schedule as validate_user_submitted_path
 
 # Formatters
 from excel_formatter import excel_formatter
@@ -110,10 +110,10 @@ from os import path
 
 
 # Used for controlling console window display
-OPERATING_SYSTEM = platform.system()
+OPERATING_SYSTEM: str = platform.system()
 
 # Flag that is true when running on Windows OS.
-WIN_CONTROL_FLAG = False
+WIN_CONTROL_FLAG: bool = False
 
 if OPERATING_SYSTEM == "Windows":
     try:
