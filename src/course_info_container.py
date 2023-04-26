@@ -9,8 +9,8 @@ from driver_fs_functions import *
 
 # ------COURSE INFO CONTAINER CLASS---------END OF CLASS-----------END OF CLASS----------END OF CLASS-------------
 
-class CourseInfoContainer:
-    
+class CourseInfoContainer:  
+
 
     def __init__(self, df_dict):
         self._df_dict = df_dict
