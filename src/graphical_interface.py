@@ -101,6 +101,12 @@ class MainMenuWidget(QWidget):
         self.verify_schedule_button: QPushButton = QPushButton('Verify Schedule')
         self.verify_schedule_button.clicked.connect(self._verify_schedule_callback)
         self.bottom_bar.addWidget(self.verify_schedule_button)
+
+        #James' CBR GUI stuff
+        #Create a button to run CBR
+        self.run_cbr_button: QPushButton = QPushButton('Run CBR')
+        self.run_cbr_button.clicked.connect(self.show_cbr_window)
+        self.bottom_bar.addWidget(self.run_cbr_button)
         
         # Add spacer to bottom bar
         self.bottom_bar.addItem(QtWidgets.QSpacerItem(1, 1, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
@@ -155,6 +161,10 @@ class MainMenuWidget(QWidget):
         if self.needed_courses is not None and self.needed_courses.is_resolved():
             self.needed_courses_load_label.setText('Courses loaded')
             self.listing_box.setText('\n'.join(self.needed_courses.get_courses_string_list()))
+
+    def show_cbr_window(self):
+        self.w = CBR_Menu_Widget(self.controller)
+        self.w.show()
         
 
     def initialize_parameter_widgets(self) -> None:
@@ -365,4 +375,198 @@ class MainMenuWidget(QWidget):
         cli = True
         self.controller.reload_in_cli()
         self.controller.output('Interface mode changed to command line. Enter "gui-i" to change back.')
+
+class CBR_Menu_Widget(QWidget):
+
+    def __init__(self, controller):
+        #setup cbr window
+        super().__init__()
+        # Initialize a reference to the program's controller
+        self.controller: Controller = controller
+        #set layout
+        self.label = QLabel("Case Based Reasoning")
+        self.setWindowTitle('CBR Elective Recommendations')
+        self.setGeometry(500, 500, 500, 500)
+        self.layout: QVBoxLayout = QVBoxLayout(self)
+        #self.setStyleSheet("border : 3px solid black;")
+        #self.setStyleSheet("background-color: yellow;")
+
+        #create row for buttons
+        self.bottom_bar = QHBoxLayout()
+        self.bottom_bar.addItem(QtWidgets.QSpacerItem(1, 1, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.layout.addLayout(self.bottom_bar)
+        #create buttons
+        self.run_cbr_main = QPushButton('Run CBR')
+        self.run_cbr_main.clicked.connect(self.run_cbr_main_callback)
+        self.adaption_button = QPushButton("Adapt elective recommendation")
+        self.adaption_button.clicked.connect(self.show_adaptation_window)
+        self.give_cbr_reasoning = QPushButton("Give Reasoning for Recommendation")
+        self.give_cbr_reasoning.clicked.connect(self._results_analysis_callback)
+        self.choose_cbr_output = QPushButton("Choose Output File")
+        self.choose_cbr_output.clicked.connect(self.output_electives_to_excel)
+        #add buttons to bar
+        self.bottom_bar.addWidget(self.run_cbr_main)
+        self.bottom_bar.addWidget(self.adaption_button)
+        self.bottom_bar.addWidget(self.give_cbr_reasoning)
+        self.bottom_bar.addWidget(self.choose_cbr_output)
+
+        # create main area 
+        self.main_area: QHBoxLayout = QHBoxLayout()
+        self.layout.addLayout(self.main_area)
+
+        #create field to display data 
+        self.listing_box = ListingField()
+        self.main_area.addWidget(self.listing_box)
+        self.listing_box.setFontPointSize(20)
+
+        #function taken from main that shows data in the listing box
+        #self.needed_courses: Optional[CoursesNeededContainer] = controller.get_courses_needed()
+        #if self.needed_courses is not None and self.needed_courses.is_resolved():
+        #    self.needed_courses_load_label.setText('Courses loaded')
+        #    self.listing_box.setText('\n'.join(self.needed_courses.get_courses_string_list()))
+
+    def run_cbr_main_callback(self):
+        file_loader_dialog: QFileDialog = QFileDialog()
+        file_loader_dialog.setFileMode(QFileDialog.ExistingFile)
+        filename: Optional[str] = None
+
+        if file_loader_dialog.exec():
+            selected_filename: str = file_loader_dialog.selectedFiles()[0]
+            filename = selected_filename 
+            self.controller.run_cbr(selected_filename)
+            self.listing_box.setText("Input Case: " + self.controller._result.get_target_case().get_file_name())
+            self.listing_box.append("Retrieved Case: " + self.controller._result.get_retrieved_case().get_file_name())
+            self.listing_box.append("Similarity Measure: " + str(self.controller._result.get_similarity_measure()))
+            self.listing_box.append("\nRecommended Electives: ")
+            self.listing_box.append('\n'.join(self.controller._result.get_recommended_electives()))
+        
+        if filename is None:
+            self.controller.output('Load cancelled.')
+
+    def _results_analysis_callback(self):
+        self.listing_box.setText(self.controller.run_cbr_reasoning())
+
+    def show_adaptation_window(self):
+        self.w = Adaptation_Menu(self, self.controller)
+        self.w.show()
+
+    def refresh_data(self):
+        self.listing_box.setText("Input Case: " + self.controller._result.get_target_case().get_file_name())
+        self.listing_box.append("Retrieved Case: " + self.controller._result.get_retrieved_case().get_file_name())
+        self.listing_box.append("Similarity Measure: " + str(self.controller._result.get_similarity_measure()))
+        self.listing_box.append("\nRecommended Electives: ")
+        self.listing_box.append('\n'.join(self.controller._result.get_recommended_electives()))
+
+    def output_electives_to_excel(self):
+        file_loader_dialog: QFileDialog = QFileDialog()
+        file_loader_dialog.setFileMode(QFileDialog.ExistingFile)
+        filename: Optional[str] = None
+
+        if file_loader_dialog.exec():
+            selected_filename: str = file_loader_dialog.selectedFiles()[0]
+            filename = selected_filename 
+            output_success_string = self.controller.output_cbr_result_to_excel(selected_filename)
+            msgBox = QMessageBox()
+            msgBox.setText(output_success_string)
+            msgBox.exec()
+            self.listing_box.clear()
+        
+        if filename is None:
+            self.controller.output('Load cancelled.')
+
+
+class Adaptation_Menu(QWidget):
+    def __init__(self, parent_window, controller):
+        #setup cbr window
+        super().__init__()
+        # Initialize a reference to the program's controller
+        self.controller: Controller = controller
+        #link to parent window
+        self.parent_window = parent_window
+        #set layout
+        self.label = QLabel("Case Based Reasoning")
+        self.setWindowTitle('Elective Adaptation')
+        self.setGeometry(500, 500, 500, 500)
+        self.layout: QVBoxLayout = QVBoxLayout(self)
+        #area to show recommended electives and how many to add/remove
+        self.top_area = QHBoxLayout()
+        self.layout.addLayout(self.top_area)
+        self.recommendation_box = ListingField()
+        self.recommendation_box.setFontPointSize(20)
+        self.top_area.addWidget(self.recommendation_box)
+        self.recommendation_box.setText('Recommended Electives:\n')
+        self.recommendation_box.append(", ".join(self.controller._result.get_recommended_electives()))
+        self.recommendation_box.append(self.get_adaptation_recommendation())
+        #field for showing output
+        self.main_area: QHBoxLayout = QHBoxLayout()
+        self.layout.addLayout(self.main_area)
+        #create field to display data 
+        self.listing_box = ListingField()
+        self.main_area.addWidget(self.listing_box)
+        self.listing_box.setFontPointSize(20)
+        #User input field
+        self.elective_adaption_label: QLabel = QLabel('Enter Elective:')
+        self.elective_adaption_field: TextField = TextField()
+        self.elective_adaption_field.returnPressed.connect(self.hold_electives)
+        #interaction field for user input
+        self.interaction_area: QFormLayout = QFormLayout()
+        self.interaction_area.addRow(self.elective_adaption_label, self.elective_adaption_field)
+        ############
+        self.group_box: QGroupBox = QGroupBox()
+        self.group_box.setLayout(self.interaction_area)
+        self.main_area.addWidget(self.group_box)
+        ######################################3
+        self.bottom_bar: QHBoxLayout = QHBoxLayout()
+        self.finished_button: QPushButton = QPushButton('Finish')
+        self.finished_button.clicked.connect(self.finished_adaption)
+        self.bottom_bar.addWidget(self.finished_button)
+        self.layout.addLayout(self.bottom_bar)
+        self.is_open_bool = True
+
+    def get_adaptation_recommendation(self):
+        return self.controller.adaptation_recommendation()
+
+    def hold_electives(self):
+        elective_string = self.elective_adaption_field.text()
+        elective_matrix = self.controller.get_elective_count_for_adapt()
+        if elective_matrix[0] < elective_matrix[1]:
+            if elective_string in self.controller._result.get_recommended_electives():
+                self.listing_box.append(elective_string)
+                self.elective_adaption_field.clear()
+            else:
+                msgBox = QMessageBox()
+                msgBox.setText("Pleae eneter a course that is present in recommended electives.")
+                msgBox.exec_()
+        else:
+            self.listing_box.append(elective_string)
+            self.elective_adaption_field.clear()
+
+    def finished_adaption(self):
+        #this function will close window and pass information entered to the driver and subsequently, the adaptation module
+        elective_matrix = self.controller.get_elective_count_for_adapt()
+        previous_electives = self.controller._result.get_recommended_electives()
+        if len(self.listing_box.toPlainText()) > 1:
+            working_electives = self.listing_box.toPlainText().split("\n")
+        else: 
+            working_electives = []
+        if len(working_electives) == abs(elective_matrix[0] - elective_matrix[1]):
+            for course in previous_electives:
+                working_electives.append(course)
+            self.controller._result.set_recommended_electives(working_electives)
+            self.parent_window.refresh_data()
+            self.close()
+            #return True
+        elif elective_matrix[0] == elective_matrix[1]:
+            for course in previous_electives:
+                working_electives.append(course)
+            self.controller._result.set_recommended_electives(working_electives)
+            self.parent_window.refresh_data()
+            self.close()
+            #return True
+        else:
+            msgBox = QMessageBox()
+            msgBox.setText("Whoops, elective counts do not match, please try again")
+            msgBox.exec()
+            self.listing_box.clear()
+
     
