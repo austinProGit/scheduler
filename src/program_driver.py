@@ -94,6 +94,14 @@ from excel_formatter import excel_formatter
 from pdf_formatter import pdf_export
 from plain_text_formatter import plain_text_export
 
+#CBR Imports
+#James Code
+import cbr_driver
+import Result
+import results_analysis
+import adaptation
+import cbr_excel_output_handler
+
 
 
 # Other imports
@@ -199,6 +207,9 @@ class SmartPlannerController:
         # The following variables will be assigned (attempt to) in the following try block
         # The values are set to acceptable defaults
         self.session_configuration: SessionConfiguration = SessionConfiguration.make_default()
+
+        #Create result variable to hold cbr result
+        self._result = Result.Result("default", "default", "default", "default")
 
         try:
             # Attempt to get the program parameters from the config file
@@ -900,5 +911,33 @@ class SmartPlannerController:
         current_interface = self.get_current_interface() # Get the current interface/menu
         current_interface.parse_input(self, user_input) # Pass the user's input to the current menu
         return len(self._interface_stack) != 0 # return whether there are still any interfaces presenting
+    
+        #James CBR stuff
+
+    def get_cbr_result(self):
+        return self._result
+    
+    def set_cbr_result(self, target, retrieved, recommended_electives, similarity_measure):
+        self._result = Result.Result(target, retrieved, recommended_electives, similarity_measure)
+    
+    def run_cbr(self, selected_file):
+        result = cbr_driver.run_cbr_option(selected_file)
+        self.set_cbr_result(result.get_target_case(), result.get_retrieved_case(), result.get_recommended_electives(), result.get_similarity_measure())
+
+    def run_cbr_reasoning(self):
+        if self._result.get_target_case() != "default":
+            return results_analysis.results_driver_new(self._result)
+        else:
+            return "Error! Please run the CBR before asking about results analysis"
+        
+    def get_elective_count_for_adapt(self):
+        return adaptation.get_elective_count(self._result)
+    
+    def adaptation_recommendation(self):
+        return adaptation.resolve_differences_new(adaptation.get_elective_count(self._result))
+    
+    def output_cbr_result_to_excel(self, selected_file):
+        return cbr_excel_output_handler.write_to_file(selected_file, self._result.get_recommended_electives())
+    
 
 # End of SmartPlannerController definition
