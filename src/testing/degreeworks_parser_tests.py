@@ -1,4 +1,4 @@
-# Author: Austin Lee and Max Lewis
+# Author: Austin Lee
 # 9/21/22
 # CPSC 4175 Group Project
 
@@ -12,7 +12,7 @@ sys.path.append(parent) # Adds the parent directory to the sys.path.
 from degreeworks_parser import *
 from degree_extraction_container import DegreeExtractionContainer
 
-def degreeworks_parser_tests():
+def degreeworks_parser_v2_tests():
 
     tests_passed = True # Boolean to track if all tests pass
 

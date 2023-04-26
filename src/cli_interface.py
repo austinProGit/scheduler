@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Callable, Optional
     from program_driver import SmartPlannerController as Controller
-    from PySide6.QtWidgets import QApplication
-    from menu_interface_base import ControllerCommand
+    from PySide6.QtWidgets import QApplication, QFileDialog
+    from menu_interface_base import InterfaceCommand
 
 
 # TODO: (ENSURE) help file parser ends predictably at "<END>" (no extra blank lines)
@@ -29,18 +29,25 @@ from help_interface import HelpMenu
 
 # Used for controlling console window display
 import platform
-OPERATING_SYSTEM = platform.system()
-WIN_CONTROL_FLAG = False
+
+# Used for controlling console window display
+OPERATING_SYSTEM: str = platform.system()
+
+# Flag that is true when running on Windows OS.
+WIN_CONTROL_FLAG: bool = False
+
 if OPERATING_SYSTEM == "Windows":
     try:
-        import pywintypes, win32gui, win32con, win32api
+        # Windows OS-specific imports
+        import pywintypes, win32gui, win32con, time, win32api
         TITLE = win32api.GetConsoleTitle()
         HWND = win32gui.FindWindow(None, TITLE)
         WIN_CONTROL_FLAG = True
     except ModuleNotFoundError:
         pass
 
-ICON_FILENAME: str = 'icon.png' # The filename of the program's icon (when GUI)
+# The filename of the program's icon (when GUI)
+ICON_FILENAME: str = 'icon.png'
 
 
 
@@ -55,17 +62,18 @@ class MainMenuInterface(GeneralInterface):
     
     def __init__(self):
         if OPERATING_SYSTEM == "Windows" and WIN_CONTROL_FLAG:
+            # Hide console window if running Windows OS
             win32gui.ShowWindow(HWND, win32con.SW_SHOW)
             try:
                 win32gui.SetForegroundWindow(HWND)
             except Exception as e:
                 print(e)
 
-        self.name = 'MAIN MENU'
-        self._commands = {}
+        self.name: str = 'MAIN MENU'
+        self._commands: dict[str, InterfaceCommand] = {}
         
-        # e: explorer
-        # i: immediate
+        # e: stands for explorer
+        # i: stands for immediate
         
         # Add commands to the command dictionary
         self.add_command(list_available_commands_command, '', 'commands', 'list-commands')
@@ -86,7 +94,7 @@ class MainMenuInterface(GeneralInterface):
         self.add_command(gui_interface_immediate_command, 'gui-i', 'window', 'graphical', 'graphics')
         self.add_command(help_command, 'help', 'info')
         self.add_command(fetch_catalog_command, 'fetch', 'update', 'catalog')
-        self.add_command(edit_courses_needed_container_command, 'select', 'choose', 'tree')
+        self.add_command(edit_courses_needed_container_command, 'select', 'choose', 'tree', 'degree', 'courses')
         self.add_command(quit_command,'quit', 'exit')
     
     
@@ -102,7 +110,7 @@ class MainMenuInterface(GeneralInterface):
 class GraphicalUserMenuInterface(GeneralInterface):
     
     
-    def __init__(self):
+    def __init__(self) -> None:
         if OPERATING_SYSTEM == "Windows" and WIN_CONTROL_FLAG:
             win32gui.ShowWindow(HWND, win32con.SW_HIDE)
         
@@ -121,7 +129,7 @@ class GraphicalUserMenuInterface(GeneralInterface):
         # TODO: This is not sustainable (using __file__)
         icon: QtGui.QIcon = QtGui.QIcon(str(os.path.join(os.path.dirname(__file__), ICON_FILENAME)))
         application.setWindowIcon(icon)   # Set the window icon
-        main_window = MainProgramWindow(controller) # Create a new window for the application to present
+        main_window: MainProgramWindow = MainProgramWindow(controller) # Create a new window for the application to present
         main_window.resize(800, 400) # Set the initial window size
         main_window.show() # Present the window
         application.exec() # Execute the application until closed (block execution)
@@ -135,7 +143,7 @@ class GraphicalUserMenuInterface(GeneralInterface):
             controller.pop_interface(self)
     
         
-    def deconstruct(self, controller: Controller):
+    def deconstruct(self, controller: Controller) -> None:
         '''Destruction method that is called upon the interface being dismissed.'''
         # Disconnect program IO from graphics
         controller.remove_output_listener("GUIOutput")
@@ -152,9 +160,9 @@ class GraphicalUserMenuInterface(GeneralInterface):
 
 class ErrorMenu(GeneralInterface):
     
-    def __init__(self):
-        self.name = 'ERROR MENU'
-        self._commands = {}
+    def __init__(self) -> None:
+        self.name: str = 'ERROR MENU'
+        self._commands: dict[str, InterfaceCommand] = {}
         
         # Add commands to the command dictionary
         self.add_command(attempt_error_resolve, 'reload', 'retry', 'start', 'restart')
@@ -167,40 +175,44 @@ class ErrorMenu(GeneralInterface):
 ## --------------------------------------------------------------------- ##
 
 
-def list_available_commands_command(controller: Controller, argument: str):
+def list_available_commands_command(controller: Controller, argument: str) -> None:
     '''Output the commands that may be entered.'''
     
-    controller.output('Here are the commands available:\ncommands, load, load-e, destination, destination-e, set-hours, set-exports, list-parameters, schedule, verify, verify-e, batch, batch-verify, gui, cli, gui-i, help, quit')
+    controller.output('Here are the commands available:\ncommands, load, load-e, destination, destination-e, set-hours, ' +
+        'set-exports, list-parameters, schedule, verify, verify-e, batch, batch-verify, gui, cli, gui-i, help, quit')
     # TODO: maybe use a listing from help resourses or the main menu interface class.
 
 
-def help_command(controller, argument):
+def help_command(controller: Controller, argument: str) -> None:
     '''Push a help menu object onto the caller's stack and pass any arguments (if any) to the new menu as user input.'''
-    controller.output('Welcome to the help menu. Type keywords to search for a help article. Type "all" to see all articles and "exit" to exit the help menu.')
-    new_help_interface = HelpMenu()                             # Initialize the new interface
-    controller.push_interface(new_help_interface)               # Push the new interface onto the controller's stack
+    controller.output('Welcome to the help menu. Type keywords to search for a help article. Type "all" to ' +
+        'see all articles and "exit" to exit the help menu.')
+    new_help_interface: HelpMenu = HelpMenu() # Initialize the new interface
+    controller.push_interface(new_help_interface) # Push the new interface onto the controller's stack
     
     # Check if there was any argument(s) provided
     if argument:
-        new_help_interface.parse_input(controller, argument)    # Have the new menu process the arguements
+        new_help_interface.parse_input(controller, argument) # Have the new menu process the arguements
 
 
-def load_needed_courses_command(controller, filename):
+def load_needed_courses_command(controller: Controller, filename: str) -> None:
     '''Ask the provided caller to load needed courses via the provided filename.'''
+
+    # Check if the filename is not an empty string
     if filename:
         controller.load_courses_needed(filename)
     else:
         controller.output_error('Please enter the file\'s path.')
 
 
-def load_destination_directory_command(controller, directory):
+def load_destination_directory_command(controller: Controller, directory: str) -> None:
     '''Ask the provided caller to change the destination directory to the provided directory (the directory's existence i checked first).'''
     if directory:
         controller.configure_destination_directory(directory)
     else:
         controller.output_error('Please enter the directory\'s path.')
 
-def explore_needed_courses_command(controller, argument):
+def explore_needed_courses_command(controller: Controller, argument: str) -> None:
     '''Command to create a new QT file explorer application so the user can load the needed courses file.'''
     
     # Check if the user passed some argument(s) (report error and return if so)
@@ -209,21 +221,27 @@ def explore_needed_courses_command(controller, argument):
         return
     
     # This gets the application (launches if there is none) and uses it to present a file selection dialog
-    application = controller.get_graphical_application()
-    file_loader_dialog = QtWidgets.QFileDialog()
-    file_loader_dialog.setFileMode(QtWidgets.QFileDialog.ExistingFile)
-    filename = None
+    application: Optional[QApplication] = controller.get_graphical_application()
+    file_loader_dialog: QFileDialog = QtWidgets.QFileDialog() # Create the file explorer/selector
+    file_loader_dialog.setFileMode(QtWidgets.QFileDialog.ExistingFile) # Configure the file explorer
+
+    filename: Optional[str] = None
     
+    # Run the file explorer/selector and get the success of the execution
     if file_loader_dialog.exec():
-        filename = file_loader_dialog.selectedFiles()[0]
-        load_needed_courses_command(controller, filename)
+
+        filename = file_loader_dialog.selectedFiles()[0] # Get the path of the selected file 
+        load_needed_courses_command(controller, filename) # Load the filename into the controller
+
     if filename == None:
+        # The cancel button was pushed (inform the user)
         controller.output('File load cancelled.')
         
+    # Quit the QT application
     application.quit()
     
 
-def explore_destination_directory_command(controller, argument):
+def explore_destination_directory_command(controller: Controller, argument: str) -> None:
     '''Command to create a new QT file explorer application so the user can set the destination directory.'''
     
     # Check if the user passed some argument(s) (report error and return if so)
@@ -232,45 +250,49 @@ def explore_destination_directory_command(controller, argument):
         return
     
     # This gets the application (launches if there is none) and uses it to present a directory selection dialog
-    application = controller.get_graphical_application()
-    directory_loader_dialog = QtWidgets.QFileDialog()
-    directory_loader_dialog.setFileMode(QtWidgets.QFileDialog.Directory)
-    directory_name = None
+    application: Optional[QApplication] = controller.get_graphical_application()
+    directory_loader_dialog: QFileDialog = QtWidgets.QFileDialog() # Create the file explorer/selector
+    directory_loader_dialog.setFileMode(QtWidgets.QFileDialog.Directory) # Configure the file explorer
+
+    directory_name: Optional[str] = None
     
+    # Run the file explorer/selector and get the success of the execution
     if directory_loader_dialog.exec():
-        directory_name = directory_loader_dialog.selectedFiles()[0]
-        load_destination_directory_command(controller, directory_name)
+        directory_name = directory_loader_dialog.selectedFiles()[0] # Get the path of the selected directory 
+        load_destination_directory_command(controller, directory_name) # Load the directory into the controller
     if directory_name == None:
+        # The cancel button was pushed (inform the user)
         controller.output('Destination load cancelled.')
-        
+
+    # Quit the QT application
     application.quit()
 
 
-def set_hours_per_semster_command(controller, argument):
+def set_hours_per_semster_command(controller: Controller, argument: str) -> None:
     '''Ask the provided caller to set the number of hours per semester.'''
     
     # Check if the argument is numeric
     if argument.isdigit():
-        number = int(argument)                              # Attempt to cast the input to an integer
-        controller.configure_hours_per_semester(number)     # Set the number of hours per semester
+        number: int = int(argument) # Attempt to cast the input to an integer
+        controller.configure_hours_per_semester(number) # Set the number of hours per semester
     else:
         # The argument was not valid (report to the user)
         controller.output_error('Sorry, that is not a valid input (please use a number).')
 
 
-def select_export_command(controller, argument):
+def select_export_command(controller: Controller, argument: str) -> None:
     '''Command to present a new item selection interface so the user can select the export methods.'''
     
     # Define the function that's called when items selection is modified
-    def modify(controler, export_types_selected):
+    def modify(controler: Controller, export_types_selected: list[ExportType]) -> None:
         # Check if the user has unchecked all types
         if len(export_types_selected) == 0:
             controller.output_warning('Make sure you have at least one export mode selected.')
     
     # Define the function that's called when the user indicates completion
-    def complete(controler, export_types_selected):
+    def complete(controler: Controller, export_types_selected: list[ExportType]) -> None:
         # Construct a list of/from the selected export types
-        export_types_list = list(EXPORT_TYPE_DESCRIPTIONS.keys())
+        export_types_list: list[EXPORT_TYPE_DESCRIPTIONS] = list(EXPORT_TYPE_DESCRIPTIONS.keys())
         selected_export_types = [export_types_list[selection_index] for selection_index in export_types_selected]
         
         # Apply the selection to the controller
@@ -278,19 +300,22 @@ def select_export_command(controller, argument):
         controller.output('Export type(s) set.')
     
     # Define the function that's called when the user cancels
-    def cancel(controler, export_types_selected):
+    def cancel(controler: Controller, export_types_selected: list[ExportType]) -> None:
+        
         controller.output('Export type(s) selection cancelled...')
         
     # Initialize and construct the item selection menu
-    list_interface = ItemSelectionInterface(list(EXPORT_TYPE_DESCRIPTIONS.values()), modify, complete, cancel)
+    list_interface: ItemSelectionInterface = ItemSelectionInterface(
+        list(EXPORT_TYPE_DESCRIPTIONS.values()), modify, complete, cancel
+    )
     list_interface.set_selected(set(controller.get_export_type()))
     controller.push_interface(list_interface)
     
     controller.output('Please select from the following export types:') # Output the initial prompt
-    list_interface.list_progress(controller)                            # Output the current selection
+    list_interface.list_progress(controller) # Output the current selection
 
 
-def list_parameters_command(controller, arguements) -> None:
+def list_parameters_command(controller: Controller, arguements: str) -> None:
     '''List the current scheduling parameters (destination directory, hours per semester, needed courses, etc.).'''
     if not arguements:
         controller.output('Scheduling Parameter:\n')
@@ -302,7 +327,7 @@ def list_parameters_command(controller, arguements) -> None:
         else:
             controller.output('Unspecified')
         
-        courses_needed = [str(s) for s in controller.get_courses_needed().get_courses_list()]
+        courses_needed: list[str] = [str(s) for s in controller.get_courses_needed().get_courses_list()]
         
         if courses_needed:
             controller.output('Courses:')
@@ -315,13 +340,13 @@ def list_parameters_command(controller, arguements) -> None:
         controller.output_error('Arguments are not supported for this command.')
     
 
-def create_default_config_command(controller, argument):
+def create_default_config_command(controller: Controller, argument: str) -> None:
     '''Command to create a default config file for the program.'''
     # TODO: Maybe have the argument become the filenames in the config (split via spaces into 0, 1, or 2 filepaths)
     controller.create_default_config_file(catalog_name=None, availability_name=None)
 
 
-def set_gui_interface_command(controller, arguements):
+def set_gui_interface_command(controller: Controller, arguements: str) -> None:
     '''Change the user interface mode to GUI (this does not reload the interface, though).'''
     if not arguements:
         controller.configure_user_interface_mode(is_graphical=True)
@@ -330,7 +355,7 @@ def set_gui_interface_command(controller, arguements):
         controller.output_error('Arguments are not supported for this command.')
 
 
-def set_cli_interface_command(controller, arguements):
+def set_cli_interface_command(controller: Controller, arguements: str) -> None:
     '''Change the user interface mode to CLI (this does not reload the interface, though).'''
     if not arguements:
         controller.configure_user_interface_mode(is_graphical=False)
@@ -339,7 +364,7 @@ def set_cli_interface_command(controller, arguements):
         controller.output_error('Arguments are not supported for this command.')
 
 
-def gui_interface_immediate_command(controller, arguements):
+def gui_interface_immediate_command(controller: Controller, arguements: str) -> None:
     '''Enter a GUI interface (this does not change the program config, though).'''
     if arguements == '':
         controller.push_interface(GraphicalUserMenuInterface())
@@ -347,7 +372,7 @@ def gui_interface_immediate_command(controller, arguements):
         controller.output_error('Arguments are not supported for this command.')
 
 
-def schedule_verify_command(controller, filename):
+def schedule_verify_command(controller: Controller, filename: str) -> None:
     '''Verify the schedule for prequisite cycles and correct availability.'''
     if filename:
         controller.check_schedule(filename)
@@ -355,7 +380,7 @@ def schedule_verify_command(controller, filename):
         controller.output_error('Please enter the file\'s path.')
 
 
-def explore_schedule_verify_command(controller, argument):
+def explore_schedule_verify_command(controller: Controller, argument: str) -> None:
     '''Verify the schedule for prequisite cycles (with file explorer).'''
     
     # Check if the user passed some argument(s) (report error and return if so)
@@ -364,10 +389,10 @@ def explore_schedule_verify_command(controller, argument):
         return
     
     # This gets the application (launches if there is none) and uses it to present a file selection dialog
-    application = controller.get_graphical_application()
-    file_loader_dialog = QtWidgets.QFileDialog()
+    application: QApplication = controller.get_graphical_application()
+    file_loader_dialog: QFileDialog = QtWidgets.QFileDialog()
     file_loader_dialog.setFileMode(QtWidgets.QFileDialog.ExistingFile)
-    filename = None
+    filename: Optional[str] = None
     
     if file_loader_dialog.exec():
         filename = file_loader_dialog.selectedFiles()[0]
@@ -378,19 +403,23 @@ def explore_schedule_verify_command(controller, argument):
     application.quit()
 
 
-def generate_schedule_command(controller, filename):
+def generate_schedule_command(controller: Controller, filename: str) -> None:
     '''Ask the provided caller to generate a schedule with the passed filename.'''
     if filename:
         controller.generate_schedule(filename)
     else:
         controller.output_error('Please enter a filename.')
 
-def batch_schedule_command(controller, arguments):
+
+## ----------- Batch commands are more or less still in development (not in the current implementation) ----------- ##
+
+
+def batch_schedule_command(controller: Controller, arguments: str) -> None:
     '''Ask the provided caller to generate schedules with the passed directory (assumed needed-courses files) and possibly an output name (after comma).'''
     
     if arguments:
-        comma_position = arguments.find(',')
-        directory_name = arguments
+        comma_position: int = arguments.find(',')
+        directory_name: str = arguments
         if comma_position != -1:
             controller.set_destination_filename(arguments[comma_position+1:].strip())
             directory_name = arguments[:comma_position].strip()
@@ -398,7 +427,7 @@ def batch_schedule_command(controller, arguments):
     else:
         controller.output_error('Please enter a file or directory path/name .')
 
-def batch_schedule_verify_command(controller, directory_name):
+def batch_schedule_verify_command(controller: Controller, directory_name: str) -> None:
     '''Ask the provided caller to verify the schedules for prequisite cycles and correct availability in the passed directory (assumed to contain paths to  graduation).'''
     
     if directory_name:
@@ -407,7 +436,7 @@ def batch_schedule_verify_command(controller, directory_name):
         controller.output_error('Please enter the directory\'s path.')
     
 
-def quit_command(controller, arguements):
+def quit_command(controller: Controller, arguements: str) -> None:
     '''Terminate the program.'''
     if not arguements:
         controller.clear_all_interfaces() # Pop all interfaces in the controller's stack
@@ -416,7 +445,7 @@ def quit_command(controller, arguements):
         controller.output_error('Arguments are not supported for this command.')
 
 
-def attempt_error_resolve(controller, argument):
+def attempt_error_resolve(controller: Controller, argument: str) -> None:
     '''Attempt to reload the course info data and pop the top menu (expected to be an error menu).'''
     
     if not argument:
@@ -426,7 +455,7 @@ def attempt_error_resolve(controller, argument):
         controller.clear_all_interfaces()
         
         # Exit the QT application if active
-        application = QtWidgets.QApplication.instance()
+        application: Optional[QApplication] = QtWidgets.QApplication.instance()
         if application:
             exit(application)
                 
@@ -436,11 +465,13 @@ def attempt_error_resolve(controller, argument):
         controller.output_error('Arguments are not supported for this command.')
     
 
-def edit_courses_needed_container_command(controller, argument):
+def edit_courses_needed_container_command(controller: Controller, argument: str) -> None:
     if not argument:
         controller.output('Editing courses needed and course selection...')
         
-        new_interface = NeededCoursesInterface(controller.get_courses_needed().get_decision_tree())
+        new_interface: NeededCoursesInterface = NeededCoursesInterface(
+            controller.get_courses_needed().get_decision_tree()
+        )
 
         # Deconstruct all active interfaces on the stack
         controller.push_interface(new_interface)
@@ -448,11 +479,7 @@ def edit_courses_needed_container_command(controller, argument):
     else:
         controller.output_error('Arguments are not supported for this command.')
 
-
-## ----------- The following are more or less still in development (not in the current implementation) ----------- ##
-
-
-def fetch_catalog_command(controller, argument):
+def fetch_catalog_command(controller: Controller, argument: str) -> None:
     if argument:
         controller.fetch_catalog(argument)
     else:

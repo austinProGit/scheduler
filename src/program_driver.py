@@ -1,16 +1,13 @@
 # Thomas Merino
-# 3/6/23
+# 4/25/23
 # CPSC 4175 Group Project
 
 # TODO: add final semester rule
-# TODO: change the name of the ES to "schedule_evaluator"
-# TODO: Clean up the mixing of string and Path objects (it is not clear what is what right now)
+# TODO: change the name of the Expert System to "schedule_evaluator"
 # TODO: File existence check does not consider the to-be file extensions (fix this) -- we could do this with Path.with_suffix('') and Path.suffix
 
 # POTENTIAL GOALS FOR NEXT CYCLE:
-# - General refactoring
-# - Use UI text dictionary (maybe langauges support)
-# - Maybe add session data so the program can recover from a crash
+# - Maybe add session data so the program can recover from a crash 
 
 # - Have the last directory used for saving stored in the config
 #           This may be changed just for the current session with something like ("temp dirname")
@@ -25,12 +22,10 @@
 #           NOTE: this might mean serializing the course info container when preserving session data
 # - Display help menu contents in GUI mode via a web browser
 # - Use number of courses OR number of credit hours
-# - Open finished schedule once generated
 # - Be able to manage config file with text editor (from software)
 # - Make the content panel better
 #           Have the content panel display the output schedule (so there aren't hundreds of windows opening during batch)
 # - Add a log file (tracks commands entered and outputs generated)
-# - Accept any/all courses
 # - Handle missing package errors better
 # - Fix program icon appearing for file explorer (default Python icon)
 # - Handle permission check when setting output directory
@@ -50,17 +45,59 @@ if TYPE_CHECKING:
     from PySide6.QtWidgets import QApplication
     from degree_extraction_container import DegreeExtractionContainer
 
-import warnings
 
-
-# NOTE: Set this to True if you want to run memory profiling
-# NOTE: Memory leak detecting; this requires loading in cli
+# NOTE: Set this to True if you want to run memory profiling/check for memory leaks (this requires loading in cli)
 IS_TESTING_MEMORY = False
 
 if IS_TESTING_MEMORY:
     from guppy import hpy
     # Create a guppy heap tracking object if in memeory testing mode
     heap = hpy() 
+
+
+# Project imports
+# --------------------------------------
+
+# General functionality and IO
+from alias_module import *
+import auto_update
+from configuration_manager import *
+from driver_fs_functions import *
+from general_utilities import *
+
+
+# UX
+from cli_interface import MainMenuInterface, GraphicalUserMenuInterface, ErrorMenu
+
+# Containers
+from course_info_container import *
+from courses_needed_container import CoursesNeededContainer
+from scheduling_parameters_container import ConstructiveSchedulingParametersContainers
+
+# Scheduling
+from batch_process import batch_process
+from scheduler_driver import ConstuctiveScheduler as Scheduler
+
+
+# Parsers
+from CSU_public_data_parser import update_course_info
+from degreeworks_parser_v2 import generate_degree_extraction_container
+from path_to_grad_parser import parse_path_to_grad
+
+# Validators
+from batch_validation import batch_validation
+from program_generated_evaluator import evaluate_container, NonDAGCourseInfoError, InvalidCourseError
+from user_submitted_validator import rigorous_validate_schedule as validate_user_submitted_path
+
+# Formatters
+from excel_formatter import excel_formatter
+from pdf_formatter import pdf_export
+from plain_text_formatter import plain_text_export
+
+
+
+# Other imports
+# --------------------------------------
 
 from PySide6 import QtWidgets
 
@@ -70,39 +107,18 @@ from pathlib import Path
 from os import path
 
 
-from courses_needed_container import CoursesNeededContainer
-from general_utilities import *
 
-
-import auto_update
-
-from alias_module import *
-from catalog_parser import update_course_info
-from batch_process import batch_process
-from batch_validation import batch_validation
-from configuration_manager import *
-from driver_fs_functions import *
-from cli_interface import MainMenuInterface, GraphicalUserMenuInterface, ErrorMenu
-from scheduler import Scheduler
-from scheduling_parameters_container import ConstructiveSchedulingParametersContainers
-from course_info_container import *
-# TODO: make courses needed parser work in dis file!
-# from courses_needed_parser import get_courses_needed
-from degreeworks_parser import generate_degree_extraction_container
-from program_generated_evaluator import evaluate_container, NonDAGCourseInfoError, InvalidCourseError
-from excel_formatter import excel_formatter
-from plain_text_formatter import plain_text_export
-from pdf_formatter import pdf_export
-from user_submitted_validator import validate_user_submitted_path
-from path_to_grad_parser import parse_path_to_grad
 
 # Used for controlling console window display
-import platform
-OPERATING_SYSTEM = platform.system()
-WIN_CONTROL_FLAG = False
+OPERATING_SYSTEM: str = platform.system()
+
+# Flag that is true when running on Windows OS.
+WIN_CONTROL_FLAG: bool = False
+
 if OPERATING_SYSTEM == "Windows":
     try:
-        import pywintypes, win32gui, win32con, win32api
+        # Windows OS-specific imports
+        import pywintypes, win32gui, win32con, time, win32api
         TITLE = win32api.GetConsoleTitle()
         HWND = win32gui.FindWindow(None, TITLE)
         WIN_CONTROL_FLAG = True
@@ -115,26 +131,34 @@ RELEASE_URL = "https://api.github.com/repos/austinProGit/scheduler/releases/late
 INSTALLER_INFO_FILE = "installer_info.txt"
 
 
+
 ## --------------------------------------------------------------------- ##
 ## ---------------------- Smart Planner Controller --------------------- ##
 ## --------------------------------------------------------------------- ##
 
-# This exception is used when an issue with interface presentation is encountered.
-# Handling one should only be done for the sake of saving important data.
+
 class InterfaceProcedureError(Exception):
+    '''This exception is used when an issue with interface presentation is encountered.
+    Handling one should only be done for the sake of saving important data.'''
     pass
 
-# This class manages the interactions between the interface of the program and the model (mostly the scheduler).
-# The class also manages the destination directory and filename.
-# Menuing is performed by having an interface stack--alike chain of responsibility and/or state machine.
 class SmartPlannerController:
+    '''This class manages the interactions between the interface of the program and the model (mostly the scheduler).
+    The class also manages the destination directory and filename.
+    Menuing is performed by having an interface stack--alike chain of responsibility and/or state machine.
+    '''
     
     def __init__(self, graphics_enabled=True):
+
+        # Hide console window if running Windows OS
         if OPERATING_SYSTEM == "Windows" and WIN_CONTROL_FLAG:
             win32gui.ShowWindow(HWND, win32con.SW_HIDE)
+
+        # Check for updates
         if auto_update.update(VERSION, RELEASE_URL, INSTALLER_INFO_FILE):
             exit(0)
         
+        # Perform the controller's setup routine
         self.setup(graphics_enabled)
         
         if IS_TESTING_MEMORY:
@@ -148,14 +172,15 @@ class SmartPlannerController:
         
         # Initialize important variables
 
-        # Create a scheduler parameter container where the destination directory is defaulted to export to the home directory.
-        # Configuration should be inspected for validity. Do not set properties purely based on user input.
         parameter_container: ConstructiveSchedulingParametersContainers = \
             ConstructiveSchedulingParametersContainers(path=Path.home(), export_types=[PATH_TO_GRADUATION_EXPORT_TYPE])
+        '''A scheduler parameter container where the destination directory is defaulted to export to the home directory.
+        Configuration should be inspected for validity. Do not set properties purely based on user input.'''
         
         # Setup the scheduler--object for heading the model.
         # The scheduler functions as the program's model. It may be serialized to save the save of the process.
         self._scheduler: Scheduler = Scheduler(course_info_container=None, parameters_container=parameter_container)
+        ''''''
 
         # In this context, an 'interface' is an object that handles user input and performs actions on the passed
         # controller given those inputs. Interfaces are not expected to directly interact with the user (input or
@@ -503,6 +528,10 @@ class SmartPlannerController:
                 degree_extraction: DegreeExtractionContainer = generate_degree_extraction_container(filepath) # Get the needed courses from the file
                 self._scheduler.configure_degree_extraction(degree_extraction) # Load the course container / degree extraction into the scheduler
 
+                # NEW <<$
+                self._scheduler.get_courses_needed_container().stub_all_unresolved_nodes()
+                # $>>
+
                 # TODO: this is temp (VERY BAD, VERY NO GOOD) ->
                 if self._scheduler._courses_needed_container is not None:
                     for node in self._scheduler._courses_needed_container._decision_tree.get_all_children_list():
@@ -638,10 +667,29 @@ class SmartPlannerController:
         
     
     def fetch_catalog(self, fetch_parameters=None):
+        dept_pattern = r"[A-Z]{3}[A-Z]?"
+        file0 = get_source_path()
+        file0 = get_source_relative_path(file0, 'input_files/Course Info.xlsx')
         
         self.output('Fetching data...')
         
-        update_course_info()
+        if fetch_parameters == None:
+            new_container = update_course_info(self, None)           
+            if new_container != None:
+                write_df_dict_xlsx(new_container, file0)
+
+        else:
+            fetch_parameters = fetch_parameters.upper()
+            course_list = re.findall(dept_pattern, fetch_parameters)
+            if course_list != []:                
+                new_container = update_course_info(self, course_list)
+                if new_container != None:
+                    df_dict = load_course_info(file0)
+                    old_container = CourseInfoContainer(df_dict)
+                    old_container.update_container_keeping_external_duplicates(new_container)
+                    write_df_dict_xlsx(old_container, file0)
+            else:
+                self.output("Format incorrect: Must be in form XXX or XXXX")
         
         self.output('Course catalog info updated.')
         
@@ -751,9 +799,17 @@ class SmartPlannerController:
         desired_destination = self.get_destination()
         
         try:
-            container = self._scheduler.generate_schedule()
+
+            # NEW <<$
+            self._scheduler.prepare_schedulables()
+            container = self._scheduler.generate_schedule(prequisite_ignored_courses=[])
+            # $>> <<!
+            #container = self._scheduler.generate_schedule()
+            # <<!
+
             confidence_factor = container.get_confidence_level()
-            semesters_listing = container.get_schedule()
+            # TODO: adding "[[]] + " for legacy (remove!)
+            semesters_listing = [[]] + container.get_schedule()
             
             #semesters_listing, confidence_factor = self._scheduler.generate_schedule()
             self.output('Path generated with confidence value of {0:.1f}%'.format(confidence_factor*100))
@@ -763,7 +819,8 @@ class SmartPlannerController:
             if PATH_TO_GRADUATION_EXPORT_TYPE in export_types:
                 unique_ptg_destination = get_next_free_filename(desired_destination.with_suffix('.xlsx'))
                 # Lew erased 'Path To Graduation' from here to work with excel_formatter
-                excel_formatter(Path(template_path), unique_ptg_destination, semesters_listing, self._scheduler.get_course_info())
+                # excel_formatter(Path(template_path), unique_ptg_destination, semesters_listing, self._scheduler.get_course_info())
+                excel_formatter(Path(template_path), unique_ptg_destination, semesters_listing)
                 self.output('Schedule (Path to Graduation) exported as {0}'.format(unique_ptg_destination))
                 if os.name == 'nt':
                     os.startfile(unique_ptg_destination)

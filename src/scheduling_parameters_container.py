@@ -6,11 +6,12 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Optional
+    from typing import Optional, Callable, Any
     from pathlib import Path
     from driver_fs_functions import ExportType, PATH_TO_GRADUATION_EXPORT_TYPE
 
 from general_utilities import *
+from math import inf
 
 DEFAULT_SPRING_FALL_HOURS: int = 15
 DEFAULT_SUMMER_HOURS: int = 3
@@ -19,6 +20,32 @@ DEFAULT_SUMMER_MINIMUM_HOURS: int = 0
 
 
 DEFAULT_DESTINATION_FILENAME = "Path to Graduation"
+
+
+
+class CreditHourInformer:
+
+    @staticmethod
+    def make_unlimited_generator() -> CreditHourInformer:
+        result: CreditHourInformer = CreditHourInformer(None)
+        result._generator = lambda s, y: inf
+        return result
+
+    def _invalid_generator(self, semester: SemesterType, year: int) -> int:
+        raise ValueError('Illegal credit hour informer state encountered.')
+
+    def __init__(self, meta_informer: Any):
+        self._generator: Callable[[SemesterType, int], float] = self._invalid_generator
+        if meta_informer is None:
+            pass
+        else:
+            # isinstance(meta_informer, ConstuctiveScheduler) would be good if cyclic imports did not happen
+            self._generator = lambda s, y: meta_informer.get_hours_per_semester(s).stop
+
+    def get(self, semester: SemesterType, year: int) -> int:
+        return self._generator(semester, year)
+
+    
 
 # This is a base for a container of scheduler parameters. This will be alike the constuctive parameter
 # container. In the event this changes, the constuctive parameter container will override to be consistent
