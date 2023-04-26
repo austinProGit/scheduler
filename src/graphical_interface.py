@@ -550,19 +550,28 @@ class Adaptation_Menu(QWidget):
         else: 
             working_electives = []
         if len(working_electives) == abs(elective_matrix[0] - elective_matrix[1]):
-            for course in previous_electives:
-                working_electives.append(course)
-            self.controller._result.set_recommended_electives(working_electives)
-            self.parent_window.refresh_data()
-            self.close()
-            #return True
+            if elective_matrix[0] < elective_matrix[1]:
+                for course in previous_electives:
+                    for each in working_electives:
+                        if each == course:
+                            previous_electives.remove(each)
+                            break
+            if elective_matrix[0] < elective_matrix[1]:
+                self.controller._result.set_recommended_electives(previous_electives)
+                self.parent_window.refresh_data()
+                self.close()
+            else:
+                for course in previous_electives:
+                    working_electives.append(course)
+                self.controller._result.set_recommended_electives(working_electives)
+                self.parent_window.refresh_data()
+                self.close()
         elif elective_matrix[0] == elective_matrix[1]:
             for course in previous_electives:
                 working_electives.append(course)
             self.controller._result.set_recommended_electives(working_electives)
             self.parent_window.refresh_data()
             self.close()
-            #return True
         else:
             msgBox = QMessageBox()
             msgBox.setText("Whoops, elective counts do not match, please try again")
