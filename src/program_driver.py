@@ -667,10 +667,29 @@ class SmartPlannerController:
         
     
     def fetch_catalog(self, fetch_parameters=None):
+        dept_pattern = r"[A-Z]{3}[A-Z]?"
+        file0 = get_source_path()
+        file0 = get_source_relative_path(file0, 'input_files/Course Info.xlsx')
         
         self.output('Fetching data...')
         
-        update_course_info(['BIOL', 'CHEM', 'CPSC', 'CYBR'])
+        if fetch_parameters == None:
+            new_container = update_course_info(self, None)           
+            if new_container != None:
+                write_df_dict_xlsx(new_container, file0)
+
+        else:
+            fetch_parameters = fetch_parameters.upper()
+            course_list = re.findall(dept_pattern, fetch_parameters)
+            if course_list != []:                
+                new_container = update_course_info(self, course_list)
+                if new_container != None:
+                    df_dict = load_course_info(file0)
+                    old_container = CourseInfoContainer(df_dict)
+                    old_container.update_container_keeping_external_duplicates(new_container)
+                    write_df_dict_xlsx(old_container, file0)
+            else:
+                self.output("Format incorrect: Must be in form XXX or XXXX")
         
         self.output('Course catalog info updated.')
         

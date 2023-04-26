@@ -9,8 +9,8 @@ from driver_fs_functions import *
 
 # ------COURSE INFO CONTAINER CLASS---------END OF CLASS-----------END OF CLASS----------END OF CLASS-------------
 
-class CourseInfoContainer:
-    
+class CourseInfoContainer:  
+
 
     def __init__(self, df_dict):
         self._df_dict = df_dict
@@ -251,8 +251,8 @@ class CourseInfoContainer:
 # ..........end of helper methods.......................end of helper methods......................helper methods
 # ------COURSE INFO CONTAINER CLASS---------END OF CLASS-----------END OF CLASS----------END OF CLASS-------------
 
-# Combining two containers dataframes where the left parameter container keeps duplicates and deletes one from
-# the right container dataframe
+# Combining two containers dataframes where the right parameter container keeps duplicates and deletes one from
+# the left container dataframe
 def combine_container_keeping_right_duplicates(container_a, container_b):
     df_dict_a = container_a.get_df_dict()
     df_dict_b = container_b.get_df_dict()
@@ -329,22 +329,10 @@ def get_pickle(filename):
 #dfdict = load_course_info(file0)
 #container = CourseInfoContainer(dfdict)
 
-#course_identifier_CPSC_2105 = DummyCourseIdentifier(course_number="CPSC 2105")
-#course_identifier_CPSC_XXXX = DummyCourseIdentifier(course_number="CPSC XXXX", name="Elective", is_stub=True)
-#course_identifier_CPSC_3XX = DummyCourseIdentifier(course_number="CPSC 3@X", name="Elective", is_stub=True)
-#course_identifier_CPPP_0000 = DummyCourseIdentifier(course_number="CPPP 0000")
-
+#course_identifier_CPSC_2105 = DummyCourseIdentifier(course_number="ACCT 6117")
 #crs1 = container.get_course_record(course_identifier_CPSC_2105)
-#stub1 = container.get_course_record(course_identifier_CPSC_XXXX)
-#stub2 = container.get_course_record(course_identifier_CPSC_3XX)
-#wrong = container.get_course_record(course_identifier_CPPP_0000)
-
-##print(wrong)
 #attributes = vars(crs1)
 
 #for a_name in attributes:
 #    a_value = attributes[a_name]
 #    print(f"{a_value}  <<<-----{a_name}")
-#write_df_dict_xlsx(container, file0)
-#print(container.update_container_keeping_external_duplicates(container1))
-#print(combine_container_keeping_right_duplicates(container, container1))

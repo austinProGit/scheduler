@@ -14,26 +14,26 @@ import datetime
 import pickle
 
 
-def website_error(url):
+def website_error(controller_obj, url):
     error_found = False
     try:
         response = requests.get(url)
         response.raise_for_status()
     except requests.exceptions.HTTPError as error:
         if error.response.status_code == 404:
-            print(f"\n{error}\n")
+            controller_obj.output(f"\n{error}\n")
             error_found = True
     except requests.exceptions.RequestException as error:
-        print(f"\n{error}\n")
+        controller_obj.output(f"\n{error}\n")
         error_found = True
     return error_found
 
 
 # Webcrawls one page to retrieve Baccalaureate Degrees/Majors. (80 degrees as of April 2023) 
-def get_baccalaureate_degrees():
-    print("Retrieving Baccalaureate Degrees dictionary from https://catalog.columbusstate.edu/academic-degrees-programs/degrees-baccalaureate/")
+def get_baccalaureate_degrees(controller_obj):
+    controller_obj.output("Retrieving Baccalaureate Degrees dictionary from https://catalog.columbusstate.edu/academic-degrees-programs/degrees-baccalaureate/")
     url = "https://catalog.columbusstate.edu/academic-degrees-programs/degrees-baccalaureate/"
-    if not website_error(url):
+    if not website_error(controller_obj, url):
         html = urlopen(url).read()
         soup = BeautifulSoup(html, features="html.parser")
         degrees = soup.find("div", class_="page_content")
@@ -48,7 +48,7 @@ def get_baccalaureate_degrees():
 
         major_dict = get_majors_and_tracks(degree_string)
         write_pickle_file("baccalaureate_degrees_dictionary.pickle", major_dict)
-        print(f"Baccalaureate Degrees dictionary complete.\n")
+        controller_obj.output(f"Baccalaureate Degrees dictionary complete.\n")
 
 
 # Author: Austin Lee
@@ -90,9 +90,9 @@ def get_majors_and_tracks(degree_string):
 
 
 # Webcrawls one page to retrieve 116 department names of CSU.
-def get_department_dict():
+def get_department_dict(controller_obj):
     url = "https://catalog.columbusstate.edu/course-descriptions/"
-    if website_error(url):
+    if website_error(controller_obj, url):
         return None
     html = urlopen(url).read()
     soup = BeautifulSoup(html, features="html.parser")
@@ -110,25 +110,25 @@ def get_department_dict():
 # Webcrawls many pages (as of Mar 2023, 116 pages) to retrieve all course IDs (as of Mar 2023, 2854 course IDs) 
 # and creates a master dictionary, which we pickle for reuse.  Takes around 35 seconds to perform function; may need to 
 # optimize with threading.
-def get_course_dict():
-    print("Retrieving department dictionary from https://catalog.columbusstate.edu/course-descriptions/")
-    depts = get_department_dict()
+def get_course_dict(controller_obj):
+    controller_obj.output("Retrieving department dictionary from https://catalog.columbusstate.edu/course-descriptions/")
+    depts = get_department_dict(controller_obj)
     l = len(depts)
-    print(f"Dictionary complete with {l} departments.\n")
+    controller_obj.output(f"Dictionary complete with {l} departments.\n")
     dept_error_list = []
     refined_courses = {}
 
     for dept in depts:
         url = "https://catalog.columbusstate.edu/course-descriptions/"+str(dept).lower()+"/"
-        if not website_error(url):
-            print("Retrieving course dictionary from " + url)
+        if not website_error(controller_obj, url):
+            controller_obj.output("Retrieving course dictionary from " + url)
             html = urlopen(url).read()
             soup = BeautifulSoup(html, features="html.parser")
             courses = soup.find_all("span", class_="text col-3 detail-code margin--tiny text--semibold text--huge")
 
             for course in courses:
                 refined_courses[course.text] = None
-            print(f"Course dictionary from {dept} complete.")
+            controller_obj.output(f"Course dictionary from {dept} complete.")
         else:
             dept_error_list.append(dept)
 
@@ -142,7 +142,7 @@ def get_course_dict():
     write_pickle_file("course_dictionary.pickle", refined_courses)
 
     l = len(refined_courses)
-    print(f"Dictionary complete with {l} courses.\n")
+    controller_obj.output(f"Dictionary complete with {l} courses.\n")
     return refined_courses
 
 
@@ -171,42 +171,38 @@ def get_baccalaureate_degrees_pickle_file():
     return obj
 
 
-def update_course_info(dept=None):
-    major_dict = get_baccalaureate_degrees() #comment out for faster processing
-    dept_dict = get_department_dict() #comment out for faster processing
-    if dept_dict == None: 
-        print("Website Error: Department dictionary unable to update along with corresponding updates. (Default to last updated data version)")
-        return None
+def update_course_info(controller_obj, dept=None):    
+    major_dict = get_baccalaureate_degrees(controller_obj) #comment out for faster processing
+    dept_dict = get_department_dict(controller_obj) #comment out for faster processing
 
-    course_dict = get_course_dict() #comment out for faster processing
+    if dept_dict == None: 
+        controller_obj.output("Website Error: Department dictionary unable to update along with corresponding updates. (Default to last updated data version)")
+        return None
+    
+    course_dict = get_course_dict(controller_obj)
     df_dict = {}
     dept_dict = get_pickle_file("department_dictionary.pickle") #Quick way
     course_dict = get_pickle_file("course_dictionary.pickle") #Quick way
-    if type(dept) == str and dept in dept_dict.keys():
-        df = parse_catalog(dept)
-        df_dict[dept] = df
-    elif type(dept) == list:
+
+    if type(dept) == list:
         for d in dept:
             if d in dept_dict.keys():
-                df = parse_catalog(d)
+                df = parse_catalog(controller_obj, d)
                 df_dict[d] = df
     elif dept == None:
         for depts in dept_dict.keys():
-            df = parse_catalog(depts)
+            df = parse_catalog(controller_obj, depts)
             df_dict[depts] = df
     else:
-        print("Must specify department, department list, or no param for all departments.")
+        controller_obj.output("Must specify department(s), or no param for all departments.")
         return None
 
-    file0 = get_source_path()
-    file0 = get_source_relative_path(file0, 'output_files/New Course Info.xlsx')
-    #df_dict = load_course_info(file0)
     container = CourseInfoContainer(df_dict)
-    write_df_dict_xlsx(container, file0)
+    return container
 
 
-def parse_catalog(dept):
-    print(f"Updating {dept}...")
+def parse_catalog(controller_obj, dept):
+    controller_obj.output(f"Updating {dept}...")
     df = pd.DataFrame(columns=['courseID', 'courseName', 'hours', 'availability', 'prerequisites',
                                'co-requisites', 'recommended', 'restrictions', 'note', 'importance'])
 
@@ -217,7 +213,6 @@ def parse_catalog(dept):
 
     for index in range(len(all_course_blocks)):
         courseID = all_course_blocks[index].find("span", class_="text col-3 detail-code margin--tiny text--semibold text--huge").text
-        #print(courseID)
         name = all_course_blocks[index].find("span", class_="text col-3 detail-title margin--tiny text--bold text--huge").text
         hours = all_course_blocks[index].find("span", class_="text detail-coursehours text--bold text--huge").text
  
@@ -225,13 +220,101 @@ def parse_catalog(dept):
         coreqs = get_coreqs(all_course_blocks[index], concurrent_courses)
         supplementary_prereqs = get_supplementary_prereqs(all_course_blocks[index], coreqs)
         prereqs = get_prereqs(all_course_blocks[index], coreqs, concurrent_courses, supplementary_prereqs)
+        restrictions = get_restrictions(all_course_blocks[index])
 
-        df.loc[len(df.index)] = [courseID, name, hours, "", prereqs, coreqs, "", "", "", ""]
+        df.loc[len(df.index)] = [courseID, name, hours, "", prereqs, coreqs, "", restrictions, "", ""]
 
     avail_dict = availability_crawl(dept)
     df = avail_placement_helper(df, avail_dict)
-    print(f"Updating {dept} complete.")
+    controller_obj.output(f"Updating {dept} complete.")
     return df
+
+
+def get_restrictions(course_block):
+    restrictions = ""
+    course_body = course_block.find_all("p", class_="courseblockextra noindent")
+
+    if no_restrictions(course_body): return ""
+    section = has_restrictions(course_body)
+    if only_excluded_restrictions(section): return ""
+
+    restrictions = categorize_restrictions(section)
+    return restrictions
+
+
+def categorize_restrictions(section):
+    restrictions = ""
+    a0 = r"limited to Graduate Level"
+    a1 = r"Undergraduate Level level students may not enroll|Freshman, Sophomore, Junior or Senior students may not enroll"
+    a2 = r"limited to Degree - Graduate"
+    a3 = r"limited to Undergraduate Level|limited to Freshman, Sophomore, Junior or Senior students|Graduate Level level students may not enroll|Senior students may not enroll"
+    a4 = r"Freshman or Sophomore students may not enroll|Sophomore students may not enroll"
+    a5 = r"Freshman, Sophomore or High School Dual Enrollment students may not enroll|Freshman, Sophomore, Degree"
+    a6 = r"Freshman, Sophomore, Audit - Undergraduate"
+    a7 = r"Freshman, Sophomore or Junior students may not enroll"
+    a8 = r"Senior, Non-Degree"
+    a9 = r"Freshman students may not enroll|Freshman or High School Dual Enrollment students may not enroll"
+    a10 = r"limited to Senior"
+    a11 = r"limited to Junior"
+    a12 = r"limited to Sophomore"
+    a13 = r"limited to Freshman"
+
+    patterns = [a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13]
+    restrictions = categorize_helper(section, patterns)
+    return restrictions
+
+
+def categorize_helper(section, patterns):
+    for index, pattern in enumerate(patterns):
+        if re.search(pattern, section):
+            if index == 0 or index == 1 or index == 2: return "Graduate"
+            elif index == 3: return "Undergraduate"
+            elif index == 4 or index == 5 or index == 6: return "Junior"
+            elif index == 7 or index == 8: return "Senior"
+            elif index == 9: return "Sophomore"
+            elif index == 10: return "Senior"
+            elif index == 11: return "Junior"
+            elif index == 12: return "Sophomore"
+            elif index == 13: return "Freshman"
+            else: return ""
+
+
+def only_excluded_restrictions(section):
+    no = True
+    grad = r"G?g?raduate"
+    ungrad = r"U?u?ndergraduate"
+    sen = r"S?s?enior"
+    jun = r"J?j?unior"
+    soph= r"S?s?ophomore"
+    fresh = r"F?f?reshman"
+    patterns = [grad, ungrad, sen, jun, soph, fresh]
+
+    for pattern in patterns:
+        if re.search(pattern, section):
+            no = False
+            break
+    return no
+
+
+def has_restrictions(course_body):
+    section = ""
+    for index in range(len(course_body)):
+        section = course_body[index].text
+        section = section.replace("\xa0", " ")
+        if re.search(r"Restriction", section):
+            break
+    return section
+
+
+def no_restrictions(course_body):
+    no = True
+    for index in range(len(course_body)):
+        section = course_body[index].text
+        section = section.replace("\xa0", " ")
+        if re.search(r"Restriction", section):
+            no = False
+            break
+    return no
 
 
 def get_supplementary_prereqs(course_block, coreqs):
@@ -709,7 +792,3 @@ def create_tokenized_logic(section):
     regex_pattern = r"\(|\)|and|or|[A-Z]{3}[A-Z]?\s\d{4}[A-Z]?"
     tokens = re.findall(regex_pattern, section)
     return tokens
-
-#update_course_info()
-# print(get_baccalaureate_degrees_pickle_file())
-
