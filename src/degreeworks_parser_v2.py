@@ -402,6 +402,13 @@ def remove_after_last_course_block(still_needed_chunks):
 
     return still_needed_chunks_after_last_course_block_removed_list
 
+# Removes any new line characters and multiple spaces from a node's name
+def remove_newline_multispace_from_string(name_string):
+    cleaned_name_string = ''
+    newlined_removed_string = name_string.replace('\n', ' ')
+    cleaned_name_string = re.sub(' {2,}', ' ', newlined_removed_string)
+    return cleaned_name_string
+
 # From a given 'Still needed:' chunk, generates all course and exception blocks and returns as a dictionary
 def generate_course_blocks(chunk):
     course_blocks_list = []
@@ -463,10 +470,8 @@ def generate_course_blocks(chunk):
 # returning a part of the complex deliverables string
 def classify_and_handle_course_blocks(course_blocks_and_exceptions_dict):
     handled_course_blocks_string = ''
-    # check if its an inserter node
-    # check if its a protocol node
-    # check if its a simple deliverable node
     exception_string = ''
+    
     if len(course_blocks_and_exceptions_dict['exception_blocks']) > 0:
         exception_string += '^(?!'
         if len(course_blocks_and_exceptions_dict['exception_blocks']) == 1:
@@ -474,21 +479,22 @@ def classify_and_handle_course_blocks(course_blocks_and_exceptions_dict):
         else:
             exception_string += ('|').join(course_blocks_and_exceptions_dict['exception_blocks'])
         exception_string += ')'
+    
     for course_block in course_blocks_and_exceptions_dict["course_blocks"]:
 
         if (letter_block := course_block.split()[0]) and (number_block := course_block.split()[1]):
             # check for inserter node
             if re.match(r'\d@', number_block):
                 if letter_block == '@':
-                    handled_course_blocks_string += f'[i <n=Insert {course_block}, ga={course_block} Course, gp={exception_string}[A-Z]{{4}} {number_block[0]}\d{{3}}[A-Z]?>]\n'
+                    handled_course_blocks_string += f'[i <n=Insert {remove_newline_multispace_from_string(course_block)}, ga={course_block} Course, gp={exception_string}[A-Z]{{4}} {number_block[0]}\d{{3}}[A-Z]?>]\n'
                 else:
-                    handled_course_blocks_string += f'[i <n=Insert {course_block}, ga={course_block} Course, gp={exception_string}{letter_block} {number_block[0]}\d{{3}}[A-Z]?>]\n'
+                    handled_course_blocks_string += f'[i <n=Insert {remove_newline_multispace_from_string(course_block)}, ga={course_block} Course, gp={exception_string}{letter_block} {number_block[0]}\d{{3}}[A-Z]?>]\n'
             # check for protocol node
             elif re.match(r'\d{4}@', number_block):
-                handled_course_blocks_string += f'[p <n={course_block}, m={course_block[:-1]}.*>]\n'
+                handled_course_blocks_string += f'[p <n={remove_newline_multispace_from_string(course_block)}, m={course_block[:-1]}.*>]\n'
             # check for deliverable node
             elif re.match(r'\d{4}([A-Z])?$', number_block):
-                handled_course_blocks_string += f'[d <n={course_block}>]\n'
+                handled_course_blocks_string += f'[d <n={remove_newline_multispace_from_string(course_block)}>]\n'
             
             # catch any unhandled nodes
             else:
@@ -518,7 +524,7 @@ def classify_and_handle_chunks(still_needed_chunks):
         # Nested shallow selection node
         if (name := re.search(r'Choose from \d{1} of the following:', chunk)):
             required_count = name.group()[name.group().find(' of the following:') - 1]
-            complex_deliverables_string += f'[s <c={required_count}, n={name.group()}>\n'
+            complex_deliverables_string += f'[s <c={required_count}, n={remove_newline_multispace_from_string(name.group())}>\n'
 
             sub_chunk_list = []
             sub_chunk_start_matches_list = list(re.finditer('\d{1,2} Class(es)?|\d{1,2} Credit[s]?', chunk))
@@ -543,17 +549,15 @@ def classify_and_handle_chunks(still_needed_chunks):
         # Normal shallow selection node
         elif (name := re.search(r'\d{1,2} Class(es)? in .*[\s]*(or|and)[\s\n]*', chunk)):
             required_count = re.search(f'\d+(\d+)?', name.group()).group()
+            
             name = chunk.replace('  ', ' ')
-            complex_deliverables_string += f'[s <c={required_count}, n={name}>\n'
+            
+            complex_deliverables_string += f'[s <c={required_count}, n={remove_newline_multispace_from_string(name)}>\n'
             
             course_blocks_and_exceptions_dict = generate_course_blocks(chunk)
             
-            # for course in course_blocks:
-            #     if '@' in course:
-            #         complex_deliverables_string += f'[p <n={course}, m={course}.*>]\n'
-            #     else:
-            #         complex_deliverables_string += f'[d <n={course}>]\n'
             complex_deliverables_string += classify_and_handle_course_blocks(course_blocks_and_exceptions_dict)
+            
             complex_deliverables_string += ']\n'
 
         # Deliverable node
@@ -562,24 +566,20 @@ def classify_and_handle_chunks(still_needed_chunks):
             
             course_blocks_and_exceptions_dict = generate_course_blocks(chunk)
             
-            # for course in course_blocks:
-            #     complex_deliverables_string += f'[d <n={course}>]\n'
             complex_deliverables_string += classify_and_handle_course_blocks(course_blocks_and_exceptions_dict)
 
         # Deep credit selection node
         elif (match_obj := re.search(r'\d{1,2} Credit[s]? in', chunk)):
             required_count = required_count = re.search('\d+(\d+)?', chunk).group()
+            
             name = chunk.replace('  ', ' ')
-            complex_deliverables_string += f'[r <c={required_count}, n={name}>\n'
+            
+            complex_deliverables_string += f'[r <c={required_count}, n={remove_newline_multispace_from_string(name)}>\n'
             
             course_blocks_and_exceptions_dict = generate_course_blocks(chunk)
 
-            # for course in course_blocks:
-            #     if '@' in course:
-            #         complex_deliverables_string += f'[p <n={course}, m={course}.*>]\n'
-            #     else:
-            #         complex_deliverables_string += f'[d <n={course}>]\n'
             complex_deliverables_string += classify_and_handle_course_blocks(course_blocks_and_exceptions_dict)
+            
             complex_deliverables_string += ']\n'
             
         else:
