@@ -62,14 +62,24 @@ class DegreeExtractionContainer:
             print(rhs._gpa)
         return result
 
-    def __str__(self) -> str:
-        return f'Student name: {self._student_name}\n\n'+\
-                f'Student number: {self._student_number}\n\n'+\
-                f'Major and track: {self._degree_plan_name}\n\n'+\
-                f'GPA: {self._gpa}\n\n'+\
-                f'Current/taken courses: {self._taken_courses}\n\n'+\
-                f'Courses needed construction string: {self._courses_needed_constuction_string}'
+    # def __str__(self) -> str:
+    #     return f'Student name: {self._student_name}\n\n'+\
+    #             f'Student number: {self._student_number}\n\n'+\
+    #             f'Major and track: {self._degree_plan_name}\n\n'+\
+    #             f'GPA: {self._gpa}\n\n'+\
+    #             f'Current/taken courses: {self._taken_courses}\n\n'+\
+    #             f'Courses needed construction string: {self._courses_needed_constuction_string}'
+    
 
+    # def __init__(self, curr_taken_courses, courses_needed_constuction_string, degree_plan_name=None, student_number=None, student_name=None, gpa=None):
+
+    def __str__(self) -> str:
+        return f'Current/taken courses: {self._taken_courses}\n\n'+\
+        f'Courses needed construction string: {self._courses_needed_constuction_string}'+\
+        f'Major and track: {self._degree_plan_name}\n\n'+\
+        f'Student number: {self._student_number}\n\n'+\
+        f'Student name: {self._student_name}\n\n'+\
+        f'GPA: {self._gpa}\n\n'
 
 
 

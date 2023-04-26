@@ -1,0 +1,27 @@
+
+program_generated_validator test
+
+*************** PASSED *************** PASSED *************** PASSED ***************
+
+*************** PASSED *************** PASSED *************** PASSED ***************
+
+container test
+
+*************** PASSED *************** PASSED *************** PASSED ***************
+
+*************** PASSED *************** PASSED *************** PASSED ***************
+
+cli test
+
+*************** PASSED *************** PASSED *************** PASSED ***************
+
+*************** PASSED *************** PASSED *************** PASSED ***************
+
+degreeworks_parser_v2 test
+
+*************** PASSED *************** PASSED *************** PASSED ***************
+
+*************** PASSED *************** PASSED *************** PASSED ***************
+
+Comments: 
+Fixed the testing module
