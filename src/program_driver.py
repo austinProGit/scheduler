@@ -102,7 +102,7 @@ OPERATING_SYSTEM = platform.system()
 WIN_CONTROL_FLAG = False
 if OPERATING_SYSTEM == "Windows":
     try:
-        import pywintypes, win32gui, win32con, time, win32api
+        import pywintypes, win32gui, win32con, win32api
         TITLE = win32api.GetConsoleTitle()
         HWND = win32gui.FindWindow(None, TITLE)
         WIN_CONTROL_FLAG = True
