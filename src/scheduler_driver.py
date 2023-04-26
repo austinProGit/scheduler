@@ -23,12 +23,14 @@ if TYPE_CHECKING:
     from typing import Optional, Any
     from requirement_tree import RequirementsTree, SchedulableParameters
     from scheduling_parameters_container import ConstructiveSchedulingParametersContainers
-    from course_info_container import CourseInfoContainer
+    from course_info_container import CourseRecord
     from courses_needed_container import CoursesNeededContainer
-    from end_reports import ValidationReportResult
-from end_reports import PathValidationReport, VALIDATION_REPORT_PARSED
+    
+from course_info_container import CourseInfoContainer
+from end_reports import PathValidationReport
 
-from scheduling_parameters_container import ConstructiveSchedulingParametersContainers
+from user_submitted_validator import rigorous_validate_schedule
+from scheduling_parameters_container import ConstructiveSchedulingParametersContainers, CreditHourInformer
 from instance_identifiers import CourseIdentifier
 from general_utilities import *
 
@@ -43,9 +45,6 @@ from bisect import insort
 from math import inf
 from random import choice, randint, shuffle, random
 
-
-# TODO: THIS IS A TEST IMPORT (REMOVE)!!
-from scheduler_driver_testing import CourseInfoContainer
 from degree_extraction_container import DegreeExtractionContainer
 
 # TODO: TEMP for testing part
@@ -125,189 +124,6 @@ FALL    SPRING  SUMMER
 
 """
 
-class CreditHourInformer:
-
-    @staticmethod
-    def make_unlimited_generator() -> CreditHourInformer:
-        result: CreditHourInformer = CreditHourInformer(None)
-        result._generator = lambda s, y: inf
-        return result
-
-    def _invalid_generator(self, semester: SemesterType, year: int) -> int:
-        raise ValueError('Illegal credit hour informer state encountered.')
-
-    def __init__(self, meta_informer: Any):
-        self._generator: Callable[[SemesterType, int], int] = self._invalid_generator
-        if meta_informer is None:
-            pass
-        elif isinstance(meta_informer, ConstuctiveScheduler):
-            self._generator = lambda s, y: meta_informer.get_hours_per_semester(s).stop
-
-    def get(self, semester: SemesterType, year: int) -> int:
-        return self._generator(semester, year)
-
-    
-
-def rigorous_validate_schedule(schedule: ScheduleInfoContainer,
-        taken_courses: list[CourseIdentifier] = [],
-        prequisite_ignored_courses: list[CourseIdentifier] = [],
-        credit_hour_informer: CreditHourInformer = CreditHourInformer.make_unlimited_generator()) -> PathValidationReport:
-
-    # TODO: implement checking for courses not appearing in course info container (unless signed off on)
-
-    # TODO:
-    # NOTE: there is a lot of longer than needed searches in this method.
-    # It might be a good move to create a sometimes-hashed map for searching. There are 2 parts:
-    # 1. hashed map for searching, 2. a shorter list for linear searching or no searching at all.
-
-    running_taken_courses: list[CourseIdentifier] = taken_courses[:]
-    error_list: list[PathValidationReport.Error] = []
-
-    semester: SemesterDescription
-    for semester in schedule:
-
-        # Get the year and semester information
-        working_year: int = semester.year
-        working_semester: SemesterType = semester.semester_type
-
-        # Create a tracker to determine if the limit is reached on credits for the semester 
-        credits_left: int = credit_hour_informer.get(working_semester, working_year)
-
-        # Create a list of schedulables to check (requirements)--the identifiers will be added to running_taken_courses
-        currently_taking_courses: list[Schedulable] = []
-        
-        course: Schedulable
-
-        # Check for repeating course within a semester and update the coreq.s
-        for course in semester:
-
-            # Clear all the selections (this is the first time encountering the course)
-            course.reset_all_selection()
-
-            # Check for repeating course within a semester
-            if course not in currently_taking_courses:
-                
-                # Check if the course was taken in another semester
-                if course in running_taken_courses:
-                    # Repeating course found in different semester (append an error report)
-                    error_description: str = f'Taking {course} again in {SEMESTER_DESCRIPTION_MAPPING[working_semester]} {working_year}'
-                    error_list.append(PathValidationReport.Error(error_description))
-
-                # Make each course recognize the coreq. relationship (bidirectional)
-                taking_course: Schedulable
-                for taking_course in currently_taking_courses:
-                    course.sync_course_taking(taking_course.course_identifier)
-                    taking_course.sync_course_taking(course.course_identifier)
-                
-                # Make each course recognize the prereq.s
-                taken_course_identifier: CourseIdentifier
-                for taken_course_identifier in running_taken_courses:
-                    course.sync_course_taken(taken_course_identifier)
-
-                # Append the course the to the list of currentlyt taking courses
-                currently_taking_courses.append(course)
-
-                # Record the credits
-                credits_left -= course.hours
-                # Check if going over credit limit per semester
-                if credits_left < 0:
-                    # The semester went over the limit of credits
-                    error_description: str = f'Went over credit limit during {SEMESTER_DESCRIPTION_MAPPING[working_semester]} {working_year}'
-                    error_list.append(PathValidationReport.Error(error_description))
-
-            else:
-                # Repeating course found in the same semester (append an error report)
-                error_description: str = f'Taking {course} multiple times in {SEMESTER_DESCRIPTION_MAPPING[working_semester]} {working_year}'
-                error_list.append(PathValidationReport.Error(error_description))
-
-
-        # Check for prereq.s/coreq.s and availability
-        for course in currently_taking_courses:
-
-            # Check prereq.s/coreq.s
-            if not course.can_be_taken() and course not in prequisite_ignored_courses:
-                # TODO: add a logic requirement print out to the report (prereq.s and coreq.s)
-                # Inadequate fulfillment of requirements (append an error report)
-                error_description: str = f'Not all requirements satisfied before taking {course} in {SEMESTER_DESCRIPTION_MAPPING[working_semester]} {working_year}'
-                error_list.append(PathValidationReport.Error(error_description))
-
-            # Check availability
-            if working_semester not in course.availability:
-                # Inadequate fulfillment of requirements (append an error report)
-                error_description: str = f'Availability for {course} not present in {SEMESTER_DESCRIPTION_MAPPING[working_semester]} {working_year}'
-                error_list.append(PathValidationReport.Error(error_description))
-        
-
-        # Add the semester's courses to the list of courses taken
-        for course in currently_taking_courses:
-
-            # TODO: this check may be temp: >>>
-            if course.can_be_taken():
-                # <<<
-
-                running_taken_courses.append(course.course_identifier)
-                
-                
-        
-    return PathValidationReport(error_list, VALIDATION_REPORT_PARSED)
-
-    # processed_list = []
-    # err_list = []
-    # err_str = ''
-    # current_semester = 'Su'
-    
-    # for semester in reversed(schedule):
-
-    #     for course in semester:
-    #         if current_semester not in container.get_availability(course):
-    #             err_str = (f'{course} taken during the {USER_READABLE_SEMESTER_DESCRIPTION[current_semester]} term (not available).')
-    #             err_list.append(err_str)
-
-    #         #course_coreqs = container.get_coreqs(course)
-
-    #         # TODO: this was added before presentation for demonstration
-    #         requirements = container.get_coreqs(course) or ''
-    #         tree = RequirementsParser.make_from_course_selection_logic_string(requirements)
-    #         course_coreqs = []#[i.course_number for i in tree.decision_tree.get_all_aggragate()]
-
-    #         for coreq in course_coreqs:
-    #             if coreq in processed_list:
-    #                 err_str = (f'{course} taken before {coreq}.')
-    #                 err_list.append(err_str)
-
-    #     for course in semester:
-    #         processed_list.append(course)
-    #     for course in semester:
-    #         # Check if the course is being scheduled multiple times
-    #         if processed_list.count(course) > 1:
-    #             err_str = (f'{course} scheduled multiple times.')
-    #             if err_str not in err_list and 'XXX' not in course:
-    #                 err_list.append(err_str)
-
-    #         #course_prereqs = container.get_prereqs(course)
-            
-    #         # TODO: this was added before presentation for demonstration
-    #         requirements = container.get_prereqs(course) or ''
-    #         tree = RequirementsParser.make_from_course_selection_logic_string(requirements)
-    #         course_prereqs = [i.course_number for i in tree.decision_tree.get_all_aggragate()]
-            
-    #         for prereq in course_prereqs:
-    #             if prereq in processed_list:
-    #                 err_str = (f'{course} taken before/during {prereq}.')
-    #                 err_list.append(err_str)
-
-    #     # Update the semester term
-    #     current_semester = SEMESTER_TYPE_PREDECESSOR[current_semester]
-
-    # return err_list
-
-    # throw the semester's courses in big list
-    # check to see if any of the prereqs for the courses 
-    # for the semester you are 
-    # on are in the big list. If the are, append to string.
-    # If no problems return none
-
-    # New comment to test branch
 
 
 
@@ -335,11 +151,6 @@ def rigorous_validate_schedule(schedule: ScheduleInfoContainer,
 
 
 
-# Steps to judge a semester (fitness)
-
-
-
-# Steps to mutate a course:
 
 CACHE_SIZE: int = 10_000
 MUTATION_SHIFTS = [-4, -3, -2, -1, 1, 2, 3]
@@ -616,10 +427,10 @@ class GeneticOptimizer:
         
         semester_last_index = len(gene.selections) - 1
         semester_index = randint(0, semester_last_index)
-        prototype_semester: list[str] = gene.selections[semester_index]
+        prototype_semester: list[int] = gene.selections[semester_index]
         while not prototype_semester:
             semester_index = randint(0, semester_last_index)
-            prototype_semester: list[str] = gene.selections[semester_index]
+            prototype_semester = gene.selections[semester_index]
         
         mutation_course_index = randint(0, len(prototype_semester) - 1)
         old_delta = prototype_semester[mutation_course_index]
@@ -640,7 +451,7 @@ class GeneticOptimizer:
 
                 semester_to_index = randint(0, semester_last_index)
                 needed_swap_delta = destination_semester_index - semester_to_index
-                prototype_to_semester: list[str] = gene.selections[semester_to_index]
+                prototype_to_semester: list[int] = gene.selections[semester_to_index]
                 if needed_swap_delta in prototype_to_semester:
                     to_replace_index = prototype_to_semester.index(needed_swap_delta)
                     prototype_to_semester[to_replace_index] = semester_index - semester_to_index
@@ -997,6 +808,11 @@ class ConstuctiveScheduler:
 
         
     def prepare_schedulables(self) -> bool:
+        '''Iterate over the courses needed tree and get all of the courses that have been selected to be played.
+        If the tree is not at least partially resolved (that is, there are still nodes with pending decisions that
+        have not been stubbed), then the method does nothing and returns False. If the tree is resolved, then the
+        schedulables instance variable gets set to a list of schedulable objects that reflect the courses selected.'''
+
 
         courses_needed_root: RequirementsTree = self._courses_needed_container.get_decision_tree()
 
@@ -1020,24 +836,27 @@ class ConstuctiveScheduler:
                 course_identifier: CourseIdentifier = \
                     CourseIdentifier(course_number, schedulable_parameters_item.course_name)
 
-                # TODO: IMP NEW -> 
 
-                # TODO: REMOVE THIS - it is to support old interfaces (course info protocol)
-                FUNC_course_identifier = course_identifier if isinstance(self._course_info_container, CourseInfoContainer) else course_identifier.course_number
-                FUNC_availabilities = self._course_info_container.get_availability(FUNC_course_identifier)
-                if isinstance(FUNC_availabilities, list):
-                    FUNC_availabilities = set(map(lambda x: {'Fa':FALL, 'Sp':SPRING, 'Su':SUMMER, '--':None}[x], FUNC_availabilities))
+                course_record: Optional[CourseRecord] = self._course_info_container.get_course_record(course_identifier)
 
-                schedulable: Schedulable = Schedulable(
-                    course_identifier = course_identifier,
-                    prerequisite_string = self._course_info_container.get_prereqs(FUNC_course_identifier) or " ",
-                    corequisite_string = self._course_info_container.get_coreqs(FUNC_course_identifier) or " ",
-                    hours = self._course_info_container.get_hours(FUNC_course_identifier),
-                    availability = FUNC_availabilities,
-                    recommended = self._course_info_container.get_recommended(FUNC_course_identifier)
-                )
-                self._schedulables.append(ConstuctiveScheduler.Schedulable(schedulable))
+                if course_record is not None:
 
+                    FUNC_availabilities = set(map(lambda x: {'Fa':FALL, 'Sp':SPRING, 'Su':SUMMER, '--':None}[x], course_record.avail))
+
+                    schedulable: Schedulable = Schedulable(
+                        course_identifier = course_identifier,
+                        prerequisite_string = course_record.prereqs or " ",
+                        corequisite_string = course_record.coreqs or " ",
+                        hours = course_record.hours,
+                        availability = FUNC_availabilities,
+                        recommended = course_record.recommended
+                    )
+                    self._schedulables.append(ConstuctiveScheduler.Schedulable(schedulable))
+
+                else:
+                    pass
+                    #raise ValueError(f'Known course encountered: "{str(course_identifier)}" - Please asks an administrator to resolve this or ' +
+                    #'enter the course into the course info file manually and restart the program.')
             else:
                 schedulable: Schedulable = Schedulable(
                     course_identifier = CourseIdentifier(None, schedulable_parameters_item.course_name),

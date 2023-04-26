@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 # TODO: implement this using the new module interfacing scheme
 
 #from itertools import repeat
-from user_submitted_validator import validate_user_submitted_path
+# from user_submitted_validator import validate_user_submitted_path
 from path_to_grad_parser import parse_path_to_grad
 from concurrent.futures import ProcessPoolExecutor
 from expert_system_module import ExpertSystem, DynamicKnowledge
