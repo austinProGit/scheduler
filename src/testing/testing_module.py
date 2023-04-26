@@ -27,6 +27,7 @@ def all_tests():
     add_test('degreeworks_parser_v2', degreeworks_parser_v2_tests)
 
     tests_passed = True
+    
     failed_tests = []
     test_reports = []
 
