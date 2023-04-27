@@ -809,17 +809,15 @@ class SmartPlannerController:
             container = self._scheduler.generate_schedule(prequisite_ignored_courses=[])
 
             confidence_factor = container.get_confidence_level()
-            # TODO: adding "[[]] + " for legacy (remove!)
-            semesters_listing = [[]] + container.get_schedule()
             
             #semesters_listing, confidence_factor = self._scheduler.generate_schedule()
             self.output('Path generated with confidence value of {0:.1f}%'.format(confidence_factor*100))
             
             template_path = Path(get_source_path(), 'input_files')
-            
+             
             if PATH_TO_GRADUATION_EXPORT_TYPE in export_types:
                 unique_ptg_destination = get_next_free_filename(desired_destination.with_suffix('.xlsx'))
-                excel_formatter(Path(template_path), unique_ptg_destination, semesters_listing, self._scheduler.get_course_info())
+                excel_formatter(Path(template_path), unique_ptg_destination, container, self._scheduler.get_course_info())
                 self.output('Schedule (Path to Graduation) exported as {0}'.format(unique_ptg_destination))
                 if os.name == 'nt':
                     os.startfile(unique_ptg_destination)
