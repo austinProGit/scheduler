@@ -75,7 +75,7 @@ from scheduling_parameters_container import ConstructiveSchedulingParametersCont
 from degree_extraction_container import DegreeExtractionContainer 
 
 # Scheduling
-from batch_process import batch_process
+#from batch_process import batch_process
 from scheduler_driver import ConstuctiveScheduler as Scheduler
 
 
@@ -85,7 +85,7 @@ from degreeworks_parser_v2 import generate_degree_extraction_container
 from path_to_grad_parser import parse_path_to_grad
 
 # Validators
-from batch_validation import batch_validation
+#from batch_validation import batch_validation
 from program_generated_evaluator import evaluate_container, NonDAGCourseInfoError, InvalidCourseError
 from user_submitted_validator import validate_user_submitted_path
 

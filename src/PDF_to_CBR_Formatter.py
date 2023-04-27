@@ -3,16 +3,33 @@
 
 import os
 from pathlib import Path
+import re
 
 def format_main(file_name, student_gpa, courses_needed_construction_string):
-    
-    formatted_courses_needed = split_courses_needed_to_string(courses_needed_construction_string)
+    elective_count = get_elective_count(courses_needed_construction_string)
+    formatted_courses_needed = split_courses_needed_to_string(courses_needed_construction_string, elective_count)
     genrated_file_name = generate_file_name(file_name)
     write_to_file(genrated_file_name, student_gpa, formatted_courses_needed)
 
-def split_courses_needed_to_string(courses_needed_construction_string):
+def get_elective_count(courses_needed_construction_string):
+    elective_credits = None
+    # print(f'courses_needed_construction_string: {courses_needed_construction_string}')
+    if (match_obj := re.search(r'\d{1,2} Credits in CPSC', courses_needed_construction_string)):
+        # print('if statement activated')
+        elective_credits = re.match(r'\d{1,2}', match_obj.group()).group()
+    #print(f'elective_credits: {elective_credits}')
+    if elective_credits == None:
+        elective_credits = 0
+    elective_count = int(elective_credits) / 3
+    return elective_count
+
+def split_courses_needed_to_string(courses_needed_construction_string, elective_count):
     string_with_junk_removed = courses_needed_construction_string[courses_needed_construction_string.find("(")+1:courses_needed_construction_string.find(")")]
     formatted_courses_needed = string_with_junk_removed.split(',')
+    while elective_count > 0:
+        formatted_courses_needed.append("CPSC 3000")
+        elective_count -= 1
+    #print(f"formatted courses needed: {formatted_courses_needed}")
     return formatted_courses_needed
 
 def format_student_gpa(student_gpa):
