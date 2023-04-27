@@ -1,0 +1,48 @@
+
+program_generated_validator test
+
+*************** PASSED *************** PASSED *************** PASSED ***************
+
+*************** PASSED *************** PASSED *************** PASSED ***************
+
+container test
+
+*************** PASSED *************** PASSED *************** PASSED ***************
+
+*************** PASSED *************** PASSED *************** PASSED ***************
+
+cli test
+
+*************** PASSED *************** PASSED *************** PASSED ***************
+
+*************** PASSED *************** PASSED *************** PASSED ***************
+
+user_submitted_validator test
+
+*************** FAILED *************** FAILED *************** FAILED ***************
+
+Traceback (most recent call last):
+  File "C:\Users\mel91\Desktop\lew7\scheduler\src\testing\testing_module.py", line 40, in all_tests
+    if not test_func():
+  File "C:\Users\mel91\Desktop\lew7\scheduler\src\testing\user_submitted_validator_tests.py", line 126, in user_submitted_validator_tests
+    if Counter(validate_user_submitted_path(container, test["test_data"])) == Counter(test["ex_out"]):
+  File "C:\Users\mel91\Desktop\lew7\scheduler\src\user_submitted_validator.py", line 20, in validate_user_submitted_path
+    if current_semester not in container.get_availability(course):
+  File "C:\Users\mel91\Desktop\lew7\scheduler\src\course_info_container.py", line 113, in get_availability
+    availability_list = self.get_space_split_list(self.get_data('availability', courseid))
+  File "C:\Users\mel91\Desktop\lew7\scheduler\src\course_info_container.py", line 211, in get_data
+    df = self.get_df(dept)
+  File "C:\Users\mel91\Desktop\lew7\scheduler\src\course_info_container.py", line 35, in get_df
+    if self.df_exists(dept):
+  File "C:\Users\mel91\Desktop\lew7\scheduler\src\course_info_container.py", line 29, in df_exists
+    if dept in self._df_dict.keys():
+AttributeError: 'NoneType' object has no attribute 'keys'
+
+
+degreeworks_parser_v2 test
+
+*************** PASSED *************** PASSED *************** PASSED ***************
+
+*************** PASSED *************** PASSED *************** PASSED ***************
+
+Comments: User Submitted Validator Test require refactoring to include schedulables as list items.

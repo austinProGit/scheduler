@@ -23,7 +23,7 @@ def all_tests():
     add_test('program_generated_validator', program_generated_validator_tests)
     add_test('container', course_info_container_tests)
     add_test('cli', run_cli_unit_test)
-    # add_test('user_submitted_validator', user_submitted_validator_tests)
+    add_test('user_submitted_validator', user_submitted_validator_tests)
     add_test('degreeworks_parser_v2', degreeworks_parser_v2_tests)
 
     tests_passed = True
