@@ -25,10 +25,18 @@ from PySide6.QtWidgets import QMainWindow, QWidget, QLabel, QPushButton, QHBoxLa
     QGroupBox, QFormLayout, QLineEdit, QTextEdit, QCheckBox, QMessageBox, QFileDialog
 
 from pathlib import Path
+import subprocess
+import webbrowser
 
 from driver_fs_functions import *
 
 cli = False # Used for controlling console window display
+
+# Used for controlling console window display
+import platform
+
+# Used for controlling console window display
+OPERATING_SYSTEM: str = platform.system()
 
 ## --------------------------------------------------------------------- ##
 ## ---------------------- Graphical User Interface --------------------- ##
@@ -114,12 +122,18 @@ class MainMenuWidget(QWidget):
         # Initialize the scheduling parameter widgets
         # This does not add them; it just initializes them and saves them as instance variables
         self.initialize_parameter_widgets()
-        
+
+
+        # Create a button that generate's the schedule
+        self.launch_help_button: QPushButton = QPushButton('Help')
+        self.launch_help_button.clicked.connect(self._open_help_callback)
+        self.bottom_bar.addWidget(self.launch_help_button)
+
         # Create a button that generate's the schedule
         self.generate_schedule_button: QPushButton = QPushButton('Generate Schedule')
         self.generate_schedule_button.clicked.connect(self._generate_schedule_callback)
         self.bottom_bar.addWidget(self.generate_schedule_button)
-        
+
         # Create a vertical layout to store all UI elements
         self.layout: QVBoxLayout = QVBoxLayout(self)
         
@@ -366,6 +380,16 @@ class MainMenuWidget(QWidget):
             message_box.setIcon(QtWidgets.QMessageBox.Information)
             message_box.setText('Schedule generated with confidence value of {0:.1f}%.'.format(confidence_factor*100))
             message_box.exec()
+        
+    def _open_help_callback(self):
+        file = get_source_path()
+        file = get_source_relative_path(file, 'help.html')
+        if OPERATING_SYSTEM == 'Windows':
+            webbrowser.open('file://' + str(file))
+        else:
+            get_source_path()
+            subprocess.Popen('open ' + str(file), shell=True, stdout=subprocess.PIPE)
+        
         
     
     def _reload_in_cli_callback(self):

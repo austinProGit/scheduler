@@ -83,6 +83,7 @@ class MainMenuInterface(GeneralInterface):
         self.add_command(load_destination_directory_command, 'destination', 'dest', 'to', 'directory')
         self.add_command(explore_destination_directory_command,'destination-e', 'dest-e', 'to-e', 'directory-e')
         self.add_command(set_hours_per_semster_command, 'hours', 'set-hours', 'per', 'count', 'set-count')
+        self.add_command(set_hours_per_summer_command, 'hours-s', 's-hours', 'summer', 'summer-hours', 'set-hours-s', 'per-s', 'count-s', 'set-count-s')
         self.add_command(select_export_command, 'as', 'exports', 'set-exports', 'type', 'types', 'set-types',)
         self.add_command(list_parameters_command, 'courses', 'list-courses', 'parameters', 'list-parameters', 'arguments', 'list-arguments', 'args')
         self.add_command(generate_schedule_command, 'schedule', 'generate', 'done', 'save')
@@ -282,6 +283,19 @@ def set_hours_per_semster_command(controller: Controller, argument: str) -> None
         controller.output_error('Sorry, that is not a valid input (please use a number).')
 
 
+
+def set_hours_per_summer_command(controller: Controller, argument: str) -> None:
+    '''Ask the provided caller to set the number of hours per Summer semester.'''
+    
+    # Check if the argument is numeric
+    if argument.isdigit():
+        number: int = int(argument) # Attempt to cast the input to an integer
+        controller.configure_hours_per_summer(number) # Set the number of hours per Summer
+    else:
+        # The argument was not valid (report to the user)
+        controller.output_error('Sorry, that is not a valid input (please use a number).')
+
+
 def select_export_command(controller: Controller, argument: str) -> None:
     '''Command to present a new item selection interface so the user can select the export methods.'''
     
@@ -329,15 +343,20 @@ def list_parameters_command(controller: Controller, arguements: str) -> None:
         else:
             controller.output('Unspecified')
         
-        courses_needed: list[str] = [str(s) for s in controller.get_courses_needed().get_courses_list()]
-        
-        if courses_needed:
-            controller.output('Courses:')
-            course: str
-            for course in courses_needed:
-                controller.output('  {0}'.format(course))
-        else:
-            controller.output('No needed courses loaded.')
+
+        courses_needed_container = controller.get_courses_needed()
+
+        if courses_needed_container is not None:
+            if courses_needed_container.is_resolved():
+                courses_needed = courses_needed_container.get_courses_list()
+
+                if courses_needed:
+                    controller.output('Courses:')
+                    course: str
+                    for course in courses_needed:
+                        controller.output('  {0}'.format(course))
+                else:
+                    controller.output('No needed courses loaded.')
     else:
         controller.output_error('Arguments are not supported for this command.')
     
