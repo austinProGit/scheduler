@@ -498,6 +498,22 @@ class CBR_Menu_Widget(QWidget):
         if filename is None:
             self.controller.output('Load cancelled.')
 
+        msgBox = QMessageBox()
+        msgBox.setText("Do you want to insert the input case into the Case Base?.")
+        msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        msgBox.setDefaultButton(QMessageBox.No)
+        ret = msgBox.exec_()
+
+        if ret == QMessageBox.Yes:
+            print(self.controller._result.get_target_case().get_file_name())
+            print(self.controller._result.get_recommended_electives())
+            self.controller.insert_result_into_case_base()
+        elif ret == QMessageBox.No:
+            return
+        else:
+            # should never be reached
+            return
+
 
 class Adaptation_Menu(QWidget):
     def __init__(self, parent_window, controller):

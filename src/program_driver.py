@@ -101,6 +101,7 @@ import Result
 import results_analysis
 import adaptation
 import cbr_excel_output_handler
+import insertion
 
 
 
@@ -952,7 +953,12 @@ class SmartPlannerController:
         return adaptation.resolve_differences_new(adaptation.get_elective_count(self._result))
     
     def output_cbr_result_to_excel(self, selected_file):
-        return cbr_excel_output_handler.write_to_file(selected_file, self._result.get_recommended_electives())
+        working_elective_list = self._result.get_recommended_electives()
+        return cbr_excel_output_handler.write_to_file(selected_file, working_elective_list)
+    
+    def insert_result_into_case_base(self):
+        insertion.insert_into_case_base_problem(self._result)
+        insertion.insert_into_case_base_solution(self._result)
     
 
 # End of SmartPlannerController definition

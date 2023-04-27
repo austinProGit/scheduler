@@ -1,5 +1,5 @@
 #insert result gained from adaptation module into case base, solution text file
-#reminder: Result object contains (target_case_object, retrieved_case_object, recommende_electives[], similarity measure)
+#reminder: Result object contains (target_case_object, retrieved_case_object, recommended_electives[], similarity measure)
 
 from pathlib import Path
 import shutil
@@ -9,6 +9,7 @@ def insert_into_case_base_solution(result):
     target_case_file_name = target_case.get_file_name()
     new_case_name = target_case_file_name.lstrip(".txt")
     elective_list = result.get_recommended_electives()
+    print(elective_list)
     formatted_elective_list = ", ".join(elective_list)
     first_line_string = "Solution for Case " + new_case_name
     second_line_string = "Recommendation for electives: " + formatted_elective_list
@@ -25,7 +26,7 @@ def insert_into_case_base_problem(result):
     #copy file from input directory to case base directory 
     #  .../Inputs.. and .../Case Base...
     path = path = Path(__file__).parent
-    input_directory = path.joinpath('Inputs')
+    input_directory = path.joinpath('CBR Inputs')
     case_base_directory = path.joinpath('Case Base')
     target_case = result.get_target_case()
     target_case_file_name = target_case.get_file_name() + ".txt"
