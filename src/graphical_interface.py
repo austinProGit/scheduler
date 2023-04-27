@@ -112,7 +112,7 @@ class MainMenuWidget(QWidget):
 
         #James' CBR GUI stuff
         #Create a button to run CBR
-        self.run_cbr_button: QPushButton = QPushButton('Run CBR')
+        self.run_cbr_button: QPushButton = QPushButton('Run CBR for Elective Recommendation')
         self.run_cbr_button.clicked.connect(self.show_cbr_window)
         self.bottom_bar.addWidget(self.run_cbr_button)
         
