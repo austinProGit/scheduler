@@ -7,6 +7,7 @@ from course_info_container_tests import course_info_container_tests
 from user_submitted_validator_tests import user_submitted_validator_tests
 from cli_unit_testing import run_cli_unit_test
 from degreeworks_parser_v2_tests import degreeworks_parser_v2_tests
+from scheduler_driver_testing import validation_and_scheduling_unit_test
 from traceback import print_exc
 import traceback
 import datetime
@@ -25,6 +26,7 @@ def all_tests():
     add_test('cli', run_cli_unit_test)
     # add_test('user_submitted_validator', user_submitted_validator_tests)
     add_test('degreeworks_parser_v2', degreeworks_parser_v2_tests)
+    add_test('validator and scheduling minimum', validation_and_scheduling_unit_test)
 
     tests_passed = True
     

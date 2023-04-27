@@ -297,7 +297,7 @@ class DummyCourseInfoContainer:
     def get_importance(self, courseid):
         return 1
 
-def dummy_validation_unit_test():
+def validation_and_scheduling_unit_test():
 
     passed_all_tests: bool = True
 
@@ -562,4 +562,4 @@ def dummy_validation_unit_test():
 
 
 if __name__ == '__main__':
-        dummy_validation_unit_test()
+        validation_and_scheduling_unit_test()
