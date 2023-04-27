@@ -86,7 +86,7 @@ class HelpMenu(GeneralInterface):
 
     def remove_tokens_from_string(self, string: str, start_token: str, end_token: str) -> str:
         # TODO: verify the changes to this method is correct
-        result: str = ''
+        result: str = string
         start_index: int = string.find(start_token)
         end_index: int = string.find(end_token)
         if start_index != -1 and end_index != -1:

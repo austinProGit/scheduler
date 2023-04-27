@@ -20,23 +20,13 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from scheduling_parameters_container import ConstructiveSchedulingParametersContainers
     from course_info_container import CourseInfoContainer
-    from pathlib import Path
     from end_reports import PathValidationReport
-from general_utilities import *
 
-# TODO: This is not importing correctly from end_reports.py (FIX!)
-VALIDATION_REPORT_WORKING = 0x03
-
-# TODO: THIS IS A TEST IMPORT (REMOVE)!!
-from degree_extraction_container import DegreeExtractionContainer
-
-from pathlib import Path 
 
 from schedule_info_container import *
 from general_utilities import *
-from scheduling_parameters_container import CreditHourInformer
+from scheduler_driver import CreditHourInformer
 from user_submitted_validator import rigorous_validate_schedule
 from scheduler_driver import ConstuctiveScheduler, CACHE
 
@@ -421,153 +411,5 @@ def dummy_validation_unit_test():
         print('Passed path validation case 6')
 
 
-
-
 if __name__ == '__main__':
         dummy_validation_unit_test()
-
-        print('Test starting')
-        print(80*'=')
-        print(80*'=')
-
-        course_info_container: CourseInfoContainer = CourseInfoContainer()
-
-        course_set_a: list[set] = [
-            'CPSC 1301K',
-            'CPSC 1302',
-            'CPSC 2105',
-            'CPSC 2108',
-            'CPSC 3111',
-            'CPSC 3121',
-            'CPSC 3125',
-            'CPSC 3131',
-            'CPSC 3165',
-            'CPSC 3165',
-            'CPSC 3175',
-            'CPSC 4115',
-            'CPSC 4127',
-            'CPSC 4135',
-        ]
-        
-        identifiers = {id : CourseIdentifier(id) for id in course_set_a}
-        schedulables = Schedulable.create_schedulables(list(identifiers.values()), course_info_container)
-        
-        # for s in schedulables:
-        #     print(40*'-')
-        #     s.sync_prerequisites_taking(identifiers['CPSC 1301K'])
-        #     s.sync_prerequisites_taking(CourseIdentifier('MATH 2125'))
-        #     s.sync_prerequisites_taking(CourseIdentifier('MATH 1113'))
-        #     s.sync_prerequisites_taking(CourseIdentifier('CPSC 3175'))
-        #     s.sync_prerequisites_taking(CourseIdentifier('CYBR 2160'))
-        #     s.sync_prerequisites_taking(CourseIdentifier('MISM 3145'))
-        #     # s.reset_all_selection()
-        #     print(s.can_be_taken())
-        #     print(s.course_identifier.course_number)
-        #     print(s.get_prequisite_tree().get_deep_description())
-
-        test_path_a: ScheduleInfoContainer = ScheduleInfoContainer.make_from_string_list([
-            ['CPSC 1301K'],
-            ['CPSC 1302', 'CPSC 1555'],
-            ['CPSC 2108'],
-            ['CPSC 3175'],
-            ['CPSC 2555', 'CPSC 3118'],
-            [],
-            ['CPSC 4111'],
-            ['CPSC 4112', 'CPSC 4113']
-        ], course_info_container, starting_semester=FALL, starting_year=2023)
-        
-        # print(test_path_a)
-
-        
-
-        report: PathValidationReport = rigorous_validate_schedule(
-            test_path_a,
-            taken_courses=[CourseIdentifier('MATH 2125'), CourseIdentifier('MATH 1113')],
-            prequisite_ignored_courses=[],
-            credit_hour_informer=CreditHourInformer.make_unlimited_generator()
-
-        )
-        # print('Errors:')
-        # print(report.get_errors_printable())
-
-
-        ##################################################################
-        ##################################################################
-
-
-        '''
-        2023, Spring: CPSC 2115
-        2023, Summer: CPSC 1302
-        2023, Fall: CPSC 1105, Course XXXX, CPSC 2125, CPSC 3111
-        2024, Spring: CPSC 1301K, CPSC 1555, CPSC 2105, CPSC 3105
-        '''
-
-        ##################################################################
-        ##################################################################
-
-        dcspc: ConstructiveSchedulingParametersContainers\
-            = ConstructiveSchedulingParametersContainers(Path.home(), [],
-            fall_spring_hours=15, summer_hours=6)
-        scheduler: ConstuctiveScheduler = ConstuctiveScheduler(course_info_container, dcspc)
-
-
-#         degree_extraction: DegreeExtractionContainer = DegreeExtractionContainer(taken_courses=['MATH 2125', 'MATH 1113'],\
-#             courses_needed_constuction_string='''
-# [e <n=The Things>[d <n=CPSC 1301K>][d <n=CPSC 1302>][d <n=CPSC 1555>][d <n=CPSC 2108>][d <n=CPSC 2555>]
-#             ''')
-
-        # degree_extraction: DegreeExtractionContainer = DegreeExtractionContainer(taken_courses=['MATH 2125', 'MATH 1113'],\
-        #     courses_needed_constuction_string='''
-        # (CPSC 1105, CPSC 2105, CPSC 2115,
-        # CPSC 2125, CPSC 3105, CPSC 3111)
-        
-        # [e <n=The Things>[d <n=CPSC 1301K>][d <n=CPSC 1302>][d <n=CPSC 1555>][s <n=Take, c=1>[d <n=CPSC 2108>][d <n=CPSC 2555>]]]
-        #  ''')
-
-
-        degree_extraction: DegreeExtractionContainer = DegreeExtractionContainer(curr_taken_courses=['MATH 2125', 'MATH 1113', 'MATH 5125U'],\
-            courses_needed_constuction_string='''
-        (CPSC 1105, CPSC 2105, CPSC 2115, CPSC 1555, CPSC 2108, CPSC 2555,
-        CPSC 2125, CPSC 3105, CPSC 3111, CPSC 1302, CPSC 3116, CPSC 3118,
-        CPSC 3121, CPSC 3125, CPSC 3131, CPSC 3137, CPSC 3156, CPSC 3156,
-        CPSC 3165, CPSC 3175, CPSC 3415, CPSC 3555, CPSC 4000, CPSC 4111,
-        CPSC 4121, CPSC 4122, CPSC 4125, CPSC 1301K, CPSC 4126, CPSC 4130,
-        CPSC 4115, CPSC 4130, CPSC 4135, CPSC 4138, CPSC 4145, CPSC 4148
-        ) [p <n=COURSE A>][p <n=COURSE B>][p <n=COURSE C>]
-        ''')
-
-
-        # degree_extraction: DegreeExtractionContainer = DegreeExtractionContainer(taken_courses=['MATH 2125', 'MATH 1113', 'MATH 5125U'],\
-        #     courses_needed_constuction_string='''
-        # (CPSC 1105, CPSC 2105, CPSC 2115, CPSC 1555, CPSC 2108, CPSC 3118, CPSC 3175,
-        # CPSC 2125, CPSC 3105, CPSC 3111, CPSC 1302, CPSC 4111,
-        # CPSC 1301K, CPSC 4112, CPSC 4113
-        # ) [p <n=COURSE A>][p <n=COURSE B>][p <n=COURSE C>]
-        # ''')
-
-
-        prequisite_ignored_courses: list[CourseIdentifier] = [
-            CourseIdentifier('MATH 1113')
-        ]
-            
-        #print('SCHED')
-        scheduler.configure_degree_extraction(degree_extraction)
-        scheduler.get_courses_needed_container().stub_all_unresolved_nodes()
-        scheduler.prepare_schedulables()
-        path: ScheduleInfoContainer = scheduler.generate_schedule(prequisite_ignored_courses=prequisite_ignored_courses)
-        print(path)
-
-        generated_report: PathValidationReport = rigorous_validate_schedule(
-            path,
-            taken_courses=[CourseIdentifier('MATH 2125'), CourseIdentifier('MATH 1113'), CourseIdentifier('MATH 5125U')],
-            prequisite_ignored_courses=[],
-            credit_hour_informer=scheduler.make_credit_hour_informer()
-        )
-        print('Errors:')
-        print(generated_report.get_errors_printable())
-        print('Caching usage:')
-        print('Used Cache:', CACHE['TEST_CACHE_T'])
-        print('Calculated:', CACHE['TEST_CACHE_F'])
-        print('Ratio:', CACHE['TEST_CACHE_T']/(CACHE['TEST_CACHE_F']+CACHE['TEST_CACHE_T']))
-
-        

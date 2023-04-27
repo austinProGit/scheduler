@@ -263,7 +263,7 @@ class MainMenuWidget(QWidget):
             error_report = self.controller.check_schedule(filename)
             
             if error_report:
-                self.listing_box.setText('\n'.join(error_report))
+                self.listing_box.setText('\n'.join(str(e) for e in error_report))
             elif error_report is not None:
                 message_box = QtWidgets.QMessageBox()
                 message_box.setIcon(QtWidgets.QMessageBox.Information)

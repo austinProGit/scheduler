@@ -11,11 +11,14 @@ if TYPE_CHECKING:
     from requirement_container import RequirementsContainer
     from requirement_tree import RequirementsTree
     
-
+from requirement_tree import ExhaustiveNode
+from requirement_parser import CNLogicParsingError
 from general_utilities import *
 from requirement_parser import RequirementsParser
 
 DEFAULT_COURSE_CREDIT_HOURS: int = 3
+
+DEFAULT_UNKNOWN_CLASS_AVAILABILITY: set[SemesterType] = {FALL, SPRING}
 
 # The name to give to a course identifier if no descriptions are found
 DEFAULT_COURSE_PRINTABLE_NAME: str = 'Course'
@@ -62,6 +65,7 @@ class Schedulable:
 
                 if course_record is not None:
 
+                    # Use legacy availability indicators
                     FUNC_availabilities = set(map(lambda x: {'Fa':FALL, 'Sp':SPRING, 'Su':SUMMER, '--':None}[x], course_record.avail))
 
                     result.append(
@@ -76,9 +80,17 @@ class Schedulable:
                     )
 
                 else:
-                    pass
-                    #raise ValueError(f'Known course encountered: "{str(identifier)}" - Please asks an administrator to resolve this or ' +
-                    #'enter the course into the course info file manually and restart the program.')
+                    # The course was NOT found in the course info container (create stub)
+                    new_identifier = CourseIdentifier(identifier.course_number, identifier.name, True)
+                    result.append(
+                        Schedulable(
+                            new_identifier,
+                            '',
+                            '',
+                            DEFAULT_COURSE_CREDIT_HOURS,
+                            DEFAULT_UNKNOWN_CLASS_AVAILABILITY
+                        )
+                    )
                 
         return result
 
@@ -117,9 +129,12 @@ class Schedulable:
 
         tree: Optional[RequirementsTree] = self._prequisite_tree
         if tree is None:
-            tree = RequirementsParser.make_unified_from_course_selection_logic_string(self._prequisite_tree_string,
-                artificial_exhaustive=True)
-            self._prequisite_tree = tree
+            try:
+                tree = RequirementsParser.make_unified_from_course_selection_logic_string(self._prequisite_tree_string,
+                    artificial_exhaustive=True)
+                self._prequisite_tree = tree
+            except CNLogicParsingError:
+                self._prequisite_tree = ExhaustiveNode()
 
         return tree
 
@@ -128,9 +143,12 @@ class Schedulable:
 
         tree: Optional[RequirementsTree] = self._corequisite_tree
         if tree is None:
-            tree = RequirementsParser.make_unified_from_course_selection_logic_string(self._corequisite_tree_string,
-                artificial_exhaustive=True)
-            self._corequisite_tree = tree
+            try:
+                tree = RequirementsParser.make_unified_from_course_selection_logic_string(self._corequisite_tree_string,
+                    artificial_exhaustive=True)
+                self._corequisite_tree = tree
+            except CNLogicParsingError:
+                self._prequisite_tree = ExhaustiveNode()
 
         return tree
     

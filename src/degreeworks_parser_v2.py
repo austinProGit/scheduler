@@ -2,6 +2,7 @@
 # CPSC 4176 Project
 
 from degree_extraction_container import DegreeExtractionContainer
+from alias_module import get_latest_id
 import re
 from pypdf import PdfReader
 from driver_fs_functions import *
@@ -241,7 +242,7 @@ def generate_simple_deliverables_string(document_string):
     for deliverable_index, deliverable in enumerate(deliverables_list):
         match = re.search(r'[A-Z]{4} \d{4}[A-Z]?', deliverable)
         if match:
-            deliverables_str += match.group()
+            deliverables_str += get_latest_id(match.group())
         if deliverable_index < len(deliverables_list) - 1:
             deliverables_str += ','
     
@@ -494,7 +495,7 @@ def classify_and_handle_course_blocks(course_blocks_and_exceptions_dict):
                 handled_course_blocks_string += f'[p <n={remove_newline_multispace_from_string(course_block)}, m={course_block[:-1]}.*>]\n'
             # check for deliverable node
             elif re.match(r'\d{4}([A-Z])?$', number_block):
-                handled_course_blocks_string += f'[d <n={remove_newline_multispace_from_string(course_block)}>]\n'
+                handled_course_blocks_string += f'[d <n={get_latest_id(remove_newline_multispace_from_string(course_block))}>]\n'
             
             # catch any unhandled nodes
             else:

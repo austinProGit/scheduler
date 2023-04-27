@@ -39,7 +39,7 @@ class CreditHourInformer:
         if meta_informer is None:
             pass
         else:
-            # isinstance(meta_informer, ConstuctiveScheduler) would be good if cyclic imports did not happen
+            # isinstance(meta_inrformer, ConstuctiveScheduler) would be good if cyclic imports did not happen
             self._generator = lambda s, y: meta_informer.get_hours_per_semester(s).stop
 
     def get(self, semester: SemesterType, year: int) -> int:

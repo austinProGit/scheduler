@@ -20,7 +20,8 @@ class DegreeExtractionContainer:
     # degree_plan_name is a list of strings
     # student_number is a string
     # student_name is a string
-    def __init__(self, curr_taken_courses, courses_needed_constuction_string, degree_plan_name=None, student_number=None, student_name=None, gpa=None):
+    def __init__(self, curr_taken_courses: list[str], courses_needed_constuction_string: str,
+            degree_plan_name: Optional[str] = None, student_number: Optional[str] = None, student_name: Optional[str] = None, gpa=None):
 
         self._taken_courses = curr_taken_courses
         self._courses_needed_constuction_string = courses_needed_constuction_string

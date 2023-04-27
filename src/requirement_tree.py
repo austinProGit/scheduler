@@ -87,6 +87,7 @@ POSSIBLE_LS = 0x03
 HARD_LS = 0x04
 POSSIBLE_SOFT_CLEAR = 0x05
 HARD_CLEAR = 0x06
+UNCHECKED_PRINT = 0x07
 
 
 DEFAULT_COURSE_DESCRIPTION = "Course XXXX"
@@ -999,7 +1000,9 @@ class DeliverableCourse(_NodeSuper):
         'deliver name': '_course_description',
         'duplicate priority': '_duplicate_priority',
         'track elective': '_is_track_elective',
-        'may be taken concurrently': '_may_be_taken_concurrently'
+        'may be taken concurrently': '_may_be_taken_concurrently',
+        'fallback prereq logic': '_fallback_prereq_logic',
+        'fallback coreq logic': '_fallback_coreq_logic'
     }
     KEY_ALIASES = {
         'n': 'name',
@@ -1009,10 +1012,13 @@ class DeliverableCourse(_NodeSuper):
         'dn': 'deliver name',
         'p': 'duplicate priority',
         'te': 'track elective',
-        'mbtc': 'may be taken concurrently'
+        'mbtc': 'may be taken concurrently',
+        'fpl': 'fallback prereq logic',
+        'fcl': 'fallback coreq logic'
     }
-    KEYS_LIST = ['name', 'instance id', 'instructions', 'credits', 'deliver name', 'duplicate priority', 'track elective', 'may be taken concurrently']
-    NON_NIL_KEYS = {'name', 'credits'}
+    KEYS_LIST = ['name', 'instance id', 'instructions', 'credits', 'deliver name', 'duplicate priority',
+    'track elective', 'may be taken concurrently', 'fallback prereq logic', 'fallback coreq logic']
+    NON_NIL_KEYS = {'name', 'credits', 'fallback prereq logic', 'fallback coreq logic'}
     INTEGER_KEYS = {'credits', 'duplicate priority'}
 
     def __init__(self, course_description=None, credits=3, printable_description=None):
@@ -1021,6 +1027,8 @@ class DeliverableCourse(_NodeSuper):
         self._credits = credits
         self._explicit_id = None
         self._may_be_taken_concurrently: Optional[str] = None
+        self._fallback_prereq_logic = ''
+        self._fallback_coreq_logic = ''
     
     def set_value_for_key(self, key, value):
         super().set_value_for_key(key, value)
