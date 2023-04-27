@@ -99,6 +99,11 @@ def get_degree_plan_name(document_string):
 
     return degree_plan_name
 
+
+#Gets number of electives needed for CBR input
+def get_cpsc_elective_count(document_string):
+    pass
+
 # Gets a student's gpa from a Degreeworks document
 def get_gpa(document_string):
     gpa = None
