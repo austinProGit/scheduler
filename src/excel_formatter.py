@@ -26,18 +26,26 @@ def excel_formatter(input_path, output_file_name, sched, container):  # first pa
     
 def format(sheet, sched, num, container):
     stub_list = []
+    easy_sched = []
+
     for semester in sched:
+        semester_sched = []
+
         for schedulable in semester:
+            semester_sched.append(str(schedulable.course_identifier))
+
             if schedulable.course_identifier.is_stub():
                 stub_list.append(str(schedulable.course_identifier))
 
+        easy_sched.append(semester_sched)
+
     current_seas = [1, 4] # We can switch to actual date reference by using current_season()
-    for i in range(len(sched)):
+    for i in range(len(easy_sched)):
         if(i > 0): # Skip 1st iteration before we change semester to next
             current_seas = next_season(current_seas, num)
 
-        for x in range(len(sched[i])):
-            course = sched[i][x]
+        for x in range(len(easy_sched[i])):
+            course = easy_sched[i][x]
             data = ""
             hours = 3
 
