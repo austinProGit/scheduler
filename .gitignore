@@ -3,3 +3,4 @@
 /src/.vs
 /src/env
 /.vs
+__pycache__/
