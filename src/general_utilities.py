@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     SemesterType = int
 
-from datetime import date
+from datetime import date, timedelta
 
 # Create enum cases to represent each semester
 FALL: SemesterType = 0x00
@@ -26,8 +26,17 @@ SEMESTER_DESCRIPTION_MAPPING: dict[SemesterType, str] = {
 SEMESTER_TYPE_SUCCESSOR: dict[SemesterType, SemesterType] = {FALL: SPRING, SPRING: SUMMER, SUMMER: FALL}    # Translation map from semester K to the next
 
 
-ESTIMATED_NEXT_SEMESTER: SemesterType = FALL
-ESTIMATED_NEXT_YEAR: int = 2023
+def _determine_next_scheduling_semester() -> SemesterType:
+    return FALL
+
+def _determine_next_scheduling_year() -> int:
+    return (date.today() + timedelta(days = 20)).year
+
+
+ESTIMATED_NEXT_SEMESTER: SemesterType = _determine_next_scheduling_semester()
+ESTIMATED_NEXT_YEAR: int = _determine_next_scheduling_year()
+
+
 
 def get_semester_successor(semester: SemesterType) -> SemesterType:
     '''Get the semester that follows the passes semester.'''

@@ -74,6 +74,8 @@ class MainMenuInterface(GeneralInterface):
         # e: stands for explorer
         # i: stands for immediate
         
+        # NOTE: batch is not supported as of now
+
         # Add commands to the command dictionary
         self.add_command(list_available_commands_command, '', 'commands', 'list-commands')
         self.add_command(load_needed_courses_command, 'load', 'needed', 'set')
@@ -84,10 +86,10 @@ class MainMenuInterface(GeneralInterface):
         self.add_command(select_export_command, 'as', 'exports', 'set-exports', 'type', 'types', 'set-types',)
         self.add_command(list_parameters_command, 'courses', 'list-courses', 'parameters', 'list-parameters', 'arguments', 'list-arguments', 'args')
         self.add_command(generate_schedule_command, 'schedule', 'generate', 'done', 'save')
-        self.add_command(batch_schedule_command, 'batch-schedule', 'batch', 'group-schedule', 'group')
+        # self.add_command(batch_schedule_command, 'batch-schedule', 'batch', 'group-schedule', 'group')
         self.add_command(schedule_verify_command, 'verify', 'validate', 'check')
         self.add_command(explore_schedule_verify_command, 'verify-e', 'validate-e', 'check-e')
-        self.add_command(batch_schedule_verify_command, 'batch-verify', 'group-verify', 'batch-validate', 'group-validate', 'batch-check', 'group-check')
+        # self.add_command(batch_schedule_verify_command, 'batch-verify', 'group-verify', 'batch-validate', 'group-validate', 'batch-check', 'group-check')
         self.add_command(set_gui_interface_command, 'gui')
         self.add_command(set_cli_interface_command, 'cli', 'lui')
         self.add_command(gui_interface_immediate_command, 'gui-i', 'window', 'graphical', 'graphics')
@@ -482,7 +484,7 @@ def edit_courses_needed_container_command(controller: Controller, argument: str)
             # Deconstruct all active interfaces on the stack
             controller.push_interface(new_interface)
         else:
-            controller.output('There are no course tree loaded into the program right now.' +
+            controller.output('There are no course tree loaded into the program right now. ' +
             'You can load courses with the "load" or "load-e" commands or create a blank tree with the "new-tree" command.')
 
 
