@@ -7,7 +7,7 @@ from datetime import date
 from driver_fs_functions import *
 
 
-def excel_formatter(input_path, output_file_name, sched):  # first param is source file path
+def excel_formatter(input_path, output_file_name, sched, container):  # first param is source file path
     num = 0
     input_file_name = get_source_relative_path(input_path, 'Path To Graduation Y.xlsx')
     for lst in sched:
@@ -19,25 +19,42 @@ def excel_formatter(input_path, output_file_name, sched):  # first param is sour
     shutil.copy2(input_file_name, output_file_name) # Copy file
     edit_excel = openpyxl.load_workbook(output_file_name)
     sheet = edit_excel.active
-    format(sheet, sched, num)
+    format(sheet, sched, num, container)
     edit_excel.save(output_file_name) # Save the file so we can copy to specified directory
  
 # ...............HELPER METHODS...............HELPER METHODS...............HELPER METHODS...............HELPER METHODS
     
-def format(sheet, sched, num):
+def format(sheet, sched, num, container):
+    stub_list = []
+    for semester in sched:
+        for schedulable in semester:
+            if schedulable.course_identifier.is_stub():
+                stub_list.append(str(schedulable.course_identifier))
+
     current_seas = [1, 4] # We can switch to actual date reference by using current_season()
     for i in range(len(sched)):
         if(i > 0): # Skip 1st iteration before we change semester to next
             current_seas = next_season(current_seas, num)
+
         for x in range(len(sched[i])):
             course = sched[i][x]
-            data = f"{course.ID} - {course.name} ({course.avail[0]} {course.avail[1]} {course.avail[2]})"
+            data = ""
+            hours = 3
+
+            if course in stub_list:
+                data = f"{course} - Elective (Fa Sp --)"
+            else:
+                name = container.get_name(course)
+                avail = container.get_availability(course)
+                data = f"{course} - {name} ({avail[0]} {avail[1]} {avail[2]})"
+                hours = container.get_hours(course)
+
             co = current_seas[0]
             ro = current_seas[1] + x
             c = current_seas[0] + 1
             r = current_seas[1] + x
             sheet.cell(row=ro, column=co, value=data)
-            sheet.cell(row=r, column=c, value=course.hours)
+            sheet.cell(row=r, column=c, value=hours)
 
 
 def current_season():
@@ -64,39 +81,3 @@ def next_season(current_season, num):
 
 # ***************END OF EXCEL_FORMATTER MODULE***************END OF EXCEL_FORMATTER MODULE********************
 #Internal testing below
-
-#from driver_fs_functions import *
-#from course_info_container import *
-#from scheduler_driver import *
-
-#file0 = get_source_path()
-#file0 = get_source_relative_path(file0, 'input_files/Course Info.xlsx')
-#dfdict = load_course_info(file0)
-#container = CourseInfoContainer(dfdict)
-
-#course_identifier_CPSC_3121 = DummyCourseIdentifier(course_number="CPSC 3121")
-#course_identifier_CPSC_3165 = DummyCourseIdentifier(course_number="CPSC 3165")
-#course_identifier_CPSC_4000 = DummyCourseIdentifier(course_number="CPSC 4000")
-#course_identifier_CPSC_4135 = DummyCourseIdentifier(course_number="CPSC 4135")
-#course_identifier_MATH_1113 = DummyCourseIdentifier(course_number="MATH 1113")
-#course_identifier_STAT_3127 = DummyCourseIdentifier(course_number="STAT 3127")
-#course_identifier_CPSC_2108 = DummyCourseIdentifier(course_number="CPSC 2108")
-#course_identifier_CPSC_3125 = DummyCourseIdentifier(course_number="CPSC 3125")
-#course_identifier_CPSC_XXXX = DummyCourseIdentifier(course_number="CPSC XXXX", name="Elective", is_stub=True)
-#course_identifier_CPSC_3XX = DummyCourseIdentifier(course_number="CPSC 3@X", name="Elective", is_stub=True)
-
-#cr1 = container.get_course_record(course_identifier_CPSC_3121)
-#cr2 = container.get_course_record(course_identifier_CPSC_3165)
-#cr3 = container.get_course_record(course_identifier_CPSC_4000)
-#cr4 = container.get_course_record(course_identifier_CPSC_4135)
-#cr5 = container.get_course_record(course_identifier_MATH_1113)
-#cr6 = container.get_course_record(course_identifier_STAT_3127)
-#cr7 = container.get_course_record(course_identifier_CPSC_2108)
-#cr8 = container.get_course_record(course_identifier_CPSC_3125)
-#crX = container.get_course_record(course_identifier_CPSC_XXXX)
-#crY = container.get_course_record(course_identifier_CPSC_3XX)
-
-#course_obj_list =[[cr1, cr2, crX], [cr3, cr4, crY], [cr5, cr6, cr7, cr8]]
-
-#template_path = Path(get_source_path(), 'input_files')
-#excel_formatter(template_path, 'C:/Users/mel91/Desktop/output_files/Path.xlsx', course_obj_list)
