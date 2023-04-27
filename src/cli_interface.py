@@ -343,15 +343,20 @@ def list_parameters_command(controller: Controller, arguements: str) -> None:
         else:
             controller.output('Unspecified')
         
-        courses_needed: list[str] = [str(s) for s in controller.get_courses_needed().get_courses_list()]
-        
-        if courses_needed:
-            controller.output('Courses:')
-            course: str
-            for course in courses_needed:
-                controller.output('  {0}'.format(course))
-        else:
-            controller.output('No needed courses loaded.')
+
+        courses_needed_container = controller.get_courses_needed()
+
+        if courses_needed_container is not None:
+            if courses_needed_container.is_resolved():
+                courses_needed = courses_needed_container.get_courses_list()
+
+                if courses_needed:
+                    controller.output('Courses:')
+                    course: str
+                    for course in courses_needed:
+                        controller.output('  {0}'.format(course))
+                else:
+                    controller.output('No needed courses loaded.')
     else:
         controller.output_error('Arguments are not supported for this command.')
     

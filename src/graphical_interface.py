@@ -25,6 +25,7 @@ from PySide6.QtWidgets import QMainWindow, QWidget, QLabel, QPushButton, QHBoxLa
     QGroupBox, QFormLayout, QLineEdit, QTextEdit, QCheckBox, QMessageBox, QFileDialog
 
 from pathlib import Path
+from webbrowser import open as open_html
 
 from driver_fs_functions import *
 
@@ -114,12 +115,18 @@ class MainMenuWidget(QWidget):
         # Initialize the scheduling parameter widgets
         # This does not add them; it just initializes them and saves them as instance variables
         self.initialize_parameter_widgets()
-        
+
+
+        # Create a button that generate's the schedule
+        self.launch_help_button: QPushButton = QPushButton('Help')
+        self.launch_help_button.clicked.connect(self._open_help_callback)
+        self.bottom_bar.addWidget(self.launch_help_button)
+
         # Create a button that generate's the schedule
         self.generate_schedule_button: QPushButton = QPushButton('Generate Schedule')
         self.generate_schedule_button.clicked.connect(self._generate_schedule_callback)
         self.bottom_bar.addWidget(self.generate_schedule_button)
-        
+
         # Create a vertical layout to store all UI elements
         self.layout: QVBoxLayout = QVBoxLayout(self)
         
@@ -366,6 +373,10 @@ class MainMenuWidget(QWidget):
             message_box.setIcon(QtWidgets.QMessageBox.Information)
             message_box.setText('Schedule generated with confidence value of {0:.1f}%.'.format(confidence_factor*100))
             message_box.exec()
+        
+    def _open_help_callback(self):
+        print('file://' + __file__ + '/help.html')
+        open_html('file://' + __file__ + '/help.html')
         
     
     def _reload_in_cli_callback(self):
