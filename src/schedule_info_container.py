@@ -19,7 +19,7 @@ from instance_identifiers import StudentIdentifier, CourseIdentifier, Schedulabl
 
 
 DEFAULT_DEGREE_DESCRIPTION: str = 'Degree Plan'
-DEFAULT_STARTING_YEAR: int = 2023
+DEFAULT_STARTING_YEAR: int = ESTIMATED_NEXT_YEAR
 
 
 class SemesterDescription:
@@ -86,7 +86,7 @@ class ScheduleInfoContainer:
     # TODO: this is redundant (combine this and the above code)
     @staticmethod
     def make_from_schedulables_list(raw_list: list[list[Schedulable]],
-            starting_semester: SemesterType = FALL, starting_year: int = 2023,
+            starting_semester: SemesterType = ESTIMATED_NEXT_SEMESTER, starting_year: int = ESTIMATED_NEXT_YEAR,
             confidence_level: Optional[float] = None) -> ScheduleInfoContainer:
 
         semesters: list[SemesterDescription] = []
