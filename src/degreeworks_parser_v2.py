@@ -242,7 +242,7 @@ def generate_simple_deliverables_string(document_string):
     for deliverable_index, deliverable in enumerate(deliverables_list):
         match = re.search(r'[A-Z]{4} \d{4}[A-Z]?', deliverable)
         if match:
-            deliverables_str += match.group()
+            deliverables_str += get_latest_id(match.group())
         if deliverable_index < len(deliverables_list) - 1:
             deliverables_str += ','
     
