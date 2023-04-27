@@ -36,7 +36,10 @@ def format_student_gpa(student_gpa):
     pass
 
 def generate_file_name(file_name):
-    new_file_name = file_name[file_name.find("updated_degreeworks/")+20:file_name.find(".")]
+    head_tail_tuple = os.path.split(file_name)
+    new_file_name = head_tail_tuple[1]
+    new_file_name.strip(".pdf")
+    #new_file_name = file_name[file_name.find("updated_degreeworks/")+20:file_name.find(".")]
     return new_file_name
 
 def write_to_file(generated_file_name, student_gpa, formatted_courses_needed):
