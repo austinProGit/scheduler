@@ -121,4 +121,4 @@ Case Based Reasoning – Step by Step
     • User can choose the ‘Adapt elective recommendation” to cater the recommendation more to their specific situation 
     • New electives will be shown in the display box. 
     • User can select ‘Give Reasoning for Recommendation” to show WHY the system recommended the retrieved electives.
-    • User can finally select ‘Choose output file” to find their excel file created from the Rules Based Scheduler and overwrite the elective slots in said       excel file
+    • User can finally select ‘Choose output file” to find their excel file created from the Rules Based Scheduler and overwrite the elective slots in said excel file
