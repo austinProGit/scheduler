@@ -586,6 +586,24 @@ class SmartPlannerController:
             self.output(f'Hours per semester set to {number_of_hours}.')
         return success
         
+
+    def configure_hours_per_summer(self, number_of_hours: int) -> bool:
+        '''Set the number of hours that are scheduled per Summer semester. This return the success of the load.'''
+
+        success: bool = True
+        
+        if number_of_hours < 0 or self.session_configuration.strong_hours_limit < number_of_hours:
+            
+            # The user has entered an amount of credits above or below what us acceptable (output a warning)
+            strong_maximum: int = self.session_configuration.strong_hours_limit
+            self.output_warning(f'Please enter between {0} and {strong_maximum} hours per semester.')
+            success = False
+
+        else:
+            self._scheduler.configure_hours_per_summer(number_of_hours)
+            self.output(f'Hours per Summer set to {number_of_hours}.')
+        return success
+        
     
     def set_export_types(self, export_types: list[ExportType]) -> None:
         '''Set the types of formats to export with (schedule formatters to use).'''
