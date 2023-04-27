@@ -25,11 +25,18 @@ from PySide6.QtWidgets import QMainWindow, QWidget, QLabel, QPushButton, QHBoxLa
     QGroupBox, QFormLayout, QLineEdit, QTextEdit, QCheckBox, QMessageBox, QFileDialog
 
 from pathlib import Path
+import subprocess
 import webbrowser
 
 from driver_fs_functions import *
 
 cli = False # Used for controlling console window display
+
+# Used for controlling console window display
+import platform
+
+# Used for controlling console window display
+OPERATING_SYSTEM: str = platform.system()
 
 ## --------------------------------------------------------------------- ##
 ## ---------------------- Graphical User Interface --------------------- ##
@@ -375,7 +382,14 @@ class MainMenuWidget(QWidget):
             message_box.exec()
         
     def _open_help_callback(self):
-        webbrowser.open('file://' + os.path.realpath('help.html'))
+        file = get_source_path()
+        file = get_source_relative_path(file, 'help.html')
+        if OPERATING_SYSTEM == 'Windows':
+            webbrowser.open('file://' + str(file))
+        else:
+            get_source_path()
+            subprocess.Popen('open ' + str(file), shell=True, stdout=subprocess.PIPE)
+        
         
     
     def _reload_in_cli_callback(self):
