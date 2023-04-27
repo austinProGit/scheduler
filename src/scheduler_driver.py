@@ -146,7 +146,7 @@ FALL    SPRING  SUMMER
 CACHE_SIZE: int = 10_000
 MUTATION_SHIFTS = [-4, -3, -2, -1, 1, 2, 3]
 
-CACHE = {'TEST_CACHE_T': 0, 'TEST_CACHE_F': 0}
+CACHE_USAGE = {'TEST_CACHE_T': 0, 'TEST_CACHE_F': 0}
 
 class GeneticOptimizer:
 
@@ -362,7 +362,7 @@ class GeneticOptimizer:
         
         # Check if the memo (gene) is already cached
         if memo not in self._fitness_cache:
-            CACHE['TEST_CACHE_F'] += 1
+            CACHE_USAGE['TEST_CACHE_F'] += 1
 
             # The sequence is not cached
             schedule: ScheduleInfoContainer = gene_sequence.make_schedule_info_container(self)
@@ -380,7 +380,7 @@ class GeneticOptimizer:
         else:
             # The sequence is cached
             fitness = self._fitness_cache[memo]
-            CACHE['TEST_CACHE_T'] += 1
+            CACHE_USAGE['TEST_CACHE_T'] += 1
             
         return fitness
 
@@ -742,9 +742,8 @@ class ConstuctiveScheduler:
             parameters_container: SchedulerParameterContainer,
             semester_start: Optional[SemesterType] = None, year: Optional[int] = None) -> None:
         
-        # TODO: implement some sort of time detection or pick up from the university website
-        self.semester_start: SemesterType = semester_start if semester_start is not None else SPRING
-        self.year_start: int = year if year is not None else 2023
+        self.semester_start: SemesterType = semester_start if semester_start is not None else ESTIMATED_NEXT_SEMESTER
+        self.year_start: int = year if year is not None else ESTIMATED_NEXT_YEAR
 
         self._course_info_container: Optional[CourseInfoContainer] = course_info_container
         self.schedule_evaluator: ExpertSystem = ExpertSystem()

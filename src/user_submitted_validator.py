@@ -15,7 +15,8 @@ from scheduling_parameters_container import CreditHourInformer
 from general_utilities import *
 
 def validate_user_submitted_path(course_info_container: CourseInfoContainer, raw_schedule: list[list[str]],
-        starting_semester: SemesterType = FALL, starting_year: int = 2023, excused_courses: list[CourseIdentifier] = []) -> PathValidationReport:
+        starting_semester: SemesterType = ESTIMATED_NEXT_SEMESTER, starting_year: int = ESTIMATED_NEXT_YEAR,
+        excused_courses: list[CourseIdentifier] = []) -> PathValidationReport:
     schedule: ScheduleInfoContainer = ScheduleInfoContainer.make_from_string_list(raw_schedule, course_info_container, starting_semester, starting_year)
     return rigorous_validate_schedule(schedule, taken_courses=excused_courses)
 

@@ -487,7 +487,6 @@ class SmartPlannerController:
     def get_hours_per_semester(self) -> Optional[range]:
         '''Get the hours per semester to use.'''
         parameters: ConstructiveSchedulingParametersContainers = self._scheduler.get_parameter_container()
-        # TODO: this just uses Fall 2023 for hours
         return parameters.get_hours_for(FALL)
     
     
