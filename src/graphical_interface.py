@@ -25,7 +25,7 @@ from PySide6.QtWidgets import QMainWindow, QWidget, QLabel, QPushButton, QHBoxLa
     QGroupBox, QFormLayout, QLineEdit, QTextEdit, QCheckBox, QMessageBox, QFileDialog
 
 from pathlib import Path
-from webbrowser import open_new as open_html
+import webbrowser
 
 from driver_fs_functions import *
 
@@ -375,7 +375,7 @@ class MainMenuWidget(QWidget):
             message_box.exec()
         
     def _open_help_callback(self):
-        open_html('file://' + __file__ + '/help.html')
+        webbrowser.open('file://' + os.path.realpath('help.html'))
         
     
     def _reload_in_cli_callback(self):
