@@ -8,10 +8,6 @@ from pypdf import PdfReader
 from driver_fs_functions import *
 import pickle
 
-#james cbr stuff
-import PDF_to_CBR_Formatter
-
-
 # ========================================================================================================
 # TODO: implement custom error handling/ exceptions
 # TODO: create error report for the user
@@ -99,11 +95,6 @@ def get_degree_plan_name(document_string):
             degree_plan_name += ', '
 
     return degree_plan_name
-
-
-#Gets number of electives needed for CBR input
-def get_cpsc_elective_count(document_string):
-    pass
 
 # Gets a student's gpa from a Degreeworks document
 def get_gpa(document_string):
@@ -709,11 +700,8 @@ def generate_degree_extraction_container(file_name):
         curr_taken_courses = find_curr_taken_courses(document_string)
         courses_needed_constuction_string = generate_courses_needed_construction_string(document_string)
 
-    PDF_to_CBR_Formatter.format_main(file_name, gpa, courses_needed_constuction_string)
     return DegreeExtractionContainer(curr_taken_courses, courses_needed_constuction_string, degree_plan_name, student_number, student_name, gpa)
 
 if __name__ == '__main__':
-    container = generate_degree_extraction_container('./src//input_files/updated_degreeworks/S10.pdf')
-    #james' edit to above line - could not find file if ran as main
-    #container = generate_degree_extraction_container('/home/r/Documents/GitHub/scheduler/src/input_files/updated_degreeworks/S7.pdf')
-    #print(container)
+    container = generate_degree_extraction_container('./input_files/updated_degreeworks/S10.pdf')
+    print(container)

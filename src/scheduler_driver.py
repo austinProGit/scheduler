@@ -870,8 +870,6 @@ class ConstuctiveScheduler:
         # container and its interface) 
         self._parameters_container.set_hours(FALL, number_of_hours)
     
-    def configure_hours_per_summer(self, number_of_hours) -> None:
-        self._parameters_container.set_hours(SUMMER, number_of_hours)
 
     def _create_weighted_schedulables(self, prequisite_ignored_courses: list[CourseIdentifier]) -> ConstuctiveScheduler.SortingDict:
 
