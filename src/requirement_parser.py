@@ -129,7 +129,7 @@ class RequirementsParser:
         
         # if artificial_exhaustive is set to true, exhaustive nodes will be replaced by shallow count nodes with the right size
 
-        working_string: str = string.strip()
+        working_string: str = (string or '').strip() # NOTE: this is a backup fro when None is passed in (possible)
         
         working_string = working_string[RequirementsParser._pull_index(working_string, '[') + 1:]
 
@@ -172,7 +172,7 @@ class RequirementsParser:
     def make_from_course_selection_logic_string(logic_string: str, artificial_exhaustive: bool = False) -> RequirementsParser.RequirementsParseReport:
 
         certain_courses: list[str] = []
-        string: str = logic_string.strip()
+        string: str = (logic_string or '').strip() # NOTE: this is a backup fro when None is passed in (possible)
 
         if string and string[0] == '(':
             end_index = RequirementsParser._pull_index(string, ')')

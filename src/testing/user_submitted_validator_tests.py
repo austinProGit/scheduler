@@ -1,6 +1,15 @@
 # Author: Austin Lee and Max Lewis
-# 9/21/22
+# 9/26/22
 # CPSC 4175 Group Project
+
+
+
+# The following are imported for type annotations
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from course_info_container import CourseRecord
+    from end_reports import PathValidationReport
 
 import sys
 import os
@@ -12,6 +21,11 @@ sys.path.append(parent) # Adds the parent directory to the sys.path.
 from user_submitted_validator import validate_user_submitted_path
 from course_info_container import CourseInfoContainer, load_course_info
 from collections import Counter
+
+from schedule_info_container import ScheduleInfoContainer, SemesterDescription
+from instance_identifiers import Schedulable, CourseIdentifier
+
+from general_utilities import *
 
 def user_submitted_validator_tests():
     
@@ -93,9 +107,11 @@ def user_submitted_validator_tests():
     ['CPSC 4155', 'CPSC 4175'], ['CPSC 4176', 'CPSC 4000'],[]]
 
     # Known prereqs that will appear as prereqs in Course Info but not as courses in column 1 of Course Info
-    excused_prereqs = ['MISM 3145', 'MISM 3115', 'MISM 3109', 'MATH 1111', 'MATH 1131', 'MATH 1132']
+    excused_prereqs_ids = ['MISM 3145', 'MISM 3115', 'MISM 3109', 'MATH 1111', 'MATH 1131', 'MATH 1132']
+    excused_prereqs = [CourseIdentifier(course_id) for course_id in excused_prereqs_ids]
 
     # Create a course info container from the real Course Info input
+
     container = CourseInfoContainer(load_course_info('src/input_files/Course Info.xlsx'))
     #container = CourseInfoContainer(load_course_info('src/input_files/Course Info.xlsx'), excused_prereqs)
 
@@ -119,12 +135,17 @@ def user_submitted_validator_tests():
 
     print('=============================== Start User Submitted Validator Tests ===============================\n')
 
-
     for test in test_case_list:
-        test_passed = False
+        schedule = test["test_data"]
+
         # Controls for unpredictable list orders
-        if Counter(validate_user_submitted_path(container, test["test_data"])) == Counter(test["ex_out"]):
-            test_passed = True
+        # NOTE: "excused_courses" are those treated as already taken. That is, if you want to simulate courses being taken (counts 
+        # toward prereqs), then place their CourseIdentifer in the list.
+        validaton_report: PathValidationReport = validate_user_submitted_path(container, schedule, excused_courses=excused_prereqs)
+        error_descriptions: list[str] = [str(e) for e in validaton_report.error_list]
+        #print(test["test_name"], error_descriptions)
+        if Counter(error_descriptions) == Counter(test["ex_out"]):
+            
             print(f'The {test["test_name"]} test PASSED.')
         else:
             tests_passed = False
@@ -133,3 +154,6 @@ def user_submitted_validator_tests():
     print('\n=============================== End User Submitted Validator Tests ===============================\n')
 
     return tests_passed
+
+if __name__ == '__main__':
+    user_submitted_validator_tests()

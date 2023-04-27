@@ -43,7 +43,6 @@ if TYPE_CHECKING:
     from menu_interface_base import GeneralInterface
     from program_generated_evaluator import CourseInfoEvaluationReport
     from PySide6.QtWidgets import QApplication
-    from degree_extraction_container import DegreeExtractionContainer
 
 
 # NOTE: Set this to True if you want to run memory profiling/check for memory leaks (this requires loading in cli)
@@ -73,6 +72,7 @@ from cli_interface import MainMenuInterface, GraphicalUserMenuInterface, ErrorMe
 from course_info_container import *
 from courses_needed_container import CoursesNeededContainer
 from scheduling_parameters_container import ConstructiveSchedulingParametersContainers
+from degree_extraction_container import DegreeExtractionContainer 
 
 # Scheduling
 from batch_process import batch_process
@@ -87,7 +87,7 @@ from path_to_grad_parser import parse_path_to_grad
 # Validators
 from batch_validation import batch_validation
 from program_generated_evaluator import evaluate_container, NonDAGCourseInfoError, InvalidCourseError
-from user_submitted_validator import rigorous_validate_schedule as validate_user_submitted_path
+from user_submitted_validator import validate_user_submitted_path
 
 # Formatters
 from excel_formatter import excel_formatter
@@ -528,14 +528,13 @@ class SmartPlannerController:
                 degree_extraction: DegreeExtractionContainer = generate_degree_extraction_container(filepath) # Get the needed courses from the file
                 self._scheduler.configure_degree_extraction(degree_extraction) # Load the course container / degree extraction into the scheduler
 
-                # NEW <<$
-                self._scheduler.get_courses_needed_container().stub_all_unresolved_nodes()
-                # $>>
+                courses_needed_container: Optional[CoursesNeededContainer] = self._scheduler.get_courses_needed_container()
+                if courses_needed_container is None:
+                    raise ValueError('Errror ecnounted while configuring degree extractino container')
+                courses_needed_container.stub_all_unresolved_nodes()
 
-                # TODO: this is temp (VERY BAD, VERY NO GOOD) ->
-                if self._scheduler._courses_needed_container is not None:
-                    for node in self._scheduler._courses_needed_container._decision_tree.get_all_children_list():
-                        node.enable_stub()
+                # for node in self._scheduler._courses_needed_container._decision_tree.get_all_children_list():
+                #     node.enable_stub()
 
                 #self._scheduler.configure_courses_needed(courses_needed_container) 
                 self.output('Course requirements loaded from {0}.'.format(filepath)) # Report success to the user
@@ -547,6 +546,13 @@ class SmartPlannerController:
 
         return success
     
+    def create_empty_courses_needed(self) -> None:
+        '''Load a new, blank degree extraction container into the scheduler'''
+        degree_extraction: DegreeExtractionContainer = DegreeExtractionContainer(curr_taken_courses=[], courses_needed_constuction_string='',
+            degree_plan_name=None, student_number=None, student_name=None, gpa=None)
+        self._scheduler.configure_degree_extraction(degree_extraction)
+        self.output('New blank degree plan / course tree created.')
+        
     
     def configure_hours_per_semester(self, number_of_hours: int) -> bool:
         '''Set the number of hours that are scheduled per semester. This return the success of the load.'''
@@ -647,13 +653,13 @@ class SmartPlannerController:
             self.output('Config file created.')
     
     
-    def configure_user_interface_mode(self, is_graphical):
+    def configure_user_interface_mode(self, is_graphical: bool) -> None:
         '''Set the user interface mode to GUI is passed true and CLI if passed false.'''
         try:
             # Get the config file as a list of strings/lines
-            new_session_configuration = self.load_config_parameters()
+            new_session_configuration: SessionConfiguration = self.load_config_parameters()
             new_session_configuration.is_graphical = is_graphical
-            missing_attributes = save_configuration_session(new_session_configuration)
+            missing_attributes: list[str] = save_configuration_session(new_session_configuration)
             
             if missing_attributes:
                 self.output_error(f'Error encountered while saving config file. Missing attributes: {", ".join(missing_attributes)}.')
@@ -666,7 +672,7 @@ class SmartPlannerController:
             self.output_error('Failed to access config file.')
         
     
-    def fetch_catalog(self, fetch_parameters=None):
+    def fetch_catalog(self, fetch_parameters=None) -> None:
         dept_pattern = r"[A-Z]{3}[A-Z]?"
         file0 = get_source_path()
         file0 = get_source_relative_path(file0, 'input_files/Course Info.xlsx')
@@ -707,13 +713,14 @@ class SmartPlannerController:
                 schedule = parse_path_to_grad(filepath)
                 
                 # This is list (empty is valid)
-                error_reports = validate_user_submitted_path(self._scheduler.get_course_info(), schedule)
+                error_reports = validate_user_submitted_path(self._scheduler.get_course_info(), schedule,
+                    excused_courses = self._scheduler._taken_course).error_list
                 if not error_reports:
                     self.output('Path valid.')
                 else:
                     self.output_warning('Invalid path! Please correct the following errors.')
                     for infraction in error_reports:
-                        self.output(infraction)
+                        self.output(str(infraction))
                 
             except (ConfigFileError, IOError, ValueError):
                 self.output_error('Sorry, {0} file does not have the correct format.'.format(filename))
@@ -799,13 +806,8 @@ class SmartPlannerController:
         desired_destination = self.get_destination()
         
         try:
-
-            # NEW <<$
             self._scheduler.prepare_schedulables()
             container = self._scheduler.generate_schedule(prequisite_ignored_courses=[])
-            # $>> <<!
-            #container = self._scheduler.generate_schedule()
-            # <<!
 
             confidence_factor = container.get_confidence_level()
             # TODO: adding "[[]] + " for legacy (remove!)

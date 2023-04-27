@@ -6,12 +6,18 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from schedule_info_container import ScheduleInfoContainer, SemesterDescription
-    from instance_identifiers import CourseIdentifier, Schedulable
+    from course_info_container import CourseInfoContainer
     
+from schedule_info_container import ScheduleInfoContainer, SemesterDescription
+from instance_identifiers import CourseIdentifier, Schedulable
 from end_reports import PathValidationReport, VALIDATION_REPORT_PARSED
 from scheduling_parameters_container import CreditHourInformer
 from general_utilities import *
+
+def validate_user_submitted_path(course_info_container: CourseInfoContainer, raw_schedule: list[list[str]],
+        starting_semester: SemesterType = FALL, starting_year: int = 2023, excused_courses: list[CourseIdentifier] = []) -> PathValidationReport:
+    schedule: ScheduleInfoContainer = ScheduleInfoContainer.make_from_string_list(raw_schedule, course_info_container, starting_semester, starting_year)
+    return rigorous_validate_schedule(schedule, taken_courses=excused_courses)
 
 
 def rigorous_validate_schedule(schedule: ScheduleInfoContainer,
@@ -119,6 +125,8 @@ def rigorous_validate_schedule(schedule: ScheduleInfoContainer,
                 
         
     return PathValidationReport(error_list, VALIDATION_REPORT_PARSED)
+
+
 
 
 # def validate_user_submitted_path(container, schedule):

@@ -2,6 +2,7 @@
 # CPSC 4176 Project
 
 from degree_extraction_container import DegreeExtractionContainer
+from alias_module import get_latest_id
 import re
 from pypdf import PdfReader
 from driver_fs_functions import *
@@ -488,7 +489,7 @@ def classify_and_handle_course_blocks(course_blocks_and_exceptions_dict):
                 handled_course_blocks_string += f'[p <n={course_block}, m={course_block[:-1]}.*>]\n'
             # check for deliverable node
             elif re.match(r'\d{4}([A-Z])?$', number_block):
-                handled_course_blocks_string += f'[d <n={course_block}>]\n'
+                handled_course_blocks_string += f'[d <n={get_latest_id(course_block)}>]\n'
             
             # catch any unhandled nodes
             else:

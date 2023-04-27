@@ -56,11 +56,11 @@ from help_interface import HelpMenu
 # -> Add method to return easily printable objects
 # -> Already-taken filter (remove certain specified courses from aggregate)
 
-USER_COMMAND_LIST = '''Available commands: move, back, home, show, show_all, show_down, depth, info, select, \
-fill, deselect, deselect_layer, deselect_all, deselect_down, stub, stub_layer, stub_top, unstub, unstub_layer, \
-unstub_all, unstub_down, aggregate, admin, user, clear, clear_mode, traversal'''
-ADMIN_COMMAND_LIST = '''add_exhaustive, add_deliverable, add_protocol, add_shallow_count, add_deep_count, \
-add_deep_credit, add_inserter, delete, modify, validate, copy, cut, paste'''
+USER_COMMAND_LIST = '''Available commands: move, back, quit, home, show, show-all, show-down, depth, info, select, \
+fill, deselect, deselect-layer, deselect-all, deselect-down, stub, stub-layer, stub-top, unstub, unstub-layer, \
+unstub-all, unstub-down, aggregate, admin, user, clear, clear-mode, traversal'''
+ADMIN_COMMAND_LIST = '''add-exhaustive, add-deliverable, add-protocol, add-shallow-count, add-deep-count, \
+add-deep-credit, add-inserter, delete, modify, validate, copy, cut, paste'''
 
 
 # We want to make a tree where at various points a decision is needed (must be resolved).
@@ -86,6 +86,8 @@ add_deep_credit, add_inserter, delete, modify, validate, copy, cut, paste'''
 # Generate a 1-D list of all courses involved moving through the tree (may contain stubs)
 # Checking if there are any stubs in the tree
 
+
+MAX_LINE_LENGTH = 80
 
 
 ## ------------------------------------------------- Interface Start ------------------------------------------------- ##
@@ -211,7 +213,7 @@ class FillOutInterface(GeneralInterface):
 
 class NeededCoursesInterface(GeneralInterface):
     
-    def __init__(self, node, root_interface=None, depth=0, is_traverse_mode=False, clears_screen=NO_CLEARING):
+    def __init__(self, node, root_interface=None, depth=0, is_traverse_mode=False, clears_screen=CONSTANT_REFRESHING):
         self.name = 'COURSE SELECTION' # TODO: this needs to change by edit mode status (maybe via property: setters and getters)
         self._node = node
         self._root_interface = root_interface or self
@@ -253,33 +255,34 @@ class NeededCoursesInterface(GeneralInterface):
         self.add_command(self.navigate_to_nodes, 'move', 'cd', 'go')
         self.add_command(self.navigate_back, 'back', 'prev', 'previous')
         self.add_command(self.navigate_to_root, 'root', 'home', 'base')
+        self.add_command(self.navigate_exit, 'exit', 'quit', 'done', 'leave')
                 
-        self.add_command(self.show_all, 'show_all', 'display_all', 'map')
-        self.add_command(self.show_here, 'show_here', 'display_here', 'show', 'display', 'ls')
-        self.add_command(self.show_down, 'show_down', 'display_down', 'down')
-        self.add_command(self.show_depth, 'show_depth', 'display_depth', 'depth')
-        self.add_command(self.show_info, 'show_info', 'info', 'instructions')
+        self.add_command(self.show_all, 'show-all', 'display-all', 'map')
+        self.add_command(self.show_here, 'show-here', 'display-here', 'show', 'display', 'ls')
+        self.add_command(self.show_down, 'show-down', 'display-down', 'down')
+        self.add_command(self.show_depth, 'show-depth', 'display-depth', 'depth')
+        self.add_command(self.show_info, 'show-info', 'info', 'instructions')
         
         self.add_command(self.select_course, 'select', 'choose', 's')
-        self.add_command(self.fill_out_course, 'fill', 'fill_out', 'f')
+        self.add_command(self.fill_out_course, 'fill', 'fill-out', 'f')
         self.add_command(self.deselect_course, 'deselect', 'd')
-        self.add_command(self.deselect_layer, 'deselect_layer', 'd_layer')
-        self.add_command(self.deselect_all, 'deselect_all')
-        self.add_command(self.deselect_down, 'deselect_down', 'd_down')
+        self.add_command(self.deselect_layer, 'deselect-layer', 'd-layer')
+        self.add_command(self.deselect_all, 'deselect-all')
+        self.add_command(self.deselect_down, 'deselect-down', 'd-down')
                 
         self.add_command(self.stub_course, 'stub', 't')
-        self.add_command(self.stub_layer, 'stub_layer', 't_layer')
-        self.add_command(self.stub_all_top, 'stub_top', 't_top')
+        self.add_command(self.stub_layer, 'stub-layer', 't-layer')
+        self.add_command(self.stub_all_top, 'stub-top', 't-top')
         self.add_command(self.unstub_course, 'unstub', 'u')
-        self.add_command(self.unstub_layer, 'unstub_layer', 'u_layer')
-        self.add_command(self.unstub_all, 'unstub_all')
-        self.add_command(self.unstub_down, 'unstub_down', 'u_down')
+        self.add_command(self.unstub_layer, 'unstub-layer', 'u-layer')
+        self.add_command(self.unstub_all, 'unstub-all')
+        self.add_command(self.unstub_down, 'unstub-down', 'u-down')
 
         self.add_command(self.aggregate, 'aggregate', 'pull')
         self.add_command(self.admin_mode, 'admin', 'sudo')
         self.add_command(self.user_mode, 'user', 'student')
         self.add_command(self.clear, 'clear', 'c')
-        self.add_command(self.set_clear_mode, 'toggle_clear', 'clear_mode', 'clearing')
+        self.add_command(self.set_clear_mode, 'toggle-clear', 'clear-mode', 'clearing')
         self.add_command(self.toggle_traversal_mode, 'traversal', 'travel', 'auto', 't')
 
         self.add_command(self.push_help, 'help', 'h')
@@ -288,13 +291,13 @@ class NeededCoursesInterface(GeneralInterface):
         self._admin_commands = self._commands.copy()
         self._commands = self._admin_commands
         
-        self.add_command(self.add_exhaustive, 'add_exhaustive', 'aex', 'ae')
-        self.add_command(self.add_deliverable, 'add_deliverable', 'ade', 'ad')
-        self.add_command(self.add_protocol, 'add_protocol', 'apr', 'ap')
-        self.add_command(self.add_shallow_count, 'add_shallow_count', 'asc', 'asn')
-        self.add_command(self.add_deep_count, 'add_deep_count', 'adc', 'adn')
-        self.add_command(self.add_deep_credit, 'add_deep_credit', 'add_credit', 'acr')
-        self.add_command(self.add_inserter, 'add_inserter', 'ains', 'ai')
+        self.add_command(self.add_exhaustive, 'add-exhaustive', 'aex', 'ae')
+        self.add_command(self.add_deliverable, 'add-deliverable', 'ade', 'ad')
+        self.add_command(self.add_protocol, 'add-protocol', 'apr', 'ap')
+        self.add_command(self.add_shallow_count, 'add-shallow-count', 'asc', 'asn')
+        self.add_command(self.add_deep_count, 'add-deep-count', 'adc', 'adn')
+        self.add_command(self.add_deep_credit, 'add-deep-credit', 'add-credit', 'acr')
+        self.add_command(self.add_inserter, 'add-inserter', 'ains', 'ai')
         
         self.add_command(self.delete_node, 'delete', 'del')
         self.add_command(self.modify_node, 'rename', 'modify', 'change', 'edit', 'm', 'mod')
@@ -323,7 +326,7 @@ class NeededCoursesInterface(GeneralInterface):
         command_list_string = USER_COMMAND_LIST
         if self._commands is self._admin_commands:
             command_list_string += ', ' + ADMIN_COMMAND_LIST
-        self._add_print(command_list_string)
+        self._add_print(command_list_string, UNCHECKED_PRINT)
         self._push_print(controller)
         
     def navigate_to_nodes(self, controller, argument):
@@ -362,6 +365,12 @@ class NeededCoursesInterface(GeneralInterface):
         self._navigate_to_root(controller)
         self._add_print_warning_if_arguments(argument)
         self._push_print(controller)
+
+    def navigate_exit(self, controller, argument):
+        self._set_traversal_mode(False)
+        self._navigate_to_root(controller)
+        self._root_interface._navigate_back(controller)
+
     
     def show_all(self, controller, argument):
         self._add_clear_opportunity()
@@ -811,6 +820,8 @@ class NeededCoursesInterface(GeneralInterface):
         while self._print_queue:
             message, message_type = self._print_queue.pop(0)
             if message_type == PRINT:
+                self.output(controller, message)
+            if message_type == UNCHECKED_PRINT:
                 controller.output(message)
             elif message_type == ERROR:
                 controller.output_error(message)
@@ -836,7 +847,17 @@ class NeededCoursesInterface(GeneralInterface):
             top_interface._print_ls(controller)
             
     def _print_ls(self, controller):
-        controller.output(self._node.get_layer_description())
+        self.output(controller, self._node.get_layer_description())
+
+    def output(self, controller, message):
+        for line in message.split('\n'):
+            # TODO: this is not a clean implementation
+            # tabs, for example, changes the distance more but is not reflected in the following measure
+            is_long_line = len(line.replace('\t', '')) > MAX_LINE_LENGTH
+            if not is_long_line:
+                controller.output(line)
+            else:
+                controller.output(line[:MAX_LINE_LENGTH-2] + '...')
 
     def enter_from_submenu(self, controller, closing_message):
         self._add_clear_opportunity()

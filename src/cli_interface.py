@@ -12,7 +12,6 @@ if TYPE_CHECKING:
     from menu_interface_base import InterfaceCommand
 
 
-# TODO: (ENSURE) help file parser ends predictably at "<END>" (no extra blank lines)
 # TODO: (ORGANIZE) Remove redundant file explorer code
 # TODO: (WISH) make help loading the documentation happen only once and only when needed (static and lazy)
 
@@ -94,7 +93,8 @@ class MainMenuInterface(GeneralInterface):
         self.add_command(gui_interface_immediate_command, 'gui-i', 'window', 'graphical', 'graphics')
         self.add_command(help_command, 'help', 'info')
         self.add_command(fetch_catalog_command, 'fetch', 'update', 'catalog')
-        self.add_command(edit_courses_needed_container_command, 'select', 'choose', 'tree', 'degree', 'courses')
+        self.add_command(create_empty_tree, 'new-tree', 'scratch', 'empty', 'new')
+        self.add_command(edit_courses_needed_container_command, 'edit-tree', 'select', 'choose', 'tree', 'degree', 'courses')
         self.add_command(quit_command,'quit', 'exit')
     
     
@@ -179,7 +179,7 @@ def list_available_commands_command(controller: Controller, argument: str) -> No
     '''Output the commands that may be entered.'''
     
     controller.output('Here are the commands available:\ncommands, load, load-e, destination, destination-e, set-hours, ' +
-        'set-exports, list-parameters, schedule, verify, verify-e, batch, batch-verify, gui, cli, gui-i, help, quit')
+        'set-exports, list-parameters, schedule, verify, verify-e, edit-tree, new-tree, batch, batch-verify, gui, cli, gui-i, help, quit')
     # TODO: maybe use a listing from help resourses or the main menu interface class.
 
 
@@ -464,17 +464,27 @@ def attempt_error_resolve(controller: Controller, argument: str) -> None:
     else:
         controller.output_error('Arguments are not supported for this command.')
     
+def create_empty_tree(controller: Controller, argument: str) -> None:
+    if not argument:
+        controller.create_empty_courses_needed()
+    else:
+        controller.output_error('Arguments are not supported for this command.')
 
 def edit_courses_needed_container_command(controller: Controller, argument: str) -> None:
     if not argument:
         controller.output('Editing courses needed and course selection...')
         
-        new_interface: NeededCoursesInterface = NeededCoursesInterface(
-            controller.get_courses_needed().get_decision_tree()
-        )
+        if courses_needed_container := controller.get_courses_needed():
+            new_interface: NeededCoursesInterface = NeededCoursesInterface(
+                courses_needed_container.get_decision_tree()
+            )
 
-        # Deconstruct all active interfaces on the stack
-        controller.push_interface(new_interface)
+            # Deconstruct all active interfaces on the stack
+            controller.push_interface(new_interface)
+        else:
+            controller.output('There are no course tree loaded into the program right now.' +
+            'You can load courses with the "load" or "load-e" commands or create a blank tree with the "new-tree" command.')
+
 
     else:
         controller.output_error('Arguments are not supported for this command.')
