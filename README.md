@@ -122,3 +122,6 @@ Case Based Reasoning – Step by Step
     • New electives will be shown in the display box. 
     • User can select ‘Give Reasoning for Recommendation” to show WHY the system recommended the retrieved electives.
     • User can finally select ‘Choose output file” to find their excel file created from the Rules Based Scheduler and overwrite the elective slots in said excel file
+
+## Futher Resources
+Once the program installed, there is a "Help" button that will link to a webpage describing system behavior, step-by-step instruction, all in plain language. There is also a README file intended for devlopers who wish to continue the SmartPlanner project. 
