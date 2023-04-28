@@ -26,6 +26,8 @@ DEFAULT_COURSE_PRINTABLE_NAME: str = 'Course'
 DEFAULT_IMPORTANCE = 60
 
 class CourseIdentifier:
+    '''A representation of a course. Like a name rather than a person. This record the course number,
+    course name, and whether the course is a stub or not (never equal to another identifer if stubbed).'''
 
     def __init__(self, course_number: Optional[str], name: Optional[str] = None, is_stub: Optional[bool] = None):
         self.course_number: Optional[str] = course_number
@@ -49,6 +51,7 @@ class CourseIdentifier:
         return self._is_stub
 
 class Schedulable:
+    '''A representation of a living course in a schedule. Like a person rather than a name.'''
 
     @staticmethod
     def create_schedulables(course_identifiers: list[CourseIdentifier],
@@ -64,6 +67,7 @@ class Schedulable:
 
                 course_record: Optional[CourseRecord] = course_info_container.get_course_record(identifier)
 
+                print(38590238905902384)
                 if course_record is not None:
 
                     # Use legacy availability indicators
