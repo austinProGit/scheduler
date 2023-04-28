@@ -23,8 +23,6 @@ def insert_into_case_base_solution(result):
     solutions_file.write("\n")
 
 def insert_into_case_base_problem(result):
-    #copy file from input directory to case base directory 
-    #  .../Inputs.. and .../Case Base...
     path = path = Path(__file__).parent
     input_directory = path.joinpath('CBR Inputs')
     case_base_directory = path.joinpath('Case Base')
@@ -32,7 +30,4 @@ def insert_into_case_base_problem(result):
     target_case_file_name = target_case.get_file_name() + ".txt"
     copy_source_string =  input_directory.joinpath(target_case_file_name)
     copy_destination_string = case_base_directory.joinpath(target_case_file_name)
-    #
-    #shutil copy - shutil.copy(src, dst)
-    #
     shutil.copy(copy_source_string, copy_destination_string)

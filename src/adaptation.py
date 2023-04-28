@@ -64,6 +64,8 @@ def resolve_difference(result, elective_count_matrix):
         insertion.insert_into_case_base_problem(result)
         return result
     
+#determines how many electives needed to be added or removed
+#returns string describing what is needed from the user 
 def resolve_differences_new(elective_matrix):
     if elective_matrix[0] > elective_matrix[1]:
             elective_count_to_add = elective_matrix[0] - elective_matrix[1]

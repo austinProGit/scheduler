@@ -714,6 +714,4 @@ def generate_degree_extraction_container(file_name):
 
 if __name__ == '__main__':
     container = generate_degree_extraction_container('./src//input_files/updated_degreeworks/S10.pdf')
-    #james' edit to above line - could not find file if ran as main
-    #container = generate_degree_extraction_container('/home/r/Documents/GitHub/scheduler/src/input_files/updated_degreeworks/S7.pdf')
-    #print(container)
+    print(container)

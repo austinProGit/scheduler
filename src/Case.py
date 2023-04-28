@@ -1,3 +1,7 @@
+#creates a Case object that contains filename, gpa, course list, and type of case (source or target)
+#input files and case base files are both made into Case objects
+
+
 class Case():
 
     def __init__(self, file_name, gpa, course_list, type):

@@ -1,3 +1,6 @@
+#Result object is used to store target case (Case object), retrieved case (Case object), 
+#recommended electives [], and similarity measure int
+
 class Result():
 
     def __init__(self, target_case, retrieved_case, recommended_electives, similarity_measure):

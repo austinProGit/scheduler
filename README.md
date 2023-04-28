@@ -105,3 +105,23 @@ After scheduling, the user will receive an output in the form of a decimal value
 Expert System is very unconfident in the goodness of the Path to Graduation, and 1 reflects absolute confidence. All Path to 
 Graduation are valid and satisfy CSU graduation requirements; this measure reflects a subjective judgment based on rules provided 
 by human scheduling experts.
+
+ ### Case Based Reasoning (CBR) Description
+Case Based Reasoning – Overview
+ 
+Case Based Reasoning (CBR) uses past experiences to solve new problems. Previous experiences are stored in the system as Problem-Solution pairs. In the instance of the SmartPlanner CBR, a Problem is a studnets degreeworks file (courses taken and courses needed) and the Solution is the recommended electives (specifically, higher level CPSC electives). A user will select their input file, and the CBR will retrieve the recommended electives that best fit the user’s degree plan. Then, the user has the option to “Adapt” the solution to their specific situation (i.e., if the system recommended three electives, but the student only needs two). After adaptation, the user can select an output file to overwrite the blank electives slots filled by the Rule Based Scheduler. The system will automatically write the input file and adapted solution back into the Case Base to be used in the future.
+
+Case Based Reasoning – Step by Step
+ 
+    • Generate a schedule by using the SmartPlanner Rule Based Scheduler 
+    • Choose the “Run CBR” option on the GUI main page 
+    • Once the CBR menu is opened, select “Run CBR” again
+    • Choose the corresponding input file (same name as your degreeworks) located in the directory ‘CBR Inputs”
+    • CBR will automatically run, and show recommended electives in the display box
+    • User can choose the ‘Adapt elective recommendation” to cater the recommendation more to their specific situation 
+    • New electives will be shown in the display box. 
+    • User can select ‘Give Reasoning for Recommendation” to show WHY the system recommended the retrieved electives.
+    • User can finally select ‘Choose output file” to find their excel file created from the Rules Based Scheduler and overwrite the elective slots in said excel file
+
+## Futher Resources
+Once the program installed, there is a "Help" button that will link to a webpage describing system behavior, step-by-step instruction, all in plain language. There is also a README file intended for devlopers who wish to continue the SmartPlanner project. 

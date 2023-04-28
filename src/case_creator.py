@@ -1,9 +1,9 @@
+#creates Case objects from parsed data obtained form cbr_parser
+
 import Case
 import cbr_parser
 from pathlib import Path
 import os
-
-#module creates case objects from parsed data
 
 def fetch_case_base_data():
     case_base_cases = cbr_parser.case_base_driver()
