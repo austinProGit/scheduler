@@ -207,8 +207,9 @@ class SmartPlannerController:
             # Attempt to get the program parameters from the config file
             self.session_configuration = self.load_config_parameters()
 
-            # TODO: this might need to use have log file name determined by the config values
-            self.log_file = open('session_log.txt', 'w')
+            # Set the logging file if set to logging
+            if self.session_configuration.is_logging:
+                self.log_file = open('session_log.txt', 'w')
             
             # Load the course info file via the session configuration (SessionConfiguration)
             self.load_course_info(self.session_configuration)

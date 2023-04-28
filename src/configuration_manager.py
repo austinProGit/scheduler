@@ -23,7 +23,7 @@ DEFAULT_SCHEDULE_NAME: str = 'Path to Graduation' # The default filename for exp
 DEFAULT_NORMAL_HOURS_LIMIT: int = 18 # The upper limit of credit hours students can take per semester (recommended)
 DEFAULT_STRONG_HOURS_LIMIT: int = 30 # The absolute limit of credit hours students can take per semester (cannot exceed)
 DEFAULT_STRONG_HOURS_MINIMUM: int = 4 # The absolute minimum of credit hours students can take per semester (cannot be below)
-
+DEFAULT_IS_LOGGING: bool = False # # Whether the program logs inputs, outputs, and test modules runs
 
 # In this case "encodable" is just a dictionary where the keys are the attribute names
 # and the values are the attribute values
@@ -42,7 +42,8 @@ class SessionConfiguration():
             DEFAULT_SCHEDULE_NAME,
             DEFAULT_NORMAL_HOURS_LIMIT,
             DEFAULT_STRONG_HOURS_LIMIT,
-            DEFAULT_STRONG_HOURS_MINIMUM
+            DEFAULT_STRONG_HOURS_MINIMUM,
+            DEFAULT_IS_LOGGING
         )
         return result
     
@@ -55,7 +56,8 @@ class SessionConfiguration():
         'initial_schedule_name',
         'normal_hours_limit',
         'strong_hours_limit',
-        'strong_hours_minimum'
+        'strong_hours_minimum',
+        'is_logging'
     }
     
     # NOTE: We cannot rely on the default values being used during a default init (use make_default instead)
@@ -69,7 +71,8 @@ class SessionConfiguration():
                  initial_schedule_name: str = DEFAULT_SCHEDULE_NAME,
                  normal_hours_limit: int = DEFAULT_NORMAL_HOURS_LIMIT,
                  strong_hours_limit: int = DEFAULT_STRONG_HOURS_LIMIT,
-                 strong_hours_minimum: int = DEFAULT_STRONG_HOURS_MINIMUM) -> None:
+                 strong_hours_minimum: int = DEFAULT_STRONG_HOURS_MINIMUM,
+                 is_logging: bool = DEFAULT_IS_LOGGING) -> None:
                  
         self.course_info_filename: str = course_info_filename
         self.excused_prereqs: str = excused_prereqs
@@ -80,6 +83,7 @@ class SessionConfiguration():
         self.normal_hours_limit: int = normal_hours_limit
         self.strong_hours_limit: int = strong_hours_limit
         self.strong_hours_minimum: int = strong_hours_minimum
+        self.is_logging: bool = is_logging
     
     def get_encodable(self) -> dict[str, Any]:
         '''Get an encodable data object that can be used to in a json dump call--in this case "encodable" is just a dictionary where the keys are the attribute names and the values are the attribute values.'''
@@ -99,10 +103,11 @@ class SessionConfiguration():
         for expected_attribute in SessionConfiguration.expected_attributes:
             if expected_attribute not in self.__dict__ or self.__dict__[expected_attribute] == None:
                 result.append(expected_attribute)
+        
         return result
 
 
-def load_configuration_session(config_filename=CONFIG_FILENAME):
+def load_configuration_session(config_filename=CONFIG_FILENAME) -> SessionConfiguration:
     
     # Get the config file
     config_filename: str = path.join(get_source_path(), config_filename)
