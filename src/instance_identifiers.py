@@ -67,7 +67,6 @@ class Schedulable:
 
                 course_record: Optional[CourseRecord] = course_info_container.get_course_record(identifier)
 
-                print(38590238905902384)
                 if course_record is not None:
 
                     # Use legacy availability indicators
