@@ -27,7 +27,7 @@ def degreeworks_parser_v2_tests():
          'ENGL 1102', 'ENGL 1101'],
 
         '''
-        (CPSC 1302,CPSC 2105,CYBR 2159,CYBR 2160,MATH 2125,KINS 2105,ITDS 2106,HESC 2105,KINS 1105,KINS 3126,KINS 3135,KINS 4131,KINS 4331,KINS 4232,KINS 4133,KINS 4137,KINS 4146,KINS 5212U,KINS 4698,CPSC 2108,CPSC 3125,CPSC 3131,CPSC 3165,CPSC 3175,CPSC 4000,MATH 5125U,MATH 2125,CPSC 3121,CPSC 5115U,CPSC 4175,CPSC 4176)
+        (CPSC 1302,CPSC 2105,CYBR 2159,CYBR 2160,MATH 2125,KINS 2105,ITDS 2106,HESC 2105,KINS 1105,KINS 3126,KINS 3135,KINS 4131,KINS 4331,KINS 4232,KINS 4133,KINS 4137,KINS 4146,KINS 5212U,KINS 4698,CPSC 2108,CPSC 3125,CPSC 3131,CPSC 3165,CPSC 3175,CPSC 4000,MATH 5125U,MATH 2125,CPSC 3121,CPSC 4115,CPSC 4175,CPSC 4176)
 
 [s <c=1, n=Choose from 1 of the following:>
 [s <c=2, n=2 Classes in ASTR 1105 and 1305>
@@ -94,9 +94,7 @@ def degreeworks_parser_v2_tests():
 [d <n=PHED 1205>]
 [d <n=PHED 1206>]
 ]
-[s <c=1, n=Still needed:
-1 Class in PEDS 1@ or 2375 or 2376 or 2377 or 2378 or
-DANC 1310 or MSAL 4419 or THEA 1375>
+[s <c=1, n=Still needed: 1 Class in PEDS 1@ or 2375 or 2376 or 2377 or 2378 or DANC 1310 or MSAL 4419 or THEA 1375>
 [i <n=Insert PEDS 1@, ga=PEDS 1@ Course, gp=PEDS 1\d{3}[A-Z]?>]
 [d <n=PEDS 2375>]
 [d <n=PEDS 2376>]
@@ -106,24 +104,13 @@ DANC 1310 or MSAL 4419 or THEA 1375>
 [d <n=MSAL 4419>]
 [d <n=THEA 1375>]
 ]
-[r <c=4, n=Still needed:
-4 Credits in BIOL 2221K>
+[r <c=4, n=Still needed: 4 Credits in BIOL 2221K>
 [d <n=BIOL 2221K>]
 ]
-[r <c=4, n=Still needed:
-4 Credits in BIOL 2222K>
+[r <c=4, n=Still needed: 4 Credits in BIOL 2222K>
 [d <n=BIOL 2222K>]
 ]
-[r <c=5, n=Still needed:
-5 Credits in ANTH 1145 or ASTR 1105 or 1106 or 1305
-or BIOL 1125 or 1215K or 1225K or CHEM 1151 or
-1152 or 1211 or 1212 or CPSC 1301
-or ENVS 1105 or EXSC 1105 or GEOG 2215 or GEOL 1110
-or 1112 or 1121 or 1122 or 2225 or
-MATH 1111 or 1113 or 1131 or 1132 or
-2@ or PHIL 2500 or PHYS 1111 or 1112 or 1125
-or 2211 or 2212 or PSYC 1101 or SOCI 1101 or
-STAT 1401>
+[r <c=5, n=Still needed: 5 Credits in ANTH 1145 or ASTR 1105 or 1106 or 1305 or BIOL 1125 or 1215K or 1225K or CHEM 1151 or 1152 or 1211 or 1212 or CPSC 1301 or ENVS 1105 or EXSC 1105 or GEOG 2215 or GEOL 1110 or 1112 or 1121 or 1122 or 2225 or MATH 1111 or 1113 or 1131 or 1132 or 2@ or PHIL 2500 or PHYS 1111 or 1112 or 1125 or 2211 or 2212 or PSYC 1101 or SOCI 1101 or STAT 1401>
 [d <n=ANTH 1145>]
 [d <n=ASTR 1105>]
 [d <n=ASTR 1106>]
@@ -159,14 +146,11 @@ STAT 1401>
 [d <n=SOCI 1101>]
 [d <n=STAT 1401>]
 ]
-[r <c=3, n=Still needed:
-3 Credits in KINS 3232 or 4135>
+[r <c=3, n=Still needed: 3 Credits in KINS 3232 or 4135>
 [d <n=KINS 3232>]
 [d <n=KINS 4135>]
 ]
-[r <c=9, n=Still needed:
-9 Credits in KINS 3107 or 4147 or 4498 or 5133U or 5135U or
-5136U or 5137U or 5545U>
+[r <c=9, n=Still needed: 9 Credits in KINS 3107 or 4147 or 4498 or 5133U or 5135U or 5136U or 5137U or 5545U>
 [d <n=KINS 3107>]
 [d <n=KINS 4147>]
 [d <n=KINS 4498>]
@@ -176,23 +160,19 @@ STAT 1401>
 [d <n=KINS 5137U>]
 [d <n=KINS 5545U>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4135 or 5135U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4135 or 5135U>
 [d <n=CPSC 4135>]
 [d <n=CPSC 5135U>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4148 or 5128U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4148 or 5128U>
 [d <n=CPSC 4148>]
 [d <n=CPSC 5128U>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4155 or 5155U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4155 or 5155U>
 [d <n=CPSC 4155>]
 [d <n=CPSC 5155U>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4157 or 5157U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4157 or 5157U>
 [d <n=CPSC 4157>]
 [d <n=CPSC 5157U>]
 ]
@@ -216,7 +196,7 @@ STAT 1401>
         ['*** 3***', 'MATH 1111', 'MATH 1001', 'FYRS 1***', 'MATH 2125', 'MATH 1113', 'CPSC 3131', 'CYBR 2160', 'CYBR 2159', 'CPSC 2105', 'CPSC 1302', 'CPSC 1301K', 'GEOG 1101I', 'PSYC 1101', 'POLS 1101', 'HIST 2111', 'STAT 1401', 'ARTH 1100', 
         'GERM 1001', 'ENGL 1102', 'ENGL 1101'],
         '''
-        (CPSC 2108,CPSC 3125,CPSC 3165,CPSC 3175,CPSC 4000,MATH 5125U,CPSC 3121,CPSC 5115U,CPSC 4175,CPSC 4176)
+        (CPSC 2108,CPSC 3125,CPSC 3165,CPSC 3175,CPSC 4000,MATH 5125U,CPSC 3121,CPSC 4115,CPSC 4175,CPSC 4176)
 
 [r <c=1, n=Still needed: 1 Credit in ITDS 1779@ or LEAD 1705 or PERS 1506 or 1507>
 [p <n=ITDS 1779@, m=ITDS 1779.*>]
@@ -224,9 +204,7 @@ STAT 1401>
 [d <n=PERS 1506>]
 [d <n=PERS 1507>]
 ]
-[s <c=1, n=Still needed:
-1 Class in ENGL 2111@ or 2112@ or 2131 or 2132 or
-ITDS 1145 or 1155 or 1774 or 2125 or PHIL 2010>
+[s <c=1, n=Still needed: 1 Class in ENGL 2111@ or 2112@ or 2131 or 2132 or ITDS 1145 or 1155 or 1774 or 2125 or PHIL 2010>
 [p <n=ENGL 2111@, m=ENGL 2111.*>]
 [p <n=ENGL 2112@, m=ENGL 2112.*>]
 [d <n=ENGL 2131>]
@@ -300,23 +278,19 @@ ITDS 1145 or 1155 or 1774 or 2125 or PHIL 2010>
 ]
 [d <n=ENVS 1205K>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4135 or 5135U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4135 or 5135U>
 [d <n=CPSC 4135>]
 [d <n=CPSC 5135U>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4148 or 5128U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4148 or 5128U>
 [d <n=CPSC 4148>]
 [d <n=CPSC 5128U>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4155 or 5155U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4155 or 5155U>
 [d <n=CPSC 4155>]
 [d <n=CPSC 5155U>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4157 or 5157U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4157 or 5157U>
 [d <n=CPSC 4157>]
 [d <n=CPSC 5157U>]
 ]
@@ -344,11 +318,9 @@ ITDS 1145 or 1155 or 1774 or 2125 or PHIL 2010>
          'ARTH 1100', 'PHIL 2010', 'PERS 1506', 'COMM 1110', 'ENGL 1102', 
          'ENGL 1101'],
          '''
-         (CPSC 3125,CPSC 3165,CPSC 3175,CPSC 4000,CPSC 3121,CPSC 5115U,CPSC 4175,CPSC 4176)
+         (CPSC 3125,CPSC 3165,CPSC 3175,CPSC 4000,CPSC 3121,CPSC 4115,CPSC 4175,CPSC 4176)
 
-[s <c=1, n=Still needed:
-1 Class in ANTH 1105@ or 1107 or 2105 or 2136 or ENGL 2136 or GEOG 1101
-or HIST 1111 or 1112 or INTS 2105@ or ITDS 1146 or 1156>
+[s <c=1, n=Still needed: 1 Class in ANTH 1105@ or 1107 or 2105 or 2136 or ENGL 2136 or GEOG 1101 or HIST 1111 or 1112 or INTS 2105@ or ITDS 1146 or 1156>
 [p <n=ANTH 1105@, m=ANTH 1105.*>]
 [d <n=ANTH 1107>]
 [d <n=ANTH 2105>]
@@ -361,23 +333,19 @@ or HIST 1111 or 1112 or INTS 2105@ or ITDS 1146 or 1156>
 [d <n=ITDS 1146>]
 [d <n=ITDS 1156>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4135 or 5135U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4135 or 5135U>
 [d <n=CPSC 4135>]
 [d <n=CPSC 5135U>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4148 or 5128U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4148 or 5128U>
 [d <n=CPSC 4148>]
 [d <n=CPSC 5128U>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4155 or 5155U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4155 or 5155U>
 [d <n=CPSC 4155>]
 [d <n=CPSC 5155U>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4157 or 5157U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4157 or 5157U>
 [d <n=CPSC 4157>]
 [d <n=CPSC 5157U>]
 ]
@@ -389,8 +357,7 @@ or HIST 1111 or 1112 or INTS 2105@ or ITDS 1146 or 1156>
 [i <n=Insert CYBR 4@, ga=CYBR 4@ Course, gp=CYBR 4\d{3}[A-Z]?>]
 [i <n=Insert CYBR 5@, ga=CYBR 5@ Course, gp=CYBR 5\d{3}[A-Z]?>]
 ]
-[r <c=5, n=Still needed: 5 Credits in @ 1@ or 2@ or 3@ or 4@ or 5@U Except ENGL 1101 or
- 1102>
+[r <c=5, n=Still needed: 5 Credits in @ 1@ or 2@ or 3@ or 4@ or 5@U Except ENGL 1101 or 1102>
 [i <n=Insert @ 1@, ga=@ 1@ Course, gp=^(?!ENGL 1101|ENGL 1102)[A-Z]{4} 1\d{3}[A-Z]?>]
 [i <n=Insert @ 2@, ga=@ 2@ Course, gp=^(?!ENGL 1101|ENGL 1102)[A-Z]{4} 2\d{3}[A-Z]?>]
 [i <n=Insert @ 3@, ga=@ 3@ Course, gp=^(?!ENGL 1101|ENGL 1102)[A-Z]{4} 3\d{3}[A-Z]?>]
@@ -411,8 +378,7 @@ or HIST 1111 or 1112 or INTS 2105@ or ITDS 1146 or 1156>
          'PHYS 2211', 'CHEM 1211L', 'CHEM 1211', 'ARTH 1100', 'ENGL 2131', 
          'COMM 1110', 'MATH 1131', 'ENGL 1102', 'ENGL 1101'],
          '''
-         (CPSC 1302,CPSC 2105,CYBR 2159,CYBR 2160,CPSC 2108,CPSC 3125,CPSC 
-         3131,CPSC 3165,CPSC 3175,CPSC 4000,MATH 5125U,MATH 1113,CPSC 3121,CPSC 5115U,CPSC 4175,CPSC 4176)
+         (CPSC 1302,CPSC 2105,CYBR 2159,CYBR 2160,CPSC 2108,CPSC 3125,CPSC 3131,CPSC 3165,CPSC 3175,CPSC 4000,MATH 5125U,MATH 1113,CPSC 3121,CPSC 4115,CPSC 4175,CPSC 4176)
 
 [r <c=1, n=Still needed: 1 Credit in ITDS 1779@ or LEAD 1705 or PERS 1506 or 1507>
 [p <n=ITDS 1779@, m=ITDS 1779.*>]
@@ -420,8 +386,7 @@ or HIST 1111 or 1112 or INTS 2105@ or ITDS 1146 or 1156>
 [d <n=PERS 1506>]
 [d <n=PERS 1507>]
 ]
-[s <c=1, n=Still needed:
-1 Class in HIST 2111 or 2112>
+[s <c=1, n=Still needed: 1 Class in HIST 2111 or 2112>
 [d <n=HIST 2111>]
 [d <n=HIST 2112>]
 ]
@@ -430,9 +395,7 @@ or HIST 1111 or 1112 or INTS 2105@ or ITDS 1146 or 1156>
 [d <n=PHED 1205>]
 [d <n=PHED 1206>]
 ]
-[s <c=1, n=Still needed:
-1 Class in PEDS 1@ or 2375 or 2376 or 2377 or 2378 or
-DANC 1310 or MSAL 4419 or THEA 1375>
+[s <c=1, n=Still needed: 1 Class in PEDS 1@ or 2375 or 2376 or 2377 or 2378 or DANC 1310 or MSAL 4419 or THEA 1375>
 [i <n=Insert PEDS 1@, ga=PEDS 1@ Course, gp=PEDS 1\d{3}[A-Z]?>]
 [d <n=PEDS 2375>]
 [d <n=PEDS 2376>]
@@ -442,23 +405,19 @@ DANC 1310 or MSAL 4419 or THEA 1375>
 [d <n=MSAL 4419>]
 [d <n=THEA 1375>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4135 or 5135U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4135 or 5135U>
 [d <n=CPSC 4135>]
 [d <n=CPSC 5135U>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4148 or 5128U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4148 or 5128U>
 [d <n=CPSC 4148>]
 [d <n=CPSC 5128U>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4155 or 5155U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4155 or 5155U>
 [d <n=CPSC 4155>]
 [d <n=CPSC 5155U>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4157 or 5157U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4157 or 5157U>
 [d <n=CPSC 4157>]
 [d <n=CPSC 5157U>]
 ]
@@ -488,20 +447,17 @@ DANC 1310 or MSAL 4419 or THEA 1375>
          'PHYS 2312', 'PHYS 2212', 'PHYS 2311', 'PHYS 2211', 'MUSC 1100', 
          'PHIL 2010', 'ITDS 1779H', 'COMM 1110', 'ENGL 1102', 'ENGL 1101'],
          '''
-         (CPSC 4000,CPSC 5115U,CPSC 4175,CPSC 4176)
+         (CPSC 4000,CPSC 4115,CPSC 4175,CPSC 4176)
 
-[s <c=1, n=Still needed:
-1 Class in CPSC 4148 or 5128U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4148 or 5128U>
 [d <n=CPSC 4148>]
 [d <n=CPSC 5128U>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4155 or 5155U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4155 or 5155U>
 [d <n=CPSC 4155>]
 [d <n=CPSC 5155U>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4157 or 5157U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4157 or 5157U>
 [d <n=CPSC 4157>]
 [d <n=CPSC 5157U>]
 ]
@@ -513,9 +469,7 @@ DANC 1310 or MSAL 4419 or THEA 1375>
 [i <n=Insert CYBR 4@, ga=CYBR 4@ Course, gp=CYBR 4\d{3}[A-Z]?>]
 [i <n=Insert CYBR 5@, ga=CYBR 5@ Course, gp=CYBR 5\d{3}[A-Z]?>]
 ]
-[r <c=3, n=Still needed:
-3 Credits in MATH 3@ or 4@ or 5@U or DSCI 3111 or
-STAT 3127>
+[r <c=3, n=Still needed: 3 Credits in MATH 3@ or 4@ or 5@U or DSCI 3111 or STAT 3127>
 [i <n=Insert MATH 3@, ga=MATH 3@ Course, gp=MATH 3\d{3}[A-Z]?>]
 [i <n=Insert MATH 4@, ga=MATH 4@ Course, gp=MATH 4\d{3}[A-Z]?>]
 [i <n=Insert MATH 5@U, ga=MATH 5@U Course, gp=MATH 5\d{3}[A-Z]?>]
@@ -537,25 +491,21 @@ STAT 3127>
          'GEOL 1121K', 'BIOL 1215K', 'ITDS 1145', 'PHIL 2010', 'PERS 1506', 
          'COMM 1110', 'ENGL 1102', 'ENGL 1101'],
          '''
-         (CPSC 2105,MATH 2125,CPSC 2108,CPSC 3125,CPSC 3131,CPSC 3165,CPSC 3175,CPSC 4000,MATH 5125U,MATH 2125,CPSC 3121,CPSC 5115U,CPSC 4175,CPSC 4176)
+         (CPSC 2105,MATH 2125,CPSC 2108,CPSC 3125,CPSC 3131,CPSC 3165,CPSC 3175,CPSC 4000,MATH 5125U,MATH 2125,CPSC 3121,CPSC 4115,CPSC 4175,CPSC 4176)
 
-[s <c=1, n=Still needed:
-1 Class in CPSC 4135 or 5135U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4135 or 5135U>
 [d <n=CPSC 4135>]
 [d <n=CPSC 5135U>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4148 or 5128U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4148 or 5128U>
 [d <n=CPSC 4148>]
 [d <n=CPSC 5128U>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4155 or 5155U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4155 or 5155U>
 [d <n=CPSC 4155>]
 [d <n=CPSC 5155U>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4157 or 5157U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4157 or 5157U>
 [d <n=CPSC 4157>]
 [d <n=CPSC 5157U>]
 ]
@@ -584,7 +534,7 @@ STAT 3127>
          'ARTH 1100', 'ENGL 2112', 'PERS 1506', 'ARAB 1001', 'ENGL 1102', 
          'ENGL 1101'],
          '''
-         (CPSC 4000,CPSC 5115U,CPSC 4175,CPSC 4176)
+         (CPSC 4000,CPSC 4115,CPSC 4175,CPSC 4176)
 
 [s <c=1, n=Choose from 1 of the following:>
 [s <c=2, n=2 Classes in ASTR 1105 and 1305>
@@ -646,23 +596,19 @@ STAT 3127>
 ]
 [d <n=ENVS 1205K>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4135 or 5135U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4135 or 5135U>
 [d <n=CPSC 4135>]
 [d <n=CPSC 5135U>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4148 or 5128U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4148 or 5128U>
 [d <n=CPSC 4148>]
 [d <n=CPSC 5128U>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4155 or 5155U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4155 or 5155U>
 [d <n=CPSC 4155>]
 [d <n=CPSC 5155U>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4157 or 5157U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4157 or 5157U>
 [d <n=CPSC 4157>]
 [d <n=CPSC 5157U>]
 ]
@@ -674,8 +620,7 @@ STAT 3127>
 [i <n=Insert CYBR 4@, ga=CYBR 4@ Course, gp=CYBR 4\d{3}[A-Z]?>]
 [i <n=Insert CYBR 5@, ga=CYBR 5@ Course, gp=CYBR 5\d{3}[A-Z]?>]
 ]
-[r <c=4, n=Still needed: 4 Credits in @ 1@ or 2@ or 3@ or 4@ or 5@U Except ENGL 1101 or
- 1102>
+[r <c=4, n=Still needed: 4 Credits in @ 1@ or 2@ or 3@ or 4@ or 5@U Except ENGL 1101 or 1102>
 [i <n=Insert @ 1@, ga=@ 1@ Course, gp=^(?!ENGL 1101|ENGL 1102)[A-Z]{4} 1\d{3}[A-Z]?>]
 [i <n=Insert @ 2@, ga=@ 2@ Course, gp=^(?!ENGL 1101|ENGL 1102)[A-Z]{4} 2\d{3}[A-Z]?>]
 [i <n=Insert @ 3@, ga=@ 3@ Course, gp=^(?!ENGL 1101|ENGL 1102)[A-Z]{4} 3\d{3}[A-Z]?>]
@@ -699,12 +644,9 @@ STAT 3127>
          'CHEM 1151', 'MUSC 1100', 'PHIL 2010', 'PERS 1506', 'ENGL 1102', 
          'ENGL 1101'],
          '''
-         (CPSC 3125,CPSC 3165,CPSC 4000,CPSC 3121,CPSC 5115U,CPSC 4175,CPSC 4176)
+         (CPSC 3125,CPSC 3165,CPSC 4000,CPSC 3121,CPSC 4115,CPSC 4175,CPSC 4176)
 
-[s <c=1, n=Still needed: 1 Class in COMM 1110@ or ARAB 1@ or 2@ or CHIN 1@ or 2@ or FREN 1@
-or 2@ or GERM 1@ or 2@ or GREK 1@ or 2@ or ITAL 1@ or 2@ or JAPN 1@
-or 2@ or LATN 1@ or 2@ or PORT 1@ or 2@ or RUSS 1@ or 2@ or SPAN 1@
-or 2@ or SWAH 1@ or 2@>
+[s <c=1, n=Still needed: 1 Class in COMM 1110@ or ARAB 1@ or 2@ or CHIN 1@ or 2@ or FREN 1@ or 2@ or GERM 1@ or 2@ or GREK 1@ or 2@ or ITAL 1@ or 2@ or JAPN 1@ or 2@ or LATN 1@ or 2@ or PORT 1@ or 2@ or RUSS 1@ or 2@ or SPAN 1@ or 2@ or SWAH 1@ or 2@>
 [p <n=COMM 1110@, m=COMM 1110.*>]
 [i <n=Insert ARAB 1@, ga=ARAB 1@ Course, gp=ARAB 1\d{3}[A-Z]?>]
 [i <n=Insert ARAB 2@, ga=ARAB 2@ Course, gp=ARAB 2\d{3}[A-Z]?>]
@@ -736,23 +678,19 @@ or 2@ or SWAH 1@ or 2@>
 [d <n=PHED 1205>]
 [d <n=PHED 1206>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4135 or 5135U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4135 or 5135U>
 [d <n=CPSC 4135>]
 [d <n=CPSC 5135U>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4148 or 5128U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4148 or 5128U>
 [d <n=CPSC 4148>]
 [d <n=CPSC 5128U>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4155 or 5155U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4155 or 5155U>
 [d <n=CPSC 4155>]
 [d <n=CPSC 5155U>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4157 or 5157U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4157 or 5157U>
 [d <n=CPSC 4157>]
 [d <n=CPSC 5157U>]
 ]
@@ -777,12 +715,9 @@ or 2@ or SWAH 1@ or 2@>
          'MATH 1113', 'CPSC 1302', 'CPSC 1301K', 'PSYC 1101', 'POLS 1101', 
          'ARTH 1100', 'ENGL 1102', 'ENGL 1101'],
          '''
-         (STAT 1401,CPSC 2105,CYBR 2159,CYBR 2160,MATH 2125,CPSC 2108,CPSC 3125,CPSC 3131,CPSC 3165,CPSC 3175,CPSC 4000,MATH 5125U,MATH 2125,CPSC 3121,CPSC 5115U,CPSC 4175,CPSC 4176)
+         (STAT 1401,CPSC 2105,CYBR 2159,CYBR 2160,MATH 2125,CPSC 2108,CPSC 3125,CPSC 3131,CPSC 3165,CPSC 3175,CPSC 4000,MATH 5125U,MATH 2125,CPSC 3121,CPSC 4115,CPSC 4175,CPSC 4176)
 
-[s <c=1, n=Still needed: 1 Class in COMM 1110@ or ARAB 1@ or 2@ or CHIN 1@ or 2@ or FREN 1@
-or 2@ or GERM 1@ or 2@ or GREK 1@ or 2@ or ITAL 1@ or 2@ or JAPN 1@
-or 2@ or LATN 1@ or 2@ or PORT 1@ or 2@ or RUSS 1@ or 2@ or SPAN 1@
-or 2@ or SWAH 1@ or 2@>
+[s <c=1, n=Still needed: 1 Class in COMM 1110@ or ARAB 1@ or 2@ or CHIN 1@ or 2@ or FREN 1@ or 2@ or GERM 1@ or 2@ or GREK 1@ or 2@ or ITAL 1@ or 2@ or JAPN 1@ or 2@ or LATN 1@ or 2@ or PORT 1@ or 2@ or RUSS 1@ or 2@ or SPAN 1@ or 2@ or SWAH 1@ or 2@>
 [p <n=COMM 1110@, m=COMM 1110.*>]
 [i <n=Insert ARAB 1@, ga=ARAB 1@ Course, gp=ARAB 1\d{3}[A-Z]?>]
 [i <n=Insert ARAB 2@, ga=ARAB 2@ Course, gp=ARAB 2\d{3}[A-Z]?>]
@@ -815,9 +750,7 @@ or 2@ or SWAH 1@ or 2@>
 [d <n=PERS 1506>]
 [d <n=PERS 1507>]
 ]
-[s <c=1, n=Still needed:
-1 Class in ENGL 2111@ or 2112@ or 2131 or 2132 or
-ITDS 1145 or 1155 or 1774 or 2125 or PHIL 2010>
+[s <c=1, n=Still needed: 1 Class in ENGL 2111@ or 2112@ or 2131 or 2132 or ITDS 1145 or 1155 or 1774 or 2125 or PHIL 2010>
 [p <n=ENGL 2111@, m=ENGL 2111.*>]
 [p <n=ENGL 2112@, m=ENGL 2112.*>]
 [d <n=ENGL 2131>]
@@ -891,14 +824,11 @@ ITDS 1145 or 1155 or 1774 or 2125 or PHIL 2010>
 ]
 [d <n=ENVS 1205K>]
 ]
-[s <c=1, n=Still needed:
-1 Class in HIST 2111 or 2112>
+[s <c=1, n=Still needed: 1 Class in HIST 2111 or 2112>
 [d <n=HIST 2111>]
 [d <n=HIST 2112>]
 ]
-[s <c=1, n=Still needed:
-1 Class in ANTH 1105@ or 1107 or 2105 or 2136 or ENGL 2136 or GEOG 1101
-or HIST 1111 or 1112 or INTS 2105@ or ITDS 1146 or 1156>
+[s <c=1, n=Still needed: 1 Class in ANTH 1105@ or 1107 or 2105 or 2136 or ENGL 2136 or GEOG 1101 or HIST 1111 or 1112 or INTS 2105@ or ITDS 1146 or 1156>
 [p <n=ANTH 1105@, m=ANTH 1105.*>]
 [d <n=ANTH 1107>]
 [d <n=ANTH 2105>]
@@ -916,9 +846,7 @@ or HIST 1111 or 1112 or INTS 2105@ or ITDS 1146 or 1156>
 [d <n=PHED 1205>]
 [d <n=PHED 1206>]
 ]
-[s <c=1, n=Still needed:
-1 Class in PEDS 1@ or 2375 or 2376 or 2377 or 2378 or
-DANC 1310 or MSAL 4419 or THEA 1375>
+[s <c=1, n=Still needed: 1 Class in PEDS 1@ or 2375 or 2376 or 2377 or 2378 or DANC 1310 or MSAL 4419 or THEA 1375>
 [i <n=Insert PEDS 1@, ga=PEDS 1@ Course, gp=PEDS 1\d{3}[A-Z]?>]
 [d <n=PEDS 2375>]
 [d <n=PEDS 2376>]
@@ -928,23 +856,19 @@ DANC 1310 or MSAL 4419 or THEA 1375>
 [d <n=MSAL 4419>]
 [d <n=THEA 1375>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4135 or 5135U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4135 or 5135U>
 [d <n=CPSC 4135>]
 [d <n=CPSC 5135U>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4148 or 5128U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4148 or 5128U>
 [d <n=CPSC 4148>]
 [d <n=CPSC 5128U>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4155 or 5155U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4155 or 5155U>
 [d <n=CPSC 4155>]
 [d <n=CPSC 5155U>]
 ]
-[s <c=1, n=Still needed:
-1 Class in CPSC 4157 or 5157U>
+[s <c=1, n=Still needed: 1 Class in CPSC 4157 or 5157U>
 [d <n=CPSC 4157>]
 [d <n=CPSC 5157U>]
 ]
