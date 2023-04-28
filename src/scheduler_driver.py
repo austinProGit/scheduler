@@ -551,6 +551,8 @@ def judge_path(schedule_info_container: ScheduleInfoContainer, dummy_genetic_opt
             record.prereqs = schedulable._prequisite_tree_string
             record.coreqs = schedulable._corequisite_tree
             record.recommended = schedulable.recommended
+            record.importance = schedulable.importance
+            
             record_semester.append(record)
         schedule_by_records.append(record_semester)
     dynamic_knowledge.set_schedule(schedule_by_records)
@@ -844,6 +846,8 @@ class ConstuctiveScheduler:
                         availability = FUNC_availabilities,
                         recommended = course_record.recommended
                     )
+                    
+                    schedulable.importance = course_record.importance
                     self._schedulables.append(ConstuctiveScheduler.Schedulable(schedulable))
 
                 else:
@@ -1060,7 +1064,7 @@ class ConstuctiveScheduler:
             population_size: int = 120#100
             mutation_rate: float = 0.6
             fitness_function: ScheduleFitenessFunction = judge_path
-            maximum_iterations: int = 10
+            maximum_iterations: int = 25
             fitness_threshold: Optional[float] = None
             reduction_size: int = population_size//4
             best_performer_maintain: Optional[int] = 5
@@ -1121,6 +1125,7 @@ class ConstuctiveScheduler:
                 record.prereqs = schedulable._prequisite_tree_string
                 record.coreqs = schedulable._corequisite_tree
                 record.recommended = schedulable.recommended
+                record.importance = schedulable.importance
                 record_semester.append(record)
             schedule_by_records.append(record_semester)
         dynamic_knowledge.set_schedule(schedule_by_records)

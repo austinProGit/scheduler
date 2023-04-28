@@ -159,6 +159,8 @@ class SmartPlannerController:
     
     def __init__(self, graphics_enabled=True):
 
+        self.log_file: Optional[TextIOWrapper] = None
+
         # Hide console window if running Windows OS
         if OPERATING_SYSTEM == "Windows" and WIN_CONTROL_FLAG:
             win32gui.ShowWindow(HWND, win32con.SW_HIDE)
@@ -169,7 +171,7 @@ class SmartPlannerController:
         
         # Perform the controller's setup routine
         self.setup(graphics_enabled)
-        
+
         if IS_TESTING_MEMORY:
             # Initialize information regarding the heap.
             # This is done after setup to simplify the deltas.
@@ -341,6 +343,10 @@ class SmartPlannerController:
         callback: Callable[[str], None]
         for callback in self._output_callbacks.values():
             callback(message)
+
+        # Save the contents to the log
+        self.log(message)
+
         print(message)
     
     
@@ -374,8 +380,12 @@ class SmartPlannerController:
         
         if IS_TESTING_MEMORY:
             print(heap.heap())
-        
-        return input(f'{current_interface.name}: ')
+        user_input: str = input(f'{current_interface.name}: ')
+
+        # Save the contents to the log
+        self.log(f'{current_interface.name}: {user_input}')
+
+        return user_input
     
     
     def add_output_listener(self, key: str, output_callback: Callable[[str], None]) -> None:
@@ -416,6 +426,9 @@ class SmartPlannerController:
             del callback_map[key]
         return will_remove
     
+    def log(self, message: str) -> None:
+        if self.log_file:
+            self.log_file.write(message + '\n')
     
     ## ----------- Interface/menu control ----------- ##
     
@@ -838,6 +851,16 @@ class SmartPlannerController:
             self._scheduler.prepare_schedulables()
             container = self._scheduler.generate_schedule(prequisite_ignored_courses=[])
 
+            # TODO: bad practice here: (FIX TO JUST USE SCHEDULER INSTEAD):
+            SURVEY_COURSES = ['CPSC 4000']
+            for semester in container:
+                for schedulable in semester:
+                    if schedulable.course_identifier.course_number in SURVEY_COURSES:
+                        semester.courses.remove(schedulable)
+                        container._semesters[-1].courses.append(schedulable)
+                        print(schedulable.course_identifier.course_number, 1249120470723173091)
+
+            
             confidence_factor = container.get_confidence_level()
             
             #semesters_listing, confidence_factor = self._scheduler.generate_schedule()
@@ -856,7 +879,7 @@ class SmartPlannerController:
             
             if PLAIN_TEXT_EXPORT_TYPE in export_types:
                 unique_ptext_destination = get_next_free_filename(desired_destination.with_suffix('.txt'))
-                plain_text_export(Path(unique_ptext_destination), container, FALL, 2022)
+                plain_text_export(Path(unique_ptext_destination), container)
                 self.output('Schedule (plain text) exported as {0}'.format(unique_ptext_destination))
                 if os.name == 'nt':
                     os.startfile(unique_ptext_destination)
@@ -865,7 +888,7 @@ class SmartPlannerController:
 
             if PDF_EXPORT_TYPE in export_types:
                 unique_pdf_destination = get_next_free_filename(desired_destination.with_suffix('.pdf'))
-                pdf_export(Path(unique_pdf_destination), container, FALL, 2022)
+                pdf_export(Path(unique_pdf_destination), container)
                 self.output('Schedule (PDF) exported as {0}'.format(unique_pdf_destination))
                 if os.name == 'nt':
                     os.startfile(unique_pdf_destination)

@@ -23,6 +23,7 @@ DEFAULT_UNKNOWN_CLASS_AVAILABILITY: set[SemesterType] = {FALL, SPRING}
 # The name to give to a course identifier if no descriptions are found
 DEFAULT_COURSE_PRINTABLE_NAME: str = 'Course'
 
+DEFAULT_IMPORTANCE = 60
 
 class CourseIdentifier:
 
@@ -107,6 +108,8 @@ class Schedulable:
 
         self._prequisite_tree: Optional[RequirementsTree] = None
         self._corequisite_tree: Optional[RequirementsTree] = None
+
+        self.importance: float = DEFAULT_IMPORTANCE
         
     
     def __eq__(self, rhs: Any):
@@ -223,6 +226,7 @@ class Schedulable:
             self.availability,
             self.recommended
         )
+        result.importance = self.importance
         return result
 
 
