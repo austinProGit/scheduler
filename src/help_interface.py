@@ -25,6 +25,9 @@ HELP_TAG_END_TOKEN: str = '-->' # The string that will end tokens string
 HELP_PARAGRAPH_START_TOKEN: str = '<p>' # The string that will start paragraph string
 HELP_PARAGRAPH_END_TOKEN: str = '</p>' # The string that will end paragraph string
 
+# The following are string to remove from the article if ecnountered
+HELP_REMOVED_FROM_PARAGRAPH: list[str] = ['<ul>', '</ul>', '<li>', '</li>', '<ol>', '</ol>', '<a>', '</a>']
+
 HELP_QUERY_ACCEPTANCE: float = 0.7 # Level of tolerance (0.0 to 1.0) while searching help documentation
 
 # The following is the help menu for the program. It handles presenting and searching for program documentation. It loads
@@ -61,8 +64,13 @@ class HelpMenu(GeneralInterface):
                 self.headers.append(new_header)
                 new_tags = self.parse_file_with_tokens(documentation, HELP_TAG_START_TOKEN, HELP_TAG_END_TOKEN).split()
                 self.keywords.append(new_tags)
-                self.articles.append(self.remove_tokens_from_string(
-                    self.parse_file_with_tokens(documentation, HELP_PARAGRAPH_START_TOKEN, HELP_PARAGRAPH_END_TOKEN), '<table>', '</table>')
+                article = self.remove_tokens_from_string(self.parse_file_with_tokens(documentation, HELP_PARAGRAPH_START_TOKEN, HELP_PARAGRAPH_END_TOKEN), '<table>', '</table>')
+
+                for string_to_removed in HELP_REMOVED_FROM_PARAGRAPH:
+                    article = article.replace(string_to_removed, '')
+
+                self.articles.append(
+                    article
                 )
                 self.article_count += 1
     
