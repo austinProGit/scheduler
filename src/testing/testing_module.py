@@ -8,12 +8,19 @@ from user_submitted_validator_tests import user_submitted_validator_tests
 from cli_unit_testing import run_cli_unit_test
 from degreeworks_parser_v2_tests import degreeworks_parser_v2_tests
 from scheduler_driver_testing import validation_and_scheduling_unit_test
+from configuration_manager import load_configuration_session, SessionConfiguration
 from traceback import print_exc
 import traceback
 import datetime
 from driver_fs_functions import *
 
 def all_tests():
+    try:
+        config: SessionConfiguration = load_configuration_session()
+        if config.is_logging:
+            return
+    except Exception as e:
+        print(e)
     
     tests = []
 
@@ -53,7 +60,10 @@ def all_tests():
 
         test_reports.append(report)
 
+    # Check if logging is enabled (used for development)
     persist = True
+
+    # Write the reports
     if persist: write_reports(test_reports)
 
     if not tests_passed:

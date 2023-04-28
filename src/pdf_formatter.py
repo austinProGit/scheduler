@@ -26,7 +26,7 @@ def pdf_export(filepath: Path, schedule: ScheduleInfoContainer) -> None:
         pdf.set_font("helvetica", "BU", size=12)
         pdf.cell(0, 5, f"{SEMESTER_DESCRIPTION_MAPPING[current_semester_type]} {curent_year}", ln=1)
         pdf.set_font("helvetica", size=12)
-        pdf.multi_cell(0, 5, ", ".join(semester.str_iterator()) if semester else "-No Courses-", ln=1)
+        pdf.multi_cell(0, 5, ", ".join(semester.str_iterator()) if semester else "-No Courses-", 1)
         pdf.ln(10)
 
 

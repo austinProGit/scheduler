@@ -1,11 +1,10 @@
-
 <!DOCTYPE html>
 <head>
 	<title>Smart Planner Documentation</title>
 	<link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<h1>Smart Planner Documentation</h1>
+	<h1>Smart Planner Documentation</h1>
 <h3>Administrator Familiarization and Program Configuration</h3>
 	<!-- admin administrator familiarization configuration -->
 	<p>
@@ -33,8 +32,8 @@
 	<!--hours set parameter per semester setup configure summer-->
 	<p>
 		To set the number of credit hours per semester, enter "hours[number]" where 'number' is the desired number 
-		of hours per Fall or Spring semesters. Optionally, the user can enter the 'summer-hours [number]' command to set 
-		the hours per Summer semester.
+		of hours per Fall or Spring semesters. Optionally, the user can enter the â€œsummer-hours [number]â€ command to 
+		set the hours per Summer semester.
 	</p>
 	<h3>Adjusting Configuration Data</h3>
 	<!--config configuration setup settings administrate files custom customize-->
@@ -71,16 +70,16 @@
 	<p>
 	The program will begin execution in the GUI environment by default. If the user is currently in a CLI mode, the user 
 	can enter the GUI with command 'gui-i'. Entering 'cli' will configure the interface to open in command line 
-	interface mode by default. The same is the case with the “gui” command.
+	interface mode by default. The same is the case with the â€œguiâ€ command.
 	</p>
-	<h3>Validate  Existing Path to Graduation</h3>
-	<!-- existing  validate user submit path -->
+	<h3>Validate Existing Path to Graduation</h3>
+	<!-- existing validate user submit path -->
 	<p>
 		In order to assess a given path to graduation for correctness, the program must first have the relevant DegreeWorks 
 		PDF as input. To validate an existing path to graduation in the GUI, the user first clicks the 'Verify Schedule' 
 		button and selects the relevant DegreeWorks PDF. Then, if the Path to Graduation is valid, the program outputs 
 		'path valid' and the confidence in the path. Otherwise, it outputs a list of the errors found in the path. The user 
-		can also verify in the CLI by entering 'verify [filePath]', where 'filePath' is the location of the Path to 
+		can also verify in the CLI by entering 'verify [filePath]'', where 'filePath' is the location of the Path to 
 		Graduation Excel document.
 	</p>
 	<h3>AI Output Interpretation</h3>
@@ -99,7 +98,7 @@ Case Based Reasoning (CBR) uses past experiences to solve new problems. Previous
 Problem-Solution pairs. In the instance of the SmartPlanner CBR, a Problem is a students degreeworks file (courses taken 
 and courses needed) and the Solution is the recommended electives (specifically, higher level CPSC electives). A user will 
 select their input file, and the CBR will retrieve the recommended electives that best fit the user's degree plan. Then, 
-the user has the option to “Adapt” the solution to their specific situation (i.e., if the system recommended three electives, 
+the user has the option to â€œAdaptâ€ the solution to their specific situation (i.e., if the system recommended three electives, 
 but the student only needs two). After adaptation, the user can select an output file to overwrite the blank electives slots 
 filled by the Rule Based Scheduler. The system will automatically write the input file and adapted solution back into the Case 
 Base to be used in the future.
@@ -111,16 +110,12 @@ Base to be used in the future.
 	<p>
 		<ol id="cbr-steps-list">
 			<li>Generate a schedule by using the SmartPlanner Rule Based Scheduler.</li>
-			<li>Choose the “Run CBR for Elective Recommendations” option on the GUI main page.</li>
-			<li>Once the CBR menu is opened, select “Run CBR” again.</li>
-			<li>Choose the corresponding input file (same name as your degreeworks file) located in the directory 'CBR 
-				Inputs'. CBR will automatically run and show recommended electives in the display box.</li>
-			<li>User can choose the 'Adapt elective recommendation' to tailor the recommendation more to their specific 
-				situation. New electives will be shown in the display box.</li>
-			<li>The user can select "Give Reasoning for Recommendation” to show WHY the system recommended the retrieved 
-				electives.</li>
-			<li>The user can finally select 'Choose output file' to find their scheduled path to graduation excel file 
-				created from the Rules Based Scheduler and overwrite the elective slots in said file.</li>
+			<li>Choose the â€œRun CBR for Elective Recommendationsâ€ option on the GUI main page.</li>
+			<li>Once the CBR menu is opened, select â€œRun CBRâ€ again.</li>
+			<li>Choose the corresponding input file (same name as your degreeworks file) located in the directory 'CBR Inputs'. CBR will automatically run and show recommended electives in the display box.</li>
+			<li>User can choose the 'Adapt elective recommendation' to tailor the recommendation more to their specific situation. New electives will be shown in the display box.</li>
+			<li>The user can select "Give Reasoning for Recommendationâ€ to show WHY the system recommended the retrieved electives.</li>
+			<li>The user can finally select 'Choose output file' to find their scheduled path to graduation excel file created from the Rules Based Scheduler and overwrite the elective slots in said file.</li>
 		</ol>
 	</p>
 
@@ -133,16 +128,12 @@ Base to be used in the future.
 			<li>courseName: Common name for course.</li>
 			<li>hours: Hours by semester.</li>
 			<li>availability: When a course is offered during the year by season.</li>
-			<li>prerequisites: Courses required to be taken before a given course. Uses a logic tree string to represent 
-				all possible ways to satisfy prerequisite requirements. See 'README_DEV.md' or module 'Logic Tree Overview' 
-				in this help module documentation for further details.</li>
-			<li>co-requisites: Courses that must be taken concurrently with a given course. Stored like a prerequisite 
-				in a logic tree string.</li>
+			<li>prerequisites: Courses required to be taken before a given course. Uses a logic tree string to represent all possible ways to satisfy prerequisite requirements. See â€˜README_DEV.mdâ€™ or module â€˜Logic Tree Overviewâ€™ in this help module documentation for further details.</li>
+			<li>co-requisites: Courses that must be taken concurrently with a given course. Stored like a prerequisite in a logic tree string.</li>
 			<li>recommended: Courses recommended to take together.</li>
 			<li>restrictions: Restrictions on when a course can be taken, ex: must be senior.</li>
 			<li>note: Misc notes.</li>
-			<li>importance: Importance that a class be taken sooner than other courses from 1 to 100. Previously implemented 
-				but deprecated pending future development.</li>
+			<li>importance: Importance that a class be taken sooner than other courses from 1 to 100. Previously implemented but deprecated pending future development.</li>
 		</ul>
 	</p>
 
@@ -163,15 +154,15 @@ Base to be used in the future.
 	<!-- logic tree node navigate requirements -->
 	<p>
 		After the logic tree string has been generated for a given DegreeWorks PDF, the user must be able to navigate the resulting 
-		logical tree structure. The user enters the command “tree” from the main menu to enter the course selection menu. From the 
+		logical tree structure. The user enters the command â€œtreeâ€ from the main menu to enter the course selection menu. From the 
 		course selection menu, the user navigates the structure of the tree by using the "show" command. "show-all" shows the entire 
-		tree structure; “show-info [node]” shows the information for a given node. The user uses “move [node]”, “back”, “root”, and 
-		“exit” to navigate. The “select [node]”, “deselect [node]”, “stub [node]”, and “unstub [node]” to change the selection and 
+		tree structure; â€œshow-info [node]â€ shows the information for a given node. The user uses â€œmove [node]â€, â€œbackâ€, â€œrootâ€, and 
+		â€œexitâ€ to navigate. The â€œselect [node]â€, â€œdeselect [node]â€, â€œstub [node]â€, and â€œunstub [node]â€ to change the selection and 
 		stubbing status of the nodes. There are also administrative (can edit tree structure) and user modes (cannot edit tree structure) 
-		that can be toggled with “admin” and “user” commands respectively. “Fill [node]” puts the user in the fill menu that fills out 
-		protocol nodes. As an administrator, the “add-exhaustive”, “add-exhaustive”, “add-deliverable”, “add-protocol”, “add-shallow-count”, 
-		“add-deep-count”, “add-deep-credit”, and “add-inserter” commands add new and empty nodes to the working node. The “delete [node]”, 
-		“edit [node]”, “validate”, “copy [node]”, “cut [node]”, “paste” commands are also available. The user enters “commands” to see all 
+		that can be toggled with â€œadminâ€ and â€œuserâ€ commands respectively. â€œFill [node]â€ puts the user in the fill menu that fills out 
+		protocol nodes. As an administrator, the â€œadd-exhaustiveâ€, â€œadd-exhaustiveâ€, â€œadd-deliverableâ€, â€œadd-protocolâ€, â€œadd-shallow-countâ€, 
+		â€œadd-deep-countâ€, â€œadd-deep-creditâ€, and â€œadd-inserterâ€ commands add new and empty nodes to the working node. The â€œdelete [node]â€, 
+		â€œedit [node]â€, â€œvalidateâ€, â€œcopy [node]â€, â€œcut [node]â€, â€œpasteâ€ commands are also available. The user enters â€œcommandsâ€ to see all 
 		available commands. Note that all commands have a few aliases and shorthands. For more details on this topic, see the 
 		'README_DEV.md'.
 	</p>
@@ -237,9 +228,7 @@ Base to be used in the future.
 		</tr>
 		<tr>
 			<td>prerequisites</td>
-			<td>Courses required to be taken before a given course. Uses a logic tree string to represent all 
-				possible ways to satisfy prerequisite requirements. See 'README_DEV.md' or module 'Logic Tree 
-				Overview' in this help module documentation for further details.</td>
+			<td>Courses required to be taken before a given course. Uses a logic tree string to represent all possible ways to satisfy prerequisite requirements. See â€˜README_DEV.mdâ€™ or module â€˜Logic Tree Overviewâ€™ in this help module documentation for further details.</td>
 		</tr>
 		<tr>
 			<td>co-requisites</td>
@@ -259,8 +248,7 @@ Base to be used in the future.
 		</tr>
 		<tr>
 			<td>importance</td>
-			<td>Importance that a class be taken sooner than other courses from 1 to 100. Previously implemented 
-				but deprecated pending future development.</td>
+			<td>Importance that a class be taken sooner than other courses from 1 to 100. Previously implemented but deprecated pending future development.</td>
 		</tr>
 	</table>
 <!-- configuring rule weights, submit premade schedule, format of course Info file -->
