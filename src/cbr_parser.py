@@ -1,3 +1,5 @@
+#parses the CBR input files and Case Base
+
 import os
 from pathlib import Path
 

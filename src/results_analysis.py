@@ -1,3 +1,6 @@
+#this module gives reasoning when button 'Give reasoning for recommendation" is pressed
+#compares features in common between target case and retrieved case
+
 import output_fetch
 import similarity_measure
 

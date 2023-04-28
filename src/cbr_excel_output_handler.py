@@ -1,3 +1,5 @@
+#overwrites a path to graduations stubbed elective courses with electives obtained from cbr result
+
 from openpyxl import Workbook, load_workbook
 
 def write_to_file(selected_file, working_elective_list):
