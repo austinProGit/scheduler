@@ -5,6 +5,7 @@ import openpyxl
 import shutil
 from datetime import date
 from driver_fs_functions import *
+from general_utilities import *
 
 
 def excel_formatter(input_path, output_file_name, sched, container):  # first param is source file path
@@ -27,6 +28,15 @@ def excel_formatter(input_path, output_file_name, sched, container):  # first pa
 def format(sheet, sched, num, container):
     stub_list = []
     easy_sched = []
+
+    print(sched._semesters[0].semester_type)
+
+    if sched._semesters[0].semester_type == SUMMER:
+        easy_sched.append([])
+        easy_sched.append([])
+
+    elif sched._semesters[0].semester_type == SPRING:
+        easy_sched.append([])
 
     for semester in sched:
         semester_sched = []
