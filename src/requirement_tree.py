@@ -996,30 +996,32 @@ class DeliverableCourse(_NodeSuper):
         'name': '_printable_description',
         'instance id': '_explicit_id',
         'instructions': '_verbose_instructions',
-        'credits': '_credits',
+        'fallback credits': '_credits',
         'deliver name': '_course_description',
         'duplicate priority': '_duplicate_priority',
         'track elective': '_is_track_elective',
         'may be taken concurrently': '_may_be_taken_concurrently',
         'fallback prereq logic': '_fallback_prereq_logic',
-        'fallback coreq logic': '_fallback_coreq_logic'
+        'fallback coreq logic': '_fallback_coreq_logic',
+        'fallback availability': '_fallback_availability'
     }
     KEY_ALIASES = {
         'n': 'name',
         'id': 'instance id',
         'i': 'instructions',
-        'c': 'credits',
+        'c': 'fallback credits',
         'dn': 'deliver name',
         'p': 'duplicate priority',
         'te': 'track elective',
         'mbtc': 'may be taken concurrently',
         'fpl': 'fallback prereq logic',
-        'fcl': 'fallback coreq logic'
+        'fcl': 'fallback coreq logic',
+        'fa': 'fallback availability'
     }
-    KEYS_LIST = ['name', 'instance id', 'instructions', 'credits', 'deliver name', 'duplicate priority',
-    'track elective', 'may be taken concurrently', 'fallback prereq logic', 'fallback coreq logic']
-    NON_NIL_KEYS = {'name', 'credits', 'fallback prereq logic', 'fallback coreq logic'}
-    INTEGER_KEYS = {'credits', 'duplicate priority'}
+    KEYS_LIST = ['name', 'instance id', 'instructions', 'deliver name', 'duplicate priority', 'track elective',
+     'may be taken concurrently', 'fallback credits', 'fallback prereq logic', 'fallback coreq logic', 'fallback availability']
+    NON_NIL_KEYS = {'name', 'fallback credits', 'fallback prereq logic', 'fallback coreq logic', 'fallback availability'}
+    INTEGER_KEYS = {'fallback credits', 'duplicate priority'}
 
     def __init__(self, course_description=None, credits=3, printable_description=None):
         super().__init__(printable_description or course_description)
@@ -1029,6 +1031,7 @@ class DeliverableCourse(_NodeSuper):
         self._may_be_taken_concurrently: Optional[str] = None
         self._fallback_prereq_logic = ''
         self._fallback_coreq_logic = ''
+        self._fallback_availability = 'Fa Sp'
     
     def set_value_for_key(self, key, value):
         super().set_value_for_key(key, value)
@@ -1060,10 +1063,27 @@ class DeliverableCourse(_NodeSuper):
     def get_aggregate(self) -> list[SchedulableParameters]:
         '''This gets a list of SchedulableItem objects from the node and all of its children.'''
         result: list[SchedulableParameters] = []
+        new_parameter_object: Optional[SchedulableParameters] = None
         if self._course_description:
-            result.append(SchedulableParameters(course_number=self._course_description, course_name=self._printable_description or DEFAULT_COURSE_DESCRIPTION))
+            new_parameter_object = SchedulableParameters(course_number=self._course_description, course_name=self._printable_description or DEFAULT_COURSE_DESCRIPTION)
         else:
-            result.append(SchedulableParameters(course_name=self._printable_description or DEFAULT_COURSE_DESCRIPTION))
+            new_parameter_object = SchedulableParameters(course_name=self._printable_description or DEFAULT_COURSE_DESCRIPTION)
+
+        new_parameter_object.stub_hours = self._credits
+        new_parameter_object.stub_prereqs_logic_string = self._fallback_prereq_logic
+        new_parameter_object.stub_coreqs_logic_string = self._fallback_coreq_logic
+
+        availability: set[SemesterType] = set()
+        raw_availability: str = self._fallback_availability.lower()
+        if 'fa' in raw_availability:
+            availability.add(FALL)
+        if 'sp' in raw_availability:
+            availability.add(SPRING)
+        if 'su' in raw_availability:
+            availability.add(SUMMER)
+        new_parameter_object.stub_availability = availability
+        
+        result.append(new_parameter_object)
         return result
     
     def get_as_schedulable_list(self) -> list[SchedulableParameters]:

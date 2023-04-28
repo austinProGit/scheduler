@@ -3,7 +3,6 @@
 # CPSC 4175 Group Project
 
 # TODO: add final semester rule
-# TODO: change the name of the Expert System to "schedule_evaluator"
 # TODO: File existence check does not consider the to-be file extensions (fix this) -- we could do this with Path.with_suffix('') and Path.suffix
 
 # POTENTIAL GOALS FOR NEXT CYCLE:
@@ -12,21 +11,11 @@
 # - Have the last directory used for saving stored in the config
 #           This may be changed just for the current session with something like ("temp dirname")
 #           Using the feature may be optional: having no directory means to start with home
-# - Make importing PySide optional in case the user does not have them installed (maybe other packages as well)
 # - Add drag and drog support for easier file import
-# - Support more export/import types
-# - Manually setting courses setting
-#           Adding specified course (via scheduler)
-#           Adding scheduling constraints (maybe via AI)
-#           Adding custom classes: specify name, availability, hours (via course info container buffer)
-#           NOTE: this might mean serializing the course info container when preserving session data
-# - Display help menu contents in GUI mode via a web browser
 # - Use number of courses OR number of credit hours
 # - Be able to manage config file with text editor (from software)
 # - Make the content panel better
 #           Have the content panel display the output schedule (so there aren't hundreds of windows opening during batch)
-# - Add a log file (tracks commands entered and outputs generated)
-# - Handle missing package errors better
 # - Fix program icon appearing for file explorer (default Python icon)
 # - Handle permission check when setting output directory
 # - Implement weakref into the GUI widgets and item selection callbacks to prevent strong reference cycles
@@ -41,7 +30,6 @@ if TYPE_CHECKING:
     from typing import Callable, Optional, Union
     from pandas import DataFrame
     from menu_interface_base import GeneralInterface
-    from program_generated_evaluator import CourseInfoEvaluationReport
     from PySide6.QtWidgets import QApplication
 
 
@@ -159,6 +147,7 @@ class SmartPlannerController:
     
     def __init__(self, graphics_enabled=True):
 
+        # The file to save input and output to
         self.log_file: Optional[TextIOWrapper] = None
 
         # Hide console window if running Windows OS
@@ -217,6 +206,9 @@ class SmartPlannerController:
         try:
             # Attempt to get the program parameters from the config file
             self.session_configuration = self.load_config_parameters()
+
+            # TODO: this might need to use have log file name determined by the config values
+            self.log_file = open('session_log.txt', 'w')
             
             # Load the course info file via the session configuration (SessionConfiguration)
             self.load_course_info(self.session_configuration)
@@ -858,7 +850,6 @@ class SmartPlannerController:
                     if schedulable.course_identifier.course_number in SURVEY_COURSES:
                         semester.courses.remove(schedulable)
                         container._semesters[-1].courses.append(schedulable)
-                        print(schedulable.course_identifier.course_number, 1249120470723173091)
 
             
             confidence_factor = container.get_confidence_level()

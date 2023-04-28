@@ -3,6 +3,7 @@
 # CPSC 4176 Project
 
 
+
 # TODO: (IMPORTANT) at the moment, coreq.s in constructive scheduler do not work fully:
 #               We just look for "simple coreq.s", which means 1 coreq in which every dependant course's other requirements are ignored.
 #               It is assumed the requirements for the course and it's coreq. are the same
@@ -11,11 +12,14 @@
 
 # TODO: change the behavior of maximum iterations allowed for schedule to be ("maximum contiguous empty semesters") <- for constructive/greedy
 
-# TODO: verify mutation entail swapping two courses between semesters
+# TODO: complete verify mutation entail swapping two courses between semesters
 
 # TODO: for the sake of making the genetic algorithm converge, there is an error produced for EACH courses going over the limit of credits for a semester,
 # and the same is the case with not recording courses as taken if the prequisites are not present
 
+# TODO: custom courses are not being passed into the schedule unless they are left default
+
+# TODO: empty genetated schedules cause crash 
 
 from __future__ import annotations
 from typing import TYPE_CHECKING, Callable
@@ -610,7 +614,8 @@ def lower_number_rule(course: ConstuctiveScheduler.Schedulable,
 # This will determine the courses that are gatekeepers and weight them stronger
 GATEWAY_COURSES_DICT: dict[str, float] = {
     "CPSC 1302": HIGH_FITNESS,
-    "CPSC 1555": LOW_FITNESS
+    "COURSE XXXX": LOW_FITNESS,
+    "CPSC 4000": LOW_FITNESS
 }
 
 local_gatekeeper_rule: ConstuctiveScheduler.Rule
@@ -648,7 +653,7 @@ availability_rule: ConstuctiveScheduler.Rule
 def availability_rule(course: ConstuctiveScheduler.Schedulable,
         courses_needed: list[ConstuctiveScheduler.Schedulable],
         course_info_container: CourseInfoContainer) -> float:
-    return FITNESS_LISTING[max(len(course.schedulable.availability) - 1, 2)]
+    return FITNESS_LISTING[min(len(course.schedulable.availability) - 1, 2)]
 
 
 class ConstuctiveScheduler:
@@ -831,11 +836,11 @@ class ConstuctiveScheduler:
                 course_identifier: CourseIdentifier = \
                     CourseIdentifier(course_number, schedulable_parameters_item.course_name)
 
-
+                
                 course_record: Optional[CourseRecord] = self._course_info_container.get_course_record(course_identifier)
 
                 if course_record is not None:
-
+                    
                     FUNC_availabilities = set(map(lambda x: {'Fa':FALL, 'Sp':SPRING, 'Su':SUMMER, '--':None}[x], course_record.avail))
 
                     schedulable: Schedulable = Schedulable(
@@ -851,7 +856,18 @@ class ConstuctiveScheduler:
                     self._schedulables.append(ConstuctiveScheduler.Schedulable(schedulable))
 
                 else:
-                    pass
+
+                    schedulable: Schedulable = Schedulable(
+                        course_identifier = CourseIdentifier(None, schedulable_parameters_item.course_name),
+                        prerequisite_string = schedulable_parameters_item.stub_prereqs_logic_string or '',
+                        corequisite_string = schedulable_parameters_item.stub_coreqs_logic_string or '',
+                        hours = schedulable_parameters_item.stub_hours,
+                        availability = schedulable_parameters_item.stub_availability,
+                        recommended = schedulable_parameters_item.stub_recommended_set,
+                    )
+                    self._schedulables.append(ConstuctiveScheduler.Schedulable(schedulable))
+
+                    # NOTE: this is used when a course is rejected if not found
                     #raise ValueError(f'Known course encountered: "{str(course_identifier)}" - Please asks an administrator to resolve this or ' +
                     #'enter the course into the course info file manually and restart the program.')
             else:
@@ -861,7 +877,7 @@ class ConstuctiveScheduler:
                     corequisite_string = schedulable_parameters_item.stub_coreqs_logic_string or '',
                     hours = schedulable_parameters_item.stub_hours,
                     availability = schedulable_parameters_item.stub_availability,
-                    recommended = schedulable_parameters_item.stub_availability
+                    recommended = schedulable_parameters_item.stub_recommended_set,
                 )
                 self._schedulables.append(ConstuctiveScheduler.Schedulable(schedulable))
 
