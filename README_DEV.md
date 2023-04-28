@@ -452,6 +452,7 @@ those key phrases appear differently in the real DegreeWorks than they did
 in sample inputs, new key phrases would need to be added.
 2. The result of editing custom courses is that the schedulable is not being passed to the scheduler.
 3. CBR Bug: After choosing the “Adapt elective recommendation” option, if the user goes BACK into the same adaptation window, it will not update to the user's choice. It will once again ask the user to add or remove elective(s). The CBR must be run again for the user’s choice to be reflected in the adaptation window. 
+4. The csu_public_data_parser does not utilize the alias module. As a consequence, it is susceptible to outdated course numbers affecting the fetched data.
 
 
 ## Further Resources
