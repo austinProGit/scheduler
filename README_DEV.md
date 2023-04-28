@@ -34,111 +34,200 @@ This document assumes that the reader is at least a junior level Computer Scienc
 
 ## Step-by-Step Usage
 
-<h3>Load Needed Courses</h3>
-<p>
-    In order for Smart Planner to generate a schedule, it needs the a list of courses required before graduation. 
-    Courses should be listed in a PDF document. To load the courses into the program you can either enter 
-    "load FILENAME" where FILENAME is the local or absolute path, or enter "browse" to open a file browser.
-</p>
-
-<h3>Set the Number of Hours Per Semester</h3>
-<p>
-    To set the number of credit hours per semester, enter "hours NUMBER" where NUMBER is the desired number of hours 
-    per semester.
-</p>
-
-<h3>Adjusting Configuration Data</h3>
-<p>
-    The configuration file (called "config") has the following format: the first line is the filename of the catalog 
-    file. This is expected to be an xslx file in the working directory and follows the format in the instruction 
-    manual (see manual). The second line is whether the program launches in GUI mode (either "YES" or "NO").
-</p>
-
-<h3>CLI Scheduling</h3>
-<p>
-    From the command line, user launches main.py. User loads needed courses with syntax 'load fileName'. The user 
-    should verify the parameters of the current configuration with the parameters command, syntax 'parameters', which 
-    will output the file destination, the maximum hours per semester, and all loaded courses. Then, the user will 
-    generate a schedule with the 'schedule' command, receiving a positive completion output message. The user can then 
-    access their schedule.
-</p>
-
-<h3>GUI Scheduling</h3>
-<p>
-    From the command line, user launches main.py. If the program has been previously configured to open immediately to 
-    the GUI, then the GUI will launch automatically. If not, the user will then enter 'gui-i' to launch the GUI. Once 
-    the GUI is launched, the user will have access to the following parameters: load needed courses, set destination 
-    directory, set maximum hours per semester, set output format, and set output file name. After the user modifies 
-    desired parameters, they press the 'generate schedule' button. The schedule is now generated.
-</p>
-
-<h3>Handling Bad Course Info Input</h3>
-<p>
-    The administrator has configured the program with a prerequisite that is definitionally unsatisfiable. As soon as 
-    the user launches the program, the user is notified that the catalog contains invalid data and is then redirected 
-    to an error menu. The user must seek the administrator's assistance in creating a valid course information input. 
-    Once in the error menu, the administrator has the option to create a new default configuration file or attempt to 
-    reload. The user cannot access the GUI if there is an error.
-</p>
-
 <h3>Administrator Familiarization and Program Configuration</h3>
+	<!-- admin administrator familiarization configuration -->
 <p>
-    After launching, the administrator accesses the help menu with command 'help'. On the help menu, the administrator 
-    sees a prompt to search by keywords for help articles. The administrator decides to instead see all help articles 
-    by entering the command 'all'. The administrator learns about the main functions of the program, including loading 
-    courses needed, generating the hours, selecting the schedule export types, and many other functions. The administrator 
-    then begins configuration. The administrator configures the courses by editing the Course Info excel file. The 
-    administrator then changes the source directory for the Course Info file as desired by editing the config file. Next, 
-    the administrator sets the output format with the commands 'exports [exportNum]'. Next, the administrator configures 
-    the destination path with the command 'destination [path]'. The administrator then sets the default user interface 
-    to GUI with command 'gui'. The program is now configured for student use.
+    After launching, the administrator accesses the help menu with command 'help'. On the help menu, 
+    the administrator sees a prompt to search by keywords for help articles. The administrator decides 
+    to instead see all help articles by entering the command 'all'. The administrator learns about the main 
+    functions of the program, including loading courses needed, setting maximum hours per semester, 
+    selecting the schedule export types, and other functions. The administrator then begins configuration. 
+    The administrator configures the course records by editing the 'Course Info' excel file, which is found 
+    within the 'Smart Planner/input_files' directory. The administrator then changes the source directory for 
+    the 'Course Info' file as desired by editing the 'config' file located in the 'Smart Planner' directory. 
+    Next, the administrator sets the output format with the commands 'exports [exportNum]'. Next, the 
+    administrator configures the destination path with the command 'destination [path]'. The administrator 
+    then sets the default user interface to GUI with command 'gui'. The program is now configured for student use.
 </p>
-
+<h3>Load Needed Courses</h3>
+<!--load needed courses course classes class schedule input-->
+<p>
+    To generate a schedule, the Smart Planner requires a valid DegreeWorks PDF from a student's DegreeWorks 
+    portal as an input. To load needed courses via the GUI, the user can click 'Open Needed Courses', then 
+    select the DegreeWorks PDF, then click 'Open'. To load needed courses via the CLI, the administrator can 
+    either enter "load [fileName]" where 'fileName' is the local or absolute path, or enter "load-e" to open a file browser.
+</p>
+<h3>Set the Number of Hours Per Semester</h3>
+<!--hours set parameter per semester setup configure summer-->
+<p>
+    To set the number of credit hours per semester, enter "hours[number]" where 'number' is the desired number 
+    of hours per Fall or Spring semesters. Optionally, the user can enter the “summer-hours [number]” command to 
+    set the hours per Summer semester.
+</p>
+<h3>Adjusting Configuration Data</h3>
+<!--config configuration setup settings administrate files custom customize-->
+<p>
+    The configuration file (called "config") is located in the 'Smart Planner' directory  has the following 
+    json format: the keys and values include "course_info_filename": the course info file path, "alias_filename": 
+    the path of the file used for aliasing old course numbers, "is_graphical": true or false (whether using a GUI 
+    or CLI), "initial_schedule_name": The default name used for path exports, "normal_hours_limit": 18 by default, 
+    "strong_hours_limit": the hours upper limit that must be enforced (30 by default), "strong_hours_minimum": the 
+    hours lower limit that must be enforced (4 by default)
+</p>
+<h3>CLI Scheduling</h3>
+<!-- generate run execute schedule create scheduling cli -->
+<p>
+    The program will begin execution in the GUI environment by default. Click 'Enter Command Line' to enter the 
+    CLI. The user loads needed courses with syntax 'load [fileName]', where 'fileName' is the name of the 
+    DegreeWorks PDF containing all path to graduation requirements. The user should verify the parameters of 
+    the current configuration with the 'parameters' command, which will output the file destination, the maximum 
+    hours per semester, and all loaded courses. Then, the user will generate a schedule with the 'schedule' 
+    command, receiving a positive completion output message. The user can then access their schedule.
+</p>
+<h3>GUI Scheduling</h3>
+<!-- graphical GUI schedule scheduling userstory -->
+<p>
+The program will begin execution in the GUI environment by default. If the user is currently in a CLI mode, enter 
+the GUI with command 'gui-i'. Once the GUI is launched, the user will have access to the following parameters: 
+load needed courses, set destination directory, set maximum hours per semester, set output format, and set output 
+file name. The help button is also available to assist with program execution. Pressing the return key after 
+entering the parameters is necessary. After the user modifies desired parameters, they press the 'generate schedule' 
+button. The schedule is now generated.
+</p>
+<h3>Program Interface</h3>
+<!-- graphical GUI CLI program view look interface -->
+<p>
+The program will begin execution in the GUI environment by default. If the user is currently in a CLI mode, the user 
+can enter the GUI with command 'gui-i'. Entering 'cli' will configure the interface to open in command line 
+interface mode by default. The same is the case with the “gui” command.
+</p>
 <h3>Validate Existing Path to Graduation</h3>
+<!-- existing validate user submit path -->
 <p>
-    User launches program in CLI and enters 'verify [filePath]'', where filePath is the location of the Path to Graduation. 
-    If the Path to Graduation is valid, the program outputs 'path valid'. Otherwise, it outputs a list of the errors 
-    found in the path.
+    In order to assess a given path to graduation for correctness, the program must first have the relevant DegreeWorks 
+    PDF as input. To validate an existing path to graduation in the GUI, the user first clicks the 'Verify Schedule' 
+    button and selects the relevant DegreeWorks PDF. Then, if the Path to Graduation is valid, the program outputs 
+    'path valid' and the confidence in the path. Otherwise, it outputs a list of the errors found in the path. The user 
+    can also verify in the CLI by entering 'verify [filePath]'', where 'filePath' is the location of the Path to 
+    Graduation Excel document.
 </p>
-
-<h3>Batch Processing</h3>
-<p>
-    The administrator has a folder containing all of the Courses Needed PDF files. The admin enters the destination directory 
-    with command 'destination [path]'. Then, he enters the hours per semester with command 'hours [numberOfHoursPerSemester]'. 
-    Then, he begins batch process execution with command 'batch [directoryOfNeededCourseFiles], [destinationDirectoryName]'. 
-    Valid results will be found in the destination folder. Invalid inputs will result in no corresponding output, and an error 
-    message will be displayed.
-</p>
-
 <h3>AI Output Interpretation</h3>
+<!-- ai es artificial intelligence expert system interpretation confidence -->
 <p>
     After scheduling, the user will receive an output in the form of a decimal value between 0 and 100, where 0 reflects that
     the Expert System is very unconfident in the goodness of the Path to Graduation, and 100 reflects absolute confidence. All 
     Paths to Graduation are valid and satisfy CSU graduation requirements; this measure reflects a subjective judgment based 
     on rules provided by human scheduling experts.
 </p>
-
-<h3>Configure Course Importance</h3>
-<p>
-    Course importance is used to prioritize some classes over others in scheduling, provided that the importance does not conflict 
-    with existing scheduling rules. The aministrator accesses the Importance column in the Course Info Excel file. For a given class, 
-    a rating of 0 to 100 can be given.
+<h3>Case Based Reasoning Overview</h3>
+<!-- ai case based reasoning cbr overview elective scheduling assistance -->
+<p>                
+Case Based Reasoning (CBR) uses past experiences to solve new problems. Previous experiences are stored in the system as 
+Problem-Solution pairs. In the instance of the SmartPlanner CBR, a Problem is a students degreeworks file (courses taken 
+and courses needed) and the Solution is the recommended electives (specifically, higher level CPSC electives). A user will 
+select their input file, and the CBR will retrieve the recommended electives that best fit the user's degree plan. Then, 
+the user has the option to “Adapt” the solution to their specific situation (i.e., if the system recommended three electives, 
+but the student only needs two). After adaptation, the user can select an output file to overwrite the blank electives slots 
+filled by the Rule Based Scheduler. The system will automatically write the input file and adapted solution back into the Case 
+Base to be used in the future.
 </p>
+<h3>Case Based Reasoning/Elective Recommendations - Step by Step</h3>
+	<!-- ai case based reasoning cbr overview elective scheduling assistance -->
+	<p>
+		<ol id="cbr-steps-list">
+			<li>Generate a schedule by using the SmartPlanner Rule Based Scheduler.</li>
+			<li>Choose the “Run CBR for Elective Recommendations” option on the GUI main page.</li>
+			<li>Once the CBR menu is opened, select “Run CBR” again.</li>
+			<li>Choose the corresponding input file (same name as your degreeworks file) located in the directory 'CBR Inputs'. CBR will automatically run and show recommended electives in the display box.</li>
+			<li>User can choose the 'Adapt elective recommendation' to tailor the recommendation more to their specific situation. New electives will be shown in the display box.</li>
+			<li>The user can select "Give Reasoning for Recommendation” to show WHY the system recommended the retrieved electives.</li>
+			<li>The user can finally select 'Choose output file' to find their scheduled path to graduation excel file created from the Rules Based Scheduler and overwrite the elective slots in said file.</li>
+		</ol>
+	</p>
+
 
 <h3>Format of Course Info Input File</h3>
-<p>
-    courseID: Unique identifier for courses.
-    courseName: Common name for course.
-    hours: Hours by semester.
-    availability: When a course is offered during the year by season.
-    prerequisites: Courses required to be taken before a given course.
-    co-requisites: Courses that must be taken before or concurrently with a given course.
-    recommended: Courses recommended to take together.
-    isElective: 1 if a course is an elective, 0 otherwise.
-    restrictions: Restrictions on when a course can be taken, ex: must be senior.
-    note: Misc notes.
-    importance: Importance that a class be taken sooner than other courses from 1 to 100.
-</p>
+	<!-- format course info input columns -->
+	<p>
+		<ul id="format-course-info-file-list">
+			<li>courseID: Unique identifier for courses.</li>
+			<li>courseName: Common name for course.</li>
+			<li>hours: Hours by semester.</li>
+			<li>availability: When a course is offered during the year by season.</li>
+			<li>prerequisites: Courses required to be taken before a given course. Uses a logic tree string to represent all possible ways to satisfy prerequisite requirements. See ‘README_DEV.md’ or module ‘Logic Tree Overview’ in this help module documentation for further details.</li>
+			<li>co-requisites: Courses that must be taken concurrently with a given course. Stored like a prerequisite in a logic tree string.</li>
+			<li>recommended: Courses recommended to take together.</li>
+			<li>restrictions: Restrictions on when a course can be taken, ex: must be senior.</li>
+			<li>note: Misc notes.</li>
+			<li>importance: Importance that a class be taken sooner than other courses from 1 to 100. Previously implemented but deprecated pending future development.</li>
+		</ul>
+	</p>
+
+
+<h3>Logic Tree Overview</h3>
+	<!-- logic tree string node -->
+	<p>
+		A complex logic structure of predictable format must be created to represent the complex requirements presented by a student's 
+		DegreeWorks PDF. The complex logic arises from choices that are presented to the student by the DegreeWorks PDF. For example, 
+		a student may be able to satisfy a certain graduation requirement by taking one of several combinations of different courses. 
+		By creating this logic string while parsing an input DegreeWorks PDF, the Smart Planner is able to represent any possible 
+		variation of graduation requirements and process them for scheduling and user interaction. This data structure is also used to 
+		represent pre and co-requisites in the 'Course Info.xlsx' file. For more details on this topic, see the 'README_DEV.md'.
+	</p>
+
+
+<h3>Navigating Requirements Tree</h3>
+	<!-- logic tree node navigate requirements -->
+	<p>
+		After the logic tree string has been generated for a given DegreeWorks PDF, the user must be able to navigate the resulting 
+		logical tree structure. The user enters the command “tree” from the main menu to enter the course selection menu. From the 
+		course selection menu, the user navigates the structure of the tree by using the "show" command. "show-all" shows the entire 
+		tree structure; “show-info [node]” shows the information for a given node. The user uses “move [node]”, “back”, “root”, and 
+		“exit” to navigate. The “select [node]”, “deselect [node]”, “stub [node]”, and “unstub [node]” to change the selection and 
+		stubbing status of the nodes. There are also administrative (can edit tree structure) and user modes (cannot edit tree structure) 
+		that can be toggled with “admin” and “user” commands respectively. “Fill [node]” puts the user in the fill menu that fills out 
+		protocol nodes. As an administrator, the “add-exhaustive”, “add-exhaustive”, “add-deliverable”, “add-protocol”, “add-shallow-count”, 
+		“add-deep-count”, “add-deep-credit”, and “add-inserter” commands add new and empty nodes to the working node. The “delete [node]”, 
+		“edit [node]”, “validate”, “copy [node]”, “cut [node]”, “paste” commands are also available. The user enters “commands” to see all 
+		available commands. Note that all commands have a few aliases and shorthands. For more details on this topic, see the 
+		'README_DEV.md'.
+	</p>
+
+
+<h3>Database Updating</h3>
+	<!-- fetch update database excel course info xlsx storage web crawler crawling -->
+	<p>
+		Our program database is an Excel document called 'Course Info.xlsx' located in the '/src/input_files' directory. For a full list 
+		of what the database contains, see the 'Format of Course Info Input File' section of this help module. Using the CLI and the 
+		'fetch' command, the administrator can update the entire database with an automated web crawler, which scrapes all relevant 
+		information from the Columbus State University website. This ensures that all course information is up to date. Because the 
+		database stores the information for each department on a different Excel sheet, the administrator can choose to update only 
+		select department information by entering command 'fetch [departmentNomenclature]'. Ex: 'fetch CPSC'. Reference the CSU website 
+		at <a>https://catalog.columbusstate.edu/course-descriptions/</a> for a full list of department nomenclatures. This functionality is 
+		not available via the GUI. It is advised that all departments are updated concurrently.
+	</p>
+
+
+<h3>Program Updates</h3>
+	<!-- updates automatic version versioning  -->
+	<p>
+		The Smart Planner features automatic updates. When the program is launched, it will check the online repository for changes. 
+		If changes are found, the user will be prompted to update the program accordingly. On the Windows OS, the Smart Planner will 
+		install the new version of the software and close the program. On macOS, it will download a zip file containing the updated 
+		executable to the user's downloads directory. The user must then extract the zip file and move it to their desired directory 
+		for execution.
+	</p>
+
+
+<h3>Alias Module</h3>
+	<!-- course alias update renamed rename xlsx -->
+	<p>
+		The University will periodically rename courses during curriculum refactors/updates. For example, 'CPSC 5150' could be renamed 
+		to 'CPSC 4150'. As such, aliasing is required to prevent such changes from breaking the Smart Planner. To add a course to be 
+		aliased after such a change, the administrator navigates to the 'alias.xlsx' file, puts the outdated course ID under the 'old_id' 
+		column, and puts the updated course ID in the 'new_id' column.
+	</p>
+	
 <table>
     <tr class="table_title">
         <th colspan="2">Course Info Column Descriptions</th>
@@ -165,19 +254,15 @@ This document assumes that the reader is at least a junior level Computer Scienc
     </tr>
     <tr>
         <td>prerequisites</td>
-        <td>Courses required to be taken before a given course.</td>
+        <td>Courses required to be taken before a given course. Uses a logic tree string to represent all possible ways to satisfy prerequisite requirements. See ‘README_DEV.md’ or module ‘Logic Tree Overview’ in this help module documentation for further details.</td>
     </tr>
     <tr>
         <td>co-requisites</td>
-        <td>Courses that must be taken before or concurrently with a given course.</td>
+        <td>Courses that must be taken concurrently with a given course. Stored like a prerequisite in a logic tree string.</td>
     </tr>
     <tr>
         <td>recommended</td>
         <td>Courses recommended to take together.</td>
-    </tr>
-    <tr>
-        <td>isElective</td>
-        <td>1 if a course is an elective, 0 otherwise.</td>
     </tr>
     <tr>
         <td>restrictions</td>
@@ -189,7 +274,7 @@ This document assumes that the reader is at least a junior level Computer Scienc
     </tr>
     <tr>
         <td>importance</td>
-        <td>Importance that a class be taken sooner than other courses from 1 to 100.</td>
+        <td>Importance that a class be taken sooner than other courses from 1 to 100. Previously implemented but deprecated pending future development.</td>
     </tr>
 </table>
 
@@ -286,10 +371,78 @@ This document assumes that the reader is at least a junior level Computer Scienc
 * Module: 'requirement_interface'
     * The requirement_interface acts as the interface for the requirements tree. Handles prerequisite, course selection, and other tree configurations management. 
 
+### Utilities:
+* Module: 'general_utilities'
+    * This module has basic definitions for constant and semester successors.
+* Module: 'driver_fs_functions'
+    * The driver_fs_functions provides high level functions for interfacing with the file system, including ready made path methods.
+* Module: 'dataframe_io'
+    * It contains helper functions for reading and writing pandas DataFrames.
+* Module: 'alias_module'
+    * This module updates course IDs as needed. The default file for construction is Aliases.xlsx.
+* Module: 'configuration_manager'
+    * It handles reading and writing for easy program configuration through a JSON file.
 
-## Errors
+### Scheduling:
+* Module: 'scheduler_driver'
+    * It contains the constructive scheduler, which uses a greedy algorithm to generate a valid or nearly valid Path To Graduation. The genetic optimizer works over greedy and applies a genetic algorithm, which bases its outputs on the highest possible confidence factor. 
 
-## Support
+* Module: 'expert_system_module'
+    * This is a rules based expert system that judges the fitness of the schedule using soft rules. 
+
+* Module: 'schedule_inspector'
+    * The schedule_inspector applies soft rules to the generated schedule. Most of the rules consist of high level and low level courses being scheduled in the same semester or too close together.  
+
+* Module: 'scheduling_parameters_container'
+    * It has containers that store all of the needed information for the scheduler to run and export given a DegreeExtractionContainer.  
+	
+* Module: 'user_submitted_validator'
+    * The user_submitted_validator provides functions for determining the validity for a schedule/Path To Graduation.
+
+### Not in Use:
+* batch_configuration
+* batch_process
+* batch_process_schedules
+* batch_validation
+* program_generated_evaluator
+* scheduler_driver_testing
+
+### Deprecated:
+* degreeworks_parser
+* scheduler
+* catalog_parser
+* course_info_parser
+* scheduling_assistant
+
+### CBR Contents:
+* Non-Python Files:
+    * CBR Inputs – sample input files, contains courses and gpa
+    * Case Base – similar to input files, contains courses and gpa of cases. These have a solution (I.e, recommended electives) that is present in the solutions text file
+    * Solutions.txt – solutions to the respective case base files
+* Python Files:
+    * adaptation.py – adaptation module. Fits retrieved electives to input case. In other words, if a student needs only two electives but the closest case recommends three, it will ask for a case to be removed and edit the Result object accordingly. Input is handled by the Adaptation Window in graphical_interface.py
+    * case_creator.py – fetches the data from the cbr_parser and uses the Case class to create case objects
+    * Case.py – Case class used to store case file_nae, gpa, and course_list (note, this is the entire courses needed list)
+    * cbr_driver.py – when in stand alone, this acts as the main menu and driver. When integrated, it calls the function to run the CBR and give reasoning for the recommended case.
+    * cbr_excel_output_hanlder – simple excel overwriter. Currently, I have it so the CBR just overwrites the excel file outputted by the scheduler directly. Looks for Course XXXX – NAME UNAVAILABLE and replaces that cell data with the recommended electives
+    * cbr_parser – parses the text files in the case base / input folder and sends information to the case_creator module
+    * graphical_interface.py – added two new windows to this file, Adaptation and CBR Main Menu
+    * insertion.py – used to insert the input case with recommended solution back into the case base. Currently not integrated due to testing and demonstration reasons. Given the small size of the  * input case base, you would have to manually delete the solutions from the case base to re-demo the system
+    * output_fetch.py – acts as a middle man between CBR driver and similarity-measure class. Calls similarity_measure functions and creates/returns a Result type object to the cbr_driver
+    * Result.py – Result class that holds target Case object, retrieved Case object, recommended electives, and the similarity measure. NOTE: These are case objects, so you can call getters on these (eg, get filename, get gpa, etc)
+    * similarity_measure.py – runs the similarity function to compare how similar cases are. Currently, the highest weighted feature is GPA, followed by how many “programming courses” have been taken (1301, 1302, 2108 are the specific ones).
+    * program_driver – added a Result variable to the constructor. New functions are down at the very bottom under the James CBR stuff comment
+    * PDF_to_CBR_Formatter – takes parsed info from the degreeworks parser and uses it to create a text file that is easily read by the CBR
+
+
+## Known Bugs
+1. The DegreeWorks parser is currently somewhat tightly coupled to the 
+sample inputs that the Smart Planner team was initially given. Parsing 
+live DegreeWorks documents will take minor refactoring/reworking of the 
+DegreeWorks parsing module. For example, assumptions were made about the 
+ability to rely on key phrases as 'backstops' to trim course names. As 
+those key phrases appear differently in the real DegreeWorks than they did 
+in sample inputs, new key phrases would need to be added.
 
 ## Further Resources
 The help file located in the program explains more of the system behavior in plain language. This document is intended as a technical overview rather than a how-to. The SmartPlanner Github page is also updated regularly with release notes, history etc. Separate from this document is the README file intended for the average user. Like the Help page, this file will explain system behavior in a more digestible way. 
