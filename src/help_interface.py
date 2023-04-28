@@ -26,7 +26,8 @@ HELP_PARAGRAPH_START_TOKEN: str = '<p>' # The string that will start paragraph s
 HELP_PARAGRAPH_END_TOKEN: str = '</p>' # The string that will end paragraph string
 
 # The following are string to remove from the article if ecnountered
-HELP_REMOVED_FROM_PARAGRAPH: list[str] = ['<ul>', '</ul>', '<li>', '</li>', '<ol>', '</ol>', '<a>', '</a>']
+HELP_REMOVED_FROM_PARAGRAPH: list[str] = ['<ul>', '</ul>', '<li>', '</li>', '<ol>', '</ol>', '<a>', '</a>',
+'<ol id="cbr-steps-list">', '<ul id="format-course-info-file-list">']
 
 HELP_QUERY_ACCEPTANCE: float = 0.7 # Level of tolerance (0.0 to 1.0) while searching help documentation
 
