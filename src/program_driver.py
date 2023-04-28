@@ -837,7 +837,7 @@ class SmartPlannerController:
         try:
             self._scheduler.prepare_schedulables()
             container = self._scheduler.generate_schedule(prequisite_ignored_courses=[])
-
+            
             confidence_factor = container.get_confidence_level()
             
             #semesters_listing, confidence_factor = self._scheduler.generate_schedule()
