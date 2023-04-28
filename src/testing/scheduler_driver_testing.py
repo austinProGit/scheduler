@@ -231,7 +231,7 @@ class DummyCourseInfoContainer:
     def get_course_record(self, course_identifier_obj: CourseIdentifier) -> DummyCourseRecord:
         courseID = course_identifier_obj.course_number
         stub = course_identifier_obj.is_stub()
-
+        
         if stub:
             course = DummyCourseRecord()
             course.course_identifier_obj = course_identifier_obj
@@ -524,7 +524,7 @@ def validation_and_scheduling_unit_test():
         scheduler.get_courses_needed_container().stub_all_unresolved_nodes()
         scheduler.prepare_schedulables()
         path: ScheduleInfoContainer = scheduler.generate_schedule(prequisite_ignored_courses=prequisite_ignored_courses)
-
+        print(str(path))
         generated_report: PathValidationReport = rigorous_validate_schedule(
             path,
             taken_courses=[CourseIdentifier('MATH 2125'), CourseIdentifier('MATH 1113'), CourseIdentifier('MATH 5125U')],

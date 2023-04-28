@@ -70,6 +70,8 @@ from schedule_inspector import *
 # Taking courses at a given time/semester
 
 
+# NOTE the "schedule" to rules is a list of list of CourseRecord objects at the moment: list[list[CourseRecord]]
+
 # Translation map from semester K to the next
 
 # Lew change global variable name to SEMESTER_TYPE_SUCCESSOR1; conflict with general_utilities.py SEMESTER_TYPE_SUCCESSOR
@@ -279,6 +281,39 @@ class ExpertSystem:
         
         # TODO: make something better here (such as weighted average)
         return (courses_average_cf + path_average_cf) / 2.0
+
+
+
+    @confidencerule(confidence=1.0, rule_mask=PATH_RULE)
+    def stub_rule(schedule, facts, course_info):
+        
+        semester_upper_half_count = 0
+        semester_lower_half_count = 0
+        semester_half = len(schedule)
+
+        for semester_number, semester in enumerate(schedule):
+            for course in semester:
+                if course.stub:
+                    if semester_number < semester_half:
+                        semester_upper_half_count += 1
+                    else:
+                        semester_lower_half_count += 1
+            
+        score = math.atan((semester_upper_half_count - semester_lower_half_count)/7) / math.pi + 0.5
+        return score
+
+
+    @confidencerule(confidence=1.0, rule_mask=PATH_RULE)
+    def importance_rule(schedule, facts, course_info):
+        
+        # TODO: implement
+        for semester_number, semester in enumerate(schedule):
+            for course in semester:
+                if course.importance:
+                    pass
+        
+        return 1
+
 
     #  .................................... Lew's Rules ....................................
     #  ------------------------------------ Senior Rule ------------------------------------

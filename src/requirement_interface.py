@@ -258,8 +258,8 @@ class NeededCoursesInterface(GeneralInterface):
         self.add_command(self.navigate_exit, 'exit', 'quit', 'done', 'leave')
                 
         self.add_command(self.show_all, 'show-all', 'display-all', 'map')
-        self.add_command(self.show_here, 'show-here', 'display-here', 'show', 'display', 'ls')
-        self.add_command(self.show_down, 'show-down', 'display-down', 'down')
+        self.add_command(self.show_here, 'show-here', 'display-here', 'show', 'display', 'list', 'ls')
+        self.add_command(self.show_down, 'show-down', 'displayx-down', 'down')
         self.add_command(self.show_depth, 'show-depth', 'display-depth', 'depth')
         self.add_command(self.show_info, 'show-info', 'info', 'instructions')
         
