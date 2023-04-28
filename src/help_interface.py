@@ -52,7 +52,6 @@ class HelpMenu(GeneralInterface):
         help_filename: Any = os.path.join(os.path.dirname(__file__), HELP_FILENAME)
         documentation: TextIOWrapper
         with open(help_filename, 'r') as documentation:
-
             # Consume head and other starting content
             while HELP_PRE_START not in documentation.readline(): pass
             
