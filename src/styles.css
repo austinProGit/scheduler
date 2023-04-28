@@ -37,3 +37,12 @@ table tr th {
     font-weight: bold; 
     font-size: xx-large;
 }
+
+#cbr-steps-list, #format-course-info-file-list {
+    margin: 15px 100px 50px 100px; 
+    font-family: var(--main_font);
+    color: black;
+    font-size: 16px;
+    font-weight: normal;
+    text-align: left;
+}
