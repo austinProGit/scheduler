@@ -748,7 +748,9 @@ class SmartPlannerController:
                 schedule = parse_path_to_grad(filepath)
                 
                 # This is list (empty is valid)
+                # TODO: semester contraint is not ideal
                 error_reports = validate_user_submitted_path(self._scheduler.get_course_info(), schedule,
+                    starting_semester=FALL,
                     excused_courses = self._scheduler._taken_course).error_list
                 if not error_reports:
                     self.output('Path valid.')

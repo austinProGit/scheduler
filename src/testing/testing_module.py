@@ -17,7 +17,7 @@ from driver_fs_functions import *
 def all_tests():
     try:
         config: SessionConfiguration = load_configuration_session()
-        if config.is_logging:
+        if not config.is_logging:
             return
     except Exception as e:
         print(e)
