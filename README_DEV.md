@@ -1,5 +1,11 @@
 # Smart Planner: Developer README
 
+## Software Status
+This is a living project, and it will likely be passed on to future developers.
+Intentional outstanding TODOs can be found in some modules. Future contributions 
+will be limited to software developers assigned this project by Columbus State 
+University.
+
 ## Software Overview
 The program driver is at the core of Smart Planner. The program driver retains a copy of:
 * a scheduler object, which defines and performs the scheduling algorithms
@@ -27,6 +33,7 @@ Every process is orchestrated by the driver. The driver is responsible for handl
 * scheduling
     * Performs scheduling via the scheduling object and exports the results to the interface and/or the file system through formatter
 The program driver is built on an interface stack. To interface with the driver, a component submits requests to the top interface of the stack. 
+
 
 
 ## Assumed Background
@@ -443,6 +450,9 @@ DegreeWorks parsing module. For example, assumptions were made about the
 ability to rely on key phrases as 'backstops' to trim course names. As 
 those key phrases appear differently in the real DegreeWorks than they did 
 in sample inputs, new key phrases would need to be added.
+2. The result of editing custom courses is that the schedulable is not being passed to the scheduler.
+3. CBR Bug: After choosing the “Adapt elective recommendation” option, if the user goes BACK into the same adaptation window, it will not update to the user's choice. It will once again ask the user to add or remove elective(s). The CBR must be run again for the user’s choice to be reflected in the adaptation window. 
+
 
 ## Further Resources
 The help file located in the program explains more of the system behavior in plain language. This document is intended as a technical overview rather than a how-to. The SmartPlanner Github page is also updated regularly with release notes, history etc. Separate from this document is the README file intended for the average user. Like the Help page, this file will explain system behavior in a more digestible way. 
