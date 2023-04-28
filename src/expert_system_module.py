@@ -306,13 +306,22 @@ class ExpertSystem:
     @confidencerule(confidence=1.0, rule_mask=PATH_RULE)
     def importance_rule(schedule, facts, course_info):
         
-        # TODO: implement
-        for semester_number, semester in enumerate(schedule):
-            for course in semester:
-                if course.importance:
-                    pass
+        last_mean = math.inf
+        lowest_mean = math.inf
+        important_readings_increases_count = 1
+
+        for semester in schedule:
+            if semester:
+                mean = sum(course.importance for course in semester) / len(semester)
+                
+                if mean > last_mean:
+                    important_readings_increases_count += 2
+                if mean > lowest_mean:
+                    important_readings_increases_count += 1
+                last_mean = mean
+                lowest_mean = min(lowest_mean, mean)
         
-        return 1
+        return 1/important_readings_increases_count
 
 
     #  .................................... Lew's Rules ....................................

@@ -14,6 +14,9 @@ from end_reports import PathValidationReport, VALIDATION_REPORT_PARSED
 from scheduling_parameters_container import CreditHourInformer
 from general_utilities import *
 
+# TODO: this needs to be replaced with something scalable:
+ILLEGAL_SURVEY_COURSES = ['CPSC 4000']
+
 def validate_user_submitted_path(course_info_container: CourseInfoContainer, raw_schedule: list[list[str]],
         starting_semester: SemesterType = ESTIMATED_NEXT_SEMESTER, starting_year: int = ESTIMATED_NEXT_YEAR,
         excused_courses: list[CourseIdentifier] = []) -> PathValidationReport:
@@ -36,9 +39,12 @@ def rigorous_validate_schedule(schedule: ScheduleInfoContainer,
     running_taken_courses: list[CourseIdentifier] = taken_courses[:]
     error_list: list[PathValidationReport.Error] = []
 
+    last_semester: SemesterDescription = schedule._semesters[-1]
+
     semester: SemesterDescription
     for semester in schedule:
 
+        
         # Get the year and semester information
         working_year: int = semester.year
         working_semester: SemesterType = semester.semester_type
@@ -54,6 +60,10 @@ def rigorous_validate_schedule(schedule: ScheduleInfoContainer,
 
         # Check for repeating course within a semester and update the coreq.s
         for course in semester:
+
+            # Check for survey courses taken too early
+            if semester is not last_semester and course.course_identifier.course_number in ILLEGAL_SURVEY_COURSES:
+                error_list.append(PathValidationReport.Error(f'Illegal survery course found in {SEMESTER_DESCRIPTION_MAPPING[working_semester]} {working_year}'))
 
             # Clear all the selections (this is the first time encountering the course)
             course.reset_all_selection()
