@@ -2,7 +2,7 @@
 
 [v2.0.1 Release Notes](https://github.com/austinProGit/scheduler/releases/latest)
 
-A simple program to assist with scheduling a student's university courses.
+A program to assist with scheduling a student's university courses.
 
 ![Preview](https://github.com/austinProGit/scheduler/blob/main/preview.JPG)
 
@@ -22,8 +22,8 @@ A simple program to assist with scheduling a student's university courses.
 * Download the [SmartPlanner](https://github.com/austinProGit/scheduler/releases/download/v2.0.1/SmartPlanner-2.0.1.zip) zip file
 * Unzip and click on the SmartPlanner executable to launch the program
 
-### Using the command line
-This option requires that Python3 version 3.8 or above and Java be installed on the computer that will run the scheduler program. 
+### Using the command line (Developer option)
+This option requires that Python3 version 3.8 to be installed on the computer that will run the scheduler program. 
 All program dependencies are found in requirements.txt. The user must have python (and pip) installed. To install the dependencies,
 the user can use the terminal command 'pip install -r requirements.txt'. After the aforementioned installation is complete, entering
 'python main.py' or 'python3 main.py' (depending on OS) from the terminal will launch the program. This can be done my moving to the
@@ -51,8 +51,7 @@ Our software is flexible and includes a robust Command Line Interface (CLI) that
 options like. load <needed courses>, load-e (with file explorer), destination <output directory>, destination-e, set-hours 
 <maximum hours per semester>, set-exports, parameters, schedule <output filename>, verify <schedule filename>, verify-e, 
 help <keywords>, quit, etc. Because our program uses an excel document as its database, configuration of course offering 
-information is simple and familiar for any system administrator. For users unfamiliar with the command line, we provide a 
-simple, user-friendly Graphical User Interface (GUI). For seamless future use, our software implements a web crawler that 
+information is familiar for any system administrator. For users unfamiliar with the command line, we provide a Graphical User Interface (GUI). For seamless future use, our software implements a web crawler that 
 draws the most up-to-date course information from Columbus State University’s official website. Lastly, we automatically 
 check for invalid inputs (including unsatisfiable prerequisite requirements), providing our users confidence in the 
 validity of their computed path to graduation. Our software also incorporates an Expert System Artificial Intelligence module
@@ -123,5 +122,5 @@ Case Based Reasoning – Step by Step
     • User can select ‘Give Reasoning for Recommendation” to show WHY the system recommended the retrieved electives.
     • User can finally select ‘Choose output file” to find their excel file created from the Rules Based Scheduler and overwrite the elective slots in said excel file
 
-## Futher Resources
+## Further Resources
 Once the program installed, there is a "Help" button that will link to a webpage describing system behavior, step-by-step instruction, all in plain language. There is also a README file intended for devlopers who wish to continue the SmartPlanner project. 
