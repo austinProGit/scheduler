@@ -41,8 +41,10 @@ This document assumes that the reader is at least a junior level Computer Scienc
 
 ## Step-by-Step Usage
 
+<h3>Navigating the Logic Tree</h3>
+<p>Detailed commands can be found in the 'tree_interface.py' file.</p>
+
 <h3>Administrator Familiarization and Program Configuration</h3>
-	<!-- admin administrator familiarization configuration -->
 <p>
     After launching, the administrator accesses the help menu with command 'help'. On the help menu, 
     the administrator sees a prompt to search by keywords for help articles. The administrator decides 
@@ -57,7 +59,6 @@ This document assumes that the reader is at least a junior level Computer Scienc
     then sets the default user interface to GUI with command 'gui'. The program is now configured for student use.
 </p>
 <h3>Load Needed Courses</h3>
-<!--load needed courses course classes class schedule input-->
 <p>
     To generate a schedule, the Smart Planner requires a valid DegreeWorks PDF from a student's DegreeWorks 
     portal as an input. To load needed courses via the GUI, the user can click 'Open Needed Courses', then 
@@ -65,14 +66,12 @@ This document assumes that the reader is at least a junior level Computer Scienc
     either enter "load [fileName]" where 'fileName' is the local or absolute path, or enter "load-e" to open a file browser.
 </p>
 <h3>Set the Number of Hours Per Semester</h3>
-<!--hours set parameter per semester setup configure summer-->
 <p>
     To set the number of credit hours per semester, enter "hours[number]" where 'number' is the desired number 
     of hours per Fall or Spring semesters. Optionally, the user can enter the “summer-hours [number]” command to 
     set the hours per Summer semester.
 </p>
 <h3>Adjusting Configuration Data</h3>
-<!--config configuration setup settings administrate files custom customize-->
 <p>
     The configuration file (called "config") is located in the 'Smart Planner' directory  has the following 
     json format: the keys and values include "course_info_filename": the course info file path, "alias_filename": 
@@ -82,7 +81,6 @@ This document assumes that the reader is at least a junior level Computer Scienc
     hours lower limit that must be enforced (4 by default)
 </p>
 <h3>CLI Scheduling</h3>
-<!-- generate run execute schedule create scheduling cli -->
 <p>
     The program will begin execution in the GUI environment by default. Click 'Enter Command Line' to enter the 
     CLI. The user loads needed courses with syntax 'load [fileName]', where 'fileName' is the name of the 
@@ -92,7 +90,6 @@ This document assumes that the reader is at least a junior level Computer Scienc
     command, receiving a positive completion output message. The user can then access their schedule.
 </p>
 <h3>GUI Scheduling</h3>
-<!-- graphical GUI schedule scheduling userstory -->
 <p>
 The program will begin execution in the GUI environment by default. If the user is currently in a CLI mode, enter 
 the GUI with command 'gui-i'. Once the GUI is launched, the user will have access to the following parameters: 
@@ -102,14 +99,12 @@ entering the parameters is necessary. After the user modifies desired parameters
 button. The schedule is now generated.
 </p>
 <h3>Program Interface</h3>
-<!-- graphical GUI CLI program view look interface -->
 <p>
 The program will begin execution in the GUI environment by default. If the user is currently in a CLI mode, the user 
 can enter the GUI with command 'gui-i'. Entering 'cli' will configure the interface to open in command line 
 interface mode by default. The same is the case with the “gui” command.
 </p>
 <h3>Validate Existing Path to Graduation</h3>
-<!-- existing validate user submit path -->
 <p>
     In order to assess a given path to graduation for correctness, the program must first have the relevant DegreeWorks 
     PDF as input. To validate an existing path to graduation in the GUI, the user first clicks the 'Verify Schedule' 
@@ -119,7 +114,6 @@ interface mode by default. The same is the case with the “gui” command.
     Graduation Excel document.
 </p>
 <h3>AI Output Interpretation</h3>
-<!-- ai es artificial intelligence expert system interpretation confidence -->
 <p>
     After scheduling, the user will receive an output in the form of a decimal value between 0 and 100, where 0 reflects that
     the Expert System is very unconfident in the goodness of the Path to Graduation, and 100 reflects absolute confidence. All 
@@ -127,7 +121,6 @@ interface mode by default. The same is the case with the “gui” command.
     on rules provided by human scheduling experts.
 </p>
 <h3>Case Based Reasoning Overview</h3>
-<!-- ai case based reasoning cbr overview elective scheduling assistance -->
 <p>                
 Case Based Reasoning (CBR) uses past experiences to solve new problems. Previous experiences are stored in the system as 
 Problem-Solution pairs. In the instance of the SmartPlanner CBR, a Problem is a students degreeworks file (courses taken 
@@ -139,7 +132,6 @@ filled by the Rule Based Scheduler. The system will automatically write the inpu
 Base to be used in the future.
 </p>
 <h3>Case Based Reasoning/Elective Recommendations - Step by Step</h3>
-	<!-- ai case based reasoning cbr overview elective scheduling assistance -->
 	<p>
 		<ol id="cbr-steps-list">
 			<li>Generate a schedule by using the SmartPlanner Rule Based Scheduler.</li>
@@ -154,7 +146,6 @@ Base to be used in the future.
 
 
 <h3>Format of Course Info Input File</h3>
-	<!-- format course info input columns -->
 	<p>
 		<ul id="format-course-info-file-list">
 			<li>courseID: Unique identifier for courses.</li>
@@ -172,7 +163,6 @@ Base to be used in the future.
 
 
 <h3>Logic Tree Overview</h3>
-	<!-- logic tree string node -->
 	<p>
 		A complex logic structure of predictable format must be created to represent the complex requirements presented by a student's 
 		DegreeWorks PDF. The complex logic arises from choices that are presented to the student by the DegreeWorks PDF. For example, 
@@ -184,7 +174,6 @@ Base to be used in the future.
 
 
 <h3>Navigating Requirements Tree</h3>
-	<!-- logic tree node navigate requirements -->
 	<p>
 		After the logic tree string has been generated for a given DegreeWorks PDF, the user must be able to navigate the resulting 
 		logical tree structure. The user enters the command “tree” from the main menu to enter the course selection menu. From the 
@@ -202,7 +191,6 @@ Base to be used in the future.
 
 
 <h3>Database Updating</h3>
-	<!-- fetch update database excel course info xlsx storage web crawler crawling -->
 	<p>
 		Our program database is an Excel document called 'Course Info.xlsx' located in the '/src/input_files' directory. For a full list 
 		of what the database contains, see the 'Format of Course Info Input File' section of this help module. Using the CLI and the 
@@ -216,7 +204,6 @@ Base to be used in the future.
 
 
 <h3>Program Updates</h3>
-	<!-- updates automatic version versioning  -->
 	<p>
 		The Smart Planner features automatic updates. When the program is launched, it will check the online repository for changes. 
 		If changes are found, the user will be prompted to update the program accordingly. On the Windows OS, the Smart Planner will 
@@ -227,7 +214,6 @@ Base to be used in the future.
 
 
 <h3>Alias Module</h3>
-	<!-- course alias update renamed rename xlsx -->
 	<p>
 		The University will periodically rename courses during curriculum refactors/updates. For example, 'CPSC 5150' could be renamed 
 		to 'CPSC 4150'. As such, aliasing is required to prevent such changes from breaking the Smart Planner. To add a course to be 
