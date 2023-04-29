@@ -1,0 +1,53 @@
+
+program_generated_validator test
+
+*************** PASSED *************** PASSED *************** PASSED ***************
+
+*************** PASSED *************** PASSED *************** PASSED ***************
+
+container test
+
+*************** PASSED *************** PASSED *************** PASSED ***************
+
+*************** PASSED *************** PASSED *************** PASSED ***************
+
+cli test
+
+*************** FAILED *************** FAILED *************** FAILED ***************
+
+Traceback (most recent call last):
+  File "/Users/hhmerino/FinalScheduler/scheduler/src/testing/testing_module.py", line 42, in all_tests
+    if not test_func():
+           ^^^^^^^^^^^
+  File "/Users/hhmerino/FinalScheduler/scheduler/src/testing/cli_unit_testing.py", line 112, in run_cli_unit_test
+    while planner.run_top_interface():
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hhmerino/FinalScheduler/scheduler/src/program_driver.py", line 942, in run_top_interface
+    current_interface.parse_input(self, user_input) # Pass the user's input to the current menu
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hhmerino/FinalScheduler/scheduler/src/menu_interface_base.py", line 71, in parse_input
+    command(controller, argument) # Invoke the command with the controller and passed arguments
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hhmerino/FinalScheduler/scheduler/src/cli_interface.py", line 193, in help_command
+    new_help_interface: HelpMenu = HelpMenu() # Initialize the new interface
+                                   ^^^^^^^^^^
+  File "/Users/hhmerino/FinalScheduler/scheduler/src/help_interface.py", line 57, in __init__
+    while HELP_PRE_START not in documentation.readline(): pass
+                                ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen codecs>", line 322, in decode
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0x93 in position 4957: invalid start byte
+
+
+degreeworks_parser_v2 test
+
+*************** PASSED *************** PASSED *************** PASSED ***************
+
+*************** PASSED *************** PASSED *************** PASSED ***************
+
+validator and scheduling minimum test
+
+*************** PASSED *************** PASSED *************** PASSED ***************
+
+*************** PASSED *************** PASSED *************** PASSED ***************
+
+Comments: 
