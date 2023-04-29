@@ -8,7 +8,7 @@ from pypdf import PdfReader
 from driver_fs_functions import *
 import pickle
 
-#james cbr stuff
+#CBR module import
 import PDF_to_CBR_Formatter
 
 
